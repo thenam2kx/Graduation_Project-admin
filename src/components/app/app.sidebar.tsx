@@ -1,0 +1,83 @@
+import { useAppSelector } from '@/redux/hooks'
+import { DashboardOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
+import { Button, Menu, MenuProps } from 'antd'
+import Sider from 'antd/es/layout/Sider'
+import { Link, useLocation } from 'react-router'
+
+const items: MenuProps['items'] = [
+  {
+    key: 'overview',
+    type: 'group',
+    label: 'Tổng quan',
+    children: [
+      {
+        key: '/',
+        icon: <DashboardOutlined />,
+        label: <Link to={'/'}>Thống kê</Link>
+      }
+    ]
+  },
+  {
+    key: 'management',
+    type: 'group',
+    label: 'Quản lý',
+    children: [
+      {
+        key: '/users',
+        icon: <UserOutlined />,
+        label: <Link to={'/users'} style={{ color: 'inherit' }}>Khách hàng</Link>,
+        children: [
+          {
+            key: '/users/add',
+            label: <Link to={'/users/add'}>Thêm mới</Link>
+          },
+          {
+            key: '/users/edit',
+            label: <Link to={'/users/edit'}>Chỉnh sửa</Link>
+          }
+        ]
+      },
+      {
+        key: '/products',
+        icon: <ProductOutlined />,
+        label: <Link to={'/products'}>Sản phẩm</Link>
+      }
+    ]
+  }
+]
+
+const AppSidebar = () => {
+  const isOpenDrawer = useAppSelector((state) => state.app.isOpenDrawer)
+
+  const location = useLocation()
+
+  return (
+    <Sider trigger={null} collapsible collapsed={!isOpenDrawer}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        height: '100%',
+        padding: '0 0 20px 0'
+      }}>
+        <section>
+          <div style={{ height: 64 }} />
+
+          <Menu
+            theme='dark'
+            mode='inline'
+            selectedKeys={[location.pathname]}
+            defaultSelectedKeys={['/']}
+            items={items}
+          />
+        </section>
+
+        <section style={{ margin: '0 10px' }}>
+          <Button type="primary" icon={<LogoutOutlined />} style={{ width: '100%' }}>Đăng xuất</Button>
+        </section>
+      </div>
+    </Sider>
+  )
+}
+
+export default AppSidebar
