@@ -5,9 +5,9 @@ import DashboardPage from '@/pages/dashboard/dashboard.page'
 import LayoutPage from '@/pages/layout.page'
 import UserPage from '@/pages/user/user.page'
 import ProductPage from '@/pages/product/product.page'
-import Brand from '@/pages/brand/brand'
-import BrandForm from '@/pages/brand/brand.form'
-import BrandUpdate from '@/pages/brand/brand.update'
+import Brand from '@/pages/brand/brandPage'
+import BrandForm from '@/pages/brand/brand.form.page'
+import BrandUpdate from '@/pages/brand/brand.update.page'
 
 const Routers = () => {
   const isAuthenticated = true
