@@ -74,7 +74,7 @@ const BlogPage = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <h1>Blog Page</h1>
+      <h1>Trang bài viết</h1>
       <Link to='/blogs/add'>
       <Button type='primary' style={{ marginBottom: 16, float: 'right' }}>
         Thêm mới

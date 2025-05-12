@@ -5,9 +5,9 @@ import DashboardPage from '@/pages/dashboard/dashboard.page'
 import LayoutPage from '@/pages/layout.page'
 import UserPage from '@/pages/user/user.page'
 import ProductPage from '@/pages/product/product.page'
-import BlogPage from '@/pages/blog/blogpage'
-import FormBlogAdd from '@/pages/blog/formblogadd'
-import FormBlogEdit from '@/pages/blog/formblogedit'
+import BlogPage from '@/pages/blog/blogPage'
+import FormBlogAdd from '@/pages/blog/formBlogAdd'
+import FormBlogEdit from '@/pages/blog/formBlogEdit'
 
 const Routers = () => {
   const isAuthenticated = true

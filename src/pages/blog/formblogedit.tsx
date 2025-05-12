@@ -18,49 +18,43 @@ const modules = {
   ]
 }
 
-const FormBlogEdit = () => {
+interface IBlog {
+  title: string
+  slug: string
+  content: string
+  image: string
+}
+
+const FormEditBlog = () => {
   const [form] = Form.useForm()
   const [content, setContent] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: IBlog) => {
     const blog = {
       ...values,
-      content: content,
-      image: imageUrl
+      content: content
     }
     console.log('New blog', blog)
     message.success('Blog post created successfully!')
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImageUrl(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
   return (
     <div style={{ padding: 24 }}>
-      <Title level={3}>Form Blog</Title>
+      <Title level={3}>Trang sửa bài viết</Title>
       <Form layout='vertical' form={form} onFinish={onFinish} style={{ maxWidth: 600, margin: '0 auto' }}>
-        <Form.Item label='Title' name='title' >
-          <Input placeholder='Title' />
+        <Form.Item label='Tiêu đề' name='title' >
+          <Input placeholder='Nhập tiêu đề' />
         </Form.Item>
 
-        <Form.Item label='Slug' name='slug' >
-          <Input placeholder='Slug' />
+        <Form.Item label='Mô tả ngắn' name='slug' >
+          <Input placeholder='Nhập mô tả ngắn' />
         </Form.Item>
 
-        <Form.Item label='Image'>
-          <Input type='file' onChange={handleImageUpload} />
+        <Form.Item label='Hình ảnh'>
+          <Input type='text' disabled />
         </Form.Item>
 
-        <Form.Item label='Content'>
+        <Form.Item label='Nội dung'>
           <ReactQuill
             theme='snow'
             value={content}
@@ -72,7 +66,7 @@ const FormBlogEdit = () => {
 
         <Form.Item>
           <Button type='primary' htmlType='submit' style ={{ marginBottom: '10px', marginLeft: '10px' }}>
-            Create Blog
+            Sửa bài viết
           </Button>
         </Form.Item>
       </Form>
@@ -80,4 +74,4 @@ const FormBlogEdit = () => {
   )
 }
 
-export default FormBlogEdit
+export default FormEditBlog
