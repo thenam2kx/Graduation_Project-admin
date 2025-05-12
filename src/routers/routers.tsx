@@ -5,6 +5,9 @@ import DashboardPage from '@/pages/dashboard/dashboard.page'
 import LayoutPage from '@/pages/layout.page'
 import UserPage from '@/pages/user/user.page'
 import ProductPage from '@/pages/product/product.page'
+import BlogPage from '@/pages/blog/blogpage'
+import FormBlogAdd from '@/pages/blog/formblogadd'
+import FormBlogEdit from '@/pages/blog/formblogedit'
 
 const Routers = () => {
   const isAuthenticated = true
@@ -16,6 +19,9 @@ const Routers = () => {
           <Route index element={<DashboardPage />} />
           <Route path='/users' element={<UserPage />} />
           <Route path='/products' element={<ProductPage />} />
+          <Route path='/blogs' element={<BlogPage />} />
+          <Route path='/blogs/add' element={<FormBlogAdd />} />
+          <Route path='/blogs/edit/:id' element={<FormBlogEdit />} />
         </Route>
       </Route>
       <Route path='*' element={<NotFoundPage />} />
