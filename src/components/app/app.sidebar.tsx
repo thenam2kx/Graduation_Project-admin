@@ -51,6 +51,11 @@ const items: MenuProps['items'] = [
         key: '/permissions',
         icon: <InsertRowRightOutlined />,
         label: <Link to={'/permissions'}>Quyền hạn</Link>
+      },
+      {
+        key: '/blogs',
+        icon: <ProductOutlined />,
+        label: <Link to={'/blogs'}>Bài viết</Link>
       }
     ]
   }
