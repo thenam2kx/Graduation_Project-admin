@@ -41,6 +41,21 @@ const items: MenuProps['items'] = [
         key: '/products',
         icon: <ProductOutlined />,
         label: <Link to={'/products'}>Sản phẩm</Link>
+      },
+      {
+        key: '/brand',
+        icon: <ProductOutlined />,
+        label: <Link to={'/brand'}>Thương hiệu</Link>,
+        children: [
+          {
+            key: '/brand/add',
+            label: <Link to={'/brand/add'}>Thêm mới</Link>
+          },
+          {
+            key: '/brand/edit/1',
+            label: <Link to={'/brand/edit/1'}>Chỉnh sửa</Link>
+          }
+        ]
       }
     ]
   }
