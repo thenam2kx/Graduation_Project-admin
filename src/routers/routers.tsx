@@ -8,6 +8,8 @@ import ProductPage from '@/pages/product/product.page'
 import Brand from '@/pages/brand/brandPage'
 import BrandForm from '@/pages/brand/brand.form.page'
 import BrandUpdate from '@/pages/brand/brand.update.page'
+import RolePage from '@/pages/role/role.page'
+import PermissionsPage from '@/pages/permission/permissions.page'
 
 const Routers = () => {
   const isAuthenticated = true
@@ -22,6 +24,8 @@ const Routers = () => {
           <Route path='/brand' element={<Brand />} />
           <Route path='/brand/add' element={<BrandForm />} />
           <Route path='/brand/edit/1' element={<BrandUpdate/>} />
+          <Route path='/roles' element={<RolePage />} />
+          <Route path='/permissions' element={<PermissionsPage />} />
         </Route>
       </Route>
       <Route path='*' element={<NotFoundPage />} />

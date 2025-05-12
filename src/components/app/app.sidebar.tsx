@@ -1,5 +1,5 @@
 import { useAppSelector } from '@/redux/hooks'
-import { DashboardOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
+import { ControlOutlined, DashboardOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Menu, MenuProps } from 'antd'
 import Sider from 'antd/es/layout/Sider'
 import { Link, useLocation } from 'react-router'
@@ -56,6 +56,16 @@ const items: MenuProps['items'] = [
             label: <Link to={'/brand/edit/1'}>Chỉnh sửa</Link>
           }
         ]
+      },
+      {
+        key: '/roles',
+        icon: <ControlOutlined />,
+        label: <Link to={'/roles'}>Vai trò</Link>
+      },
+      {
+        key: '/permissions',
+        icon: <InsertRowRightOutlined />,
+        label: <Link to={'/permissions'}>Quyền hạn</Link>
       }
     ]
   }
