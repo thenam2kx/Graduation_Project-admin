@@ -25,8 +25,8 @@ const BrandUpdate = () => {
         style={{ maxWidth: 600 }}
       >
         <Form.Item name={['name']} label="Tên" rules={[
-          { required: true,message: 'Please input your name!' },
-          {min:5,message: 'Name must be at least 5 characters long'},
+          { required: true,message: 'Vui lòng không bỏ trống' },
+          {min:5,message: 'Tối thiểu 5 ký tự'},
         ]}>
           <Input />
         </Form.Item>
