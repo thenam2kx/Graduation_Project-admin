@@ -1,5 +1,5 @@
 import { useAppSelector } from '@/redux/hooks'
-import { DashboardOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
+import { DashboardOutlined, LogoutOutlined, ProductOutlined, ProfileOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Menu, MenuProps } from 'antd'
 import Sider from 'antd/es/layout/Sider'
 import { Link, useLocation } from 'react-router'
@@ -41,6 +41,11 @@ const items: MenuProps['items'] = [
         key: '/products',
         icon: <ProductOutlined />,
         label: <Link to={'/products'}>Sản phẩm</Link>
+      },
+      {
+        key: '/blogCategory',
+        icon: <ProfileOutlined />,
+        label: <Link to={'/blogCategory'}>Danh mục bài viết</Link>
       }
     ]
   }
