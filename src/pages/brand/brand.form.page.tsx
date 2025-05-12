@@ -36,7 +36,7 @@ const BrandForm = () => {
         </Form.Item>
         <Form.Item
           name="isPublic"
-          label="Hiển thị"
+          label="Trạng thái"
           rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
         >
           <Select placeholder="Chọn trạng thái">

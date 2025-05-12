@@ -25,7 +25,7 @@ const Brand = () => {
     );
     setData(newData)
     console.log(`Toggle ${record.name} to ${checked}`);
-    message.success(`Đổi trạng thái ${record.name} thành công`);
+    // message.success(`Đổi trạng thái ${record.name} thành công`);
   }
 
   const columns = [
