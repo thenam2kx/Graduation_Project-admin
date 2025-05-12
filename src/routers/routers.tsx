@@ -8,6 +8,11 @@ import ProductPage from '@/pages/product/product.page'
 import BlogPage from '@/pages/blog/blog.page'
 import FormBlogAdd from '@/pages/blog/form.blog.add'
 import FormBlogEdit from '@/pages/blog/form.blog.edit'
+import Brand from '@/pages/brand/brandPage'
+import BrandForm from '@/pages/brand/brand.form.page'
+import BrandUpdate from '@/pages/brand/brand.update.page'
+import RolePage from '@/pages/role/role.page'
+import PermissionsPage from '@/pages/permission/permissions.page'
 
 const Routers = () => {
   const isAuthenticated = true
@@ -22,6 +27,11 @@ const Routers = () => {
           <Route path='/blogs' element={<BlogPage />} />
           <Route path='/blogs/add' element={<FormBlogAdd />} />
           <Route path='/blogs/edit/:id' element={<FormBlogEdit />} />
+          <Route path='/brand' element={<Brand />} />
+          <Route path='/brand/add' element={<BrandForm />} />
+          <Route path='/brand/edit/1' element={<BrandUpdate/>} />
+          <Route path='/roles' element={<RolePage />} />
+          <Route path='/permissions' element={<PermissionsPage />} />
         </Route>
       </Route>
       <Route path='*' element={<NotFoundPage />} />
