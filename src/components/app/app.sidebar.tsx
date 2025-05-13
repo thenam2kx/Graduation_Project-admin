@@ -1,5 +1,5 @@
 import { useAppSelector } from '@/redux/hooks'
-import { DashboardOutlined, LogoutOutlined, ProductOutlined, ProfileOutlined, UserOutlined } from '@ant-design/icons'
+import { DashboardOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Menu, MenuProps } from 'antd'
 import Sider from 'antd/es/layout/Sider'
 import { Link, useLocation } from 'react-router'
@@ -43,9 +43,23 @@ const items: MenuProps['items'] = [
         label: <Link to={'/products'}>Sản phẩm</Link>
       },
       {
-        key: '/blogCategory',
-        icon: <ProfileOutlined />,
-        label: <Link to={'/blogCategory'}>Danh mục bài viết</Link>
+        key: '/blog',
+        icon: <UserOutlined />,
+        label: <Link to={'/blog'} style={{ color: 'inherit' }}>Blog & Tin tức</Link>,
+        children: [
+          {
+            key: '/blog/add',
+            label: <Link to={'/blog/add'}>Thêm mới</Link>
+          },
+          {
+            key: '/blog/edit',
+            label: <Link to={'/blog/edit'}>Chỉnh sửa</Link>
+          },
+          {
+            key: '/blogCategory',
+            label: <Link to={'/blogCategory'}>Danh mục bài viết</Link>
+          }
+        ]
       }
     ]
   }

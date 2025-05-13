@@ -1,42 +1,40 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Button, Space, Table, Typography } from 'antd'
+import { Button, Space, Table } from 'antd'
+import { ColumnsType } from 'antd/es/table'
+import { FC, useMemo } from 'react'
 import { Link } from 'react-router'
 
-const { Paragraph } = Typography
 interface ICateblog {
     _id: string
     name: string
     slug: string
-    description: string
     createdAt: string
     updatedAt: string
     deletedAt: string | null
     deleted: boolean
 }
-const BlogCategoryPage = () => {
-  const dataSource: ICateblog[]= [
-    {
-      _id: '1a2b3c4d-5678-90ab-cdef-1234567890ab',
-      name: 'Học lập trình',
-      slug: 'hoc-lap-trinh',
-      description: 'Danh mục về các bài viết hướng dẫn học lập trình...',
-      createdAt: '2025-05-10T08:00:00Z',
-      updatedAt: '2025-05-10T10:00:00Z',
-      deletedAt: null,
-      deleted: false
-    },
-    {
-      _id: '2b3c4d5e-6789-01bc-defg-2345678901cd',
-      name: 'Công nghệ mới',
-      slug: 'cong-nghe-moi',
-      description: 'Danh mục về các bài viết công nghệ mới và xu hướng...',
-      createdAt: '2025-05-09T09:00:00Z',
-      updatedAt: '2025-05-09T11:30:00Z',
-      deletedAt: null,
-      deleted: false
-    }
-  ]
-  const columns = [
+const mockData: ICateblog[] = [
+  {
+    _id: '1a2b3c4d-5678-90ab-cdef-1234567890ab',
+    name: 'Học lập trình',
+    slug: 'hoc-lap-trinh',
+    createdAt: '2025-05-10T08:00:00Z',
+    updatedAt: '2025-05-10T10:00:00Z',
+    deletedAt: null,
+    deleted: false
+  },
+  {
+    _id: '2b3c4d5e-6789-01bc-defg-2345678901cd',
+    name: 'Công nghệ mới',
+    slug: 'cong-nghe-moi',
+    createdAt: '2025-05-09T09:00:00Z',
+    updatedAt: '2025-05-09T11:30:00Z',
+    deletedAt: null,
+    deleted: false
+  }
+]
+const BlogCategoryPage:FC = () => {
+  const blogCategoryColumns: ColumnsType<ICateblog> = useMemo( () => [
     {
       title: 'Tên danh mục',
       dataIndex:'name',
@@ -46,12 +44,6 @@ const BlogCategoryPage = () => {
       title: 'Slug',
       dataIndex:'slug',
       key: 'slug'
-    },
-    {
-      title: 'Mô tả',
-      dataIndex:'description',
-      key: 'description',
-      render: (text: string) => <Paragraph ellipsis={{ rows:2 }}>{text}</Paragraph>
     },
     {
       title: 'Ngày tạo',
@@ -71,7 +63,7 @@ const BlogCategoryPage = () => {
         </Space>
       )
     }
-  ]
+  ], [])
   return (
     <div style={{ padding: 24 }}>
       <h1>Trang danh mục bài viết</h1>
@@ -82,8 +74,8 @@ const BlogCategoryPage = () => {
       </Link>
       <Table
         rowKey='_id'
-        columns={columns}
-        dataSource={dataSource}
+        columns={blogCategoryColumns}
+        dataSource={mockData}
         pagination={{ pageSize: 5 }}
       />
     </div>
