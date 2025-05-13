@@ -1,5 +1,5 @@
 import { useAppSelector } from '@/redux/hooks'
-import { ControlOutlined, DashboardOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
+import { ContactsOutlined, ControlOutlined, DashboardOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Menu, MenuProps } from 'antd'
 import Sider from 'antd/es/layout/Sider'
 import { Link, useLocation } from 'react-router'
@@ -71,6 +71,11 @@ const items: MenuProps['items'] = [
         key: '/permissions',
         icon: <InsertRowRightOutlined />,
         label: <Link to={'/permissions'}>Quyền hạn</Link>
+      },
+      {
+        key: '/contact',
+        icon: <ContactsOutlined />,
+        label: <Link to={'/contact'}>Liên hệ</Link>
       }
     ]
   }
