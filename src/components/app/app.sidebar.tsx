@@ -43,6 +43,25 @@ const items: MenuProps['items'] = [
         label: <Link to={'/products'}>Sản phẩm</Link>
       },
       {
+        key: '/blog',
+        icon: <UserOutlined />,
+        label: <Link to={'/blog'} style={{ color: 'inherit' }}>Blog & Tin tức</Link>,
+        children: [
+          {
+            key: '/blog/add',
+            label: <Link to={'/blog/add'}>Thêm mới</Link>
+          },
+          {
+            key: '/blog/edit',
+            label: <Link to={'/blog/edit'}>Chỉnh sửa</Link>
+          },
+          {
+            key: '/blogCategory',
+            label: <Link to={'/blogCategory'}>Danh mục bài viết</Link>
+          }
+        ]
+      },
+      {
         key: '/categories',
         icon: <ProductOutlined />,
         label: <Link to={'/categories'}>Danh mục</Link>

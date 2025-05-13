@@ -5,6 +5,7 @@ import DashboardPage from '@/pages/dashboard/dashboard.page'
 import LayoutPage from '@/pages/layout.page'
 import UserPage from '@/pages/user/user.page'
 import ProductPage from '@/pages/product/product.page'
+import BlogCategoryPage from '@/pages/blog/category/blogCategory.page'
 import CategoryList from '@/pages/category/category.page'
 import CategoryAdd from '@/pages/category/form.category.add'
 import CategoryEdit from '@/pages/category/form.category.edit'
@@ -27,6 +28,7 @@ const Routers = () => {
           <Route index element={<DashboardPage />} />
           <Route path='/users' element={<UserPage />} />
           <Route path='/products' element={<ProductPage />} />
+          <Route path='/blogCategory' element={<BlogCategoryPage />} />
           <Route path="/categories" element={<CategoryList />} />
           <Route path="/categories/add" element={<CategoryAdd/>} />
           <Route path="/categories/edit/:id" element={<CategoryEdit />} />
