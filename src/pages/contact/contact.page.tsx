@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Table, Modal, Button, Tag, Space, message } from 'antd'
+import {
+  Table, Modal, Button, Tag, Space, message, Form, Input
+} from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 
 interface Contact {
@@ -9,9 +11,10 @@ interface Contact {
   message: string;
   date: string;
   isRead: boolean;
+  reply?: string;
+  repliedAt?: string;
 }
 
-// Dữ liệu mẫu
 const dummyContacts: Contact[] = [
   {
     id: '1',
@@ -27,13 +30,17 @@ const dummyContacts: Contact[] = [
     email: 'b@example.com',
     message: 'Trang web của bạn có lỗi...',
     date: '2025-05-12',
-    isRead: true
+    isRead: true,
+    reply: 'Cảm ơn bạn đã phản hồi, chúng tôi sẽ kiểm tra.',
+    repliedAt: '2025-05-13'
   }
 ]
 
 export default function AdminContactPage() {
   const [contacts, setContacts] = useState<Contact[]>(dummyContacts)
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [replyContent, setReplyContent] = useState('')
+  const [form] = Form.useForm()
 
   const handleDelete = (id: string) => {
     Modal.confirm({
@@ -51,12 +58,29 @@ export default function AdminContactPage() {
 
   const handleView = (contact: Contact) => {
     setSelectedContact(contact)
-    // Đánh dấu là đã đọc
+    setReplyContent(contact.reply || '')
     setContacts((prev) =>
-      prev.map((c) =>
-        c.id === contact.id ? { ...c, isRead: true } : c
-      )
+      prev.map((c) => (c.id === contact.id ? { ...c, isRead: true } : c))
     )
+  }
+
+  const handleSendReply = () => {
+    if (!selectedContact) return
+
+    if (!replyContent.trim()) {
+      message.warning('Nội dung phản hồi không được để trống')
+      return
+    }
+
+    const updatedContacts = contacts.map((c) =>
+      c.id === selectedContact.id
+        ? { ...c, reply: replyContent.trim(), repliedAt: new Date().toISOString().split('T')[0] }
+        : c
+    )
+    setContacts(updatedContacts)
+    message.success('Đã phản hồi liên hệ')
+    setSelectedContact(null)
+    setReplyContent('')
   }
 
   const columns: ColumnsType<Contact> = [
@@ -77,26 +101,21 @@ export default function AdminContactPage() {
     },
     {
       title: 'Trạng thái',
-      dataIndex: 'isRead',
-      key: 'isRead',
-      render: (isRead: boolean) =>
-        isRead ? (
-          <Tag color='green'>Đã đọc</Tag>
-        ) : (
-          <Tag color='red'>Chưa đọc</Tag>
-        )
+      key: 'status',
+      render: (_, record) => (
+        <>
+          {record.isRead ? <Tag color='green'>Đã đọc</Tag> : <Tag color='red'>Chưa đọc</Tag>}
+          {record.reply ? <Tag color='blue'>Đã phản hồi</Tag> : null}
+        </>
+      )
     },
     {
       title: 'Hành động',
       key: 'action',
       render: (_, record) => (
         <Space>
-          <Button type='link' onClick={() => handleView(record)}>
-            Xem
-          </Button>
-          <Button danger type='link' onClick={() => handleDelete(record.id)}>
-            Xoá
-          </Button>
+          <Button type='link' onClick={() => handleView(record)}>Xem</Button>
+          <Button danger type='link' onClick={() => handleDelete(record.id)}>Xoá</Button>
         </Space>
       )
     }
@@ -107,39 +126,49 @@ export default function AdminContactPage() {
       <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16 }}>
         Quản lý liên hệ
       </h2>
-      <Table
-        columns={columns}
-        dataSource={contacts}
-        rowKey='id'
-        bordered
-      />
+      <Table columns={columns} dataSource={contacts} rowKey='id' bordered />
 
-      {/* Modal chi tiết */}
+      {/* Modal phản hồi */}
       <Modal
         open={!!selectedContact}
         onCancel={() => setSelectedContact(null)}
         title='Chi tiết liên hệ'
         footer={[
-          <Button key='close' onClick={() => setSelectedContact(null)}>
-            Đóng
+          <Button key='cancel' onClick={() => setSelectedContact(null)}>Đóng</Button>,
+          <Button
+            key='reply'
+            type='primary'
+            onClick={handleSendReply}
+            disabled={!replyContent.trim()}
+          >
+            Gửi phản hồi
           </Button>
         ]}
       >
         {selectedContact && (
           <>
-            <p>
-              <strong>Tên:</strong> {selectedContact.name}
-            </p>
-            <p>
-              <strong>Email:</strong> {selectedContact.email}
-            </p>
-            <p>
-              <strong>Ngày gửi:</strong> {selectedContact.date}
-            </p>
-            <p>
-              <strong>Nội dung:</strong>
-            </p>
+            <p><strong>Tên:</strong> {selectedContact.name}</p>
+            <p><strong>Email:</strong> {selectedContact.email}</p>
+            <p><strong>Ngày gửi:</strong> {selectedContact.date}</p>
+            <p><strong>Nội dung:</strong></p>
             <p style={{ whiteSpace: 'pre-wrap' }}>{selectedContact.message}</p>
+
+            <Form form={form} layout='vertical' style={{ marginTop: 16 }}>
+              <Form.Item label='Phản hồi'>
+                <Input.TextArea
+                  rows={4}
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  placeholder='Nhập nội dung phản hồi...'
+                />
+              </Form.Item>
+            </Form>
+
+            {selectedContact.reply && (
+              <p style={{ marginTop: 8, fontSize: 12, color: 'gray' }}>
+                Đã phản hồi vào ngày: {selectedContact.repliedAt}
+              </p>
+            )}
           </>
         )}
       </Modal>
