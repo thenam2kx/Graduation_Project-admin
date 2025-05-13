@@ -1,18 +1,33 @@
-import { useParams } from 'react-router-dom'
-import { Button, Form, Input, InputNumber, message, Switch, Upload } from 'antd'
+import { useParams } from 'react-router'
+import { Button, Form, Input, InputNumber, Switch, Upload, message } from 'antd'
 import { useEffect } from 'react'
 import { UploadOutlined } from '@ant-design/icons'
 
+interface ICategory {
+  name: string;
+  slug: string;
+  description: string;
+  image: string;
+  order: number;
+  status: boolean;
+}
+
 const CategoryEdit = () => {
   const { id } = useParams()
-  const [form] = Form.useForm()
+  const [form] = Form.useForm<ICategory>()
 
   useEffect(() => {
-    // Giả lập fetch dữ liệu
-    form.setFieldsValue({ name: 'Tên danh mục mẫu' })
+    form.setFieldsValue({
+      name: 'Danh mục mẫu',
+      slug: 'danh-muc-mau',
+      description: 'Mô tả mẫu',
+      image: 'https://picsum.photos/50',
+      order: 0,
+      status: true
+    })
   }, [form])
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: ICategory) => {
     console.log(`Cập nhật danh mục ${id}:`, values)
     message.success('Cập nhật thành công!')
   }
@@ -20,7 +35,7 @@ const CategoryEdit = () => {
   return (
     <div>
       <h2>Chỉnh sửa danh mục</h2>
-      <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ isActive: true }}>
+      <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ status: true }}>
         <Form.Item label="Tên danh mục" name="name" rules={[{ required: true, message: 'Vui lòng nhập tên danh mục' }]}>
           <Input placeholder="Nhập tên danh mục" />
         </Form.Item>
