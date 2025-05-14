@@ -45,19 +45,11 @@ const items: MenuProps['items'] = [
       {
         key: '/blog',
         icon: <UserOutlined />,
-        label: <Link to={'/blog'} style={{ color: 'inherit' }}>Blog & Tin tức</Link>,
+        label: <Link to={'/blog'} style={{ color: 'inherit' }}>Bài viết</Link>,
         children: [
           {
-            key: '/blog/add',
-            label: <Link to={'/blog/add'}>Thêm mới</Link>
-          },
-          {
-            key: '/blog/edit',
-            label: <Link to={'/blog/edit'}>Chỉnh sửa</Link>
-          },
-          {
-            key: '/blogCategory',
-            label: <Link to={'/blogCategory'}>Danh mục bài viết</Link>
+            key: '/cateblog',
+            label: <Link to={'/cateblog'}>Danh mục bài viết</Link>
           }
         ]
       }
