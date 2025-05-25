@@ -1,21 +1,33 @@
+import instance from '@/config/axios.customize'
+import { IBrand } from '@/types/brand'
 import { DeleteFilled, EditFilled, FolderAddFilled } from '@ant-design/icons'
+import { useMutation } from '@tanstack/react-query'
 import { Button, Popconfirm, Switch, Table, Modal, Form, Input, Select, message, Tooltip } from 'antd'
-import { useState } from 'react'
+import axios from 'axios'
+import { useEffect, useState } from 'react'
 
-interface IBrand {
-  _id: number
-  name: string
-  isPublic: boolean
-}
+
 const Brand = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add')
+  const [editingID, setEditingID] = useState<string | null>(null)
   const [form] = Form.useForm()
-  const [data, setData] = useState<IBrand[]>([
-    { _id: 1, name: 'Thương hiệu 1', isPublic: true },
-    { _id: 2, name: 'Thương hiệu 2', isPublic: false },
-    { _id: 3, name: 'Thương hiệu 3', isPublic: true }
-  ])
+  const [data, setData] = useState<IBrand[]>([])
+  const [image, setImage] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(false)
+  const mutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        await instance.delete(`/api/v1/brand/${id}`)
+      } catch (error: any) {
+        console.log(error)
+      }
+    },
+    onSuccess: () => {
+      message.success('Xóa thành công')
+      ListBrand()
+    }
+  })
   const handleAdd = () => {
     setModalMode('add')
     form.resetFields()
@@ -23,26 +35,97 @@ const Brand = () => {
   }
   const handleEdit = (brand: IBrand) => {
     setModalMode('edit')
-    form.setFieldsValue({ name: brand.name, isPublic: brand.isPublic })
+    setEditingID(brand._id)
+    form.setFieldsValue({
+      name: brand.name,
+      slug: brand.slug,
+      avatar: brand.avatar,
+      isPublic: brand.isPublic
+    })
     setModalOpen(true)
   }
-  const handleFinish = () => {
-    // console.log(values)
-    message.success('Thêm thương hiệu thành công')
-    setModalOpen(false)
+
+  const ListBrand = async () => {
+    try {
+      const res = await instance.get('/api/v1/brand/')
+      const results = res?.data?.results
+      console.log('Results:', results)
+      setData(Array.isArray(results) ? results : [])
+    } catch (error) {
+      message.error('Không thể tải danh sách thương hiệu')
+      setData([])
+    }
   }
-  const handleToggle = (checked: boolean, record: IBrand) => {
-    setData(data.map(item =>
-      item._id === record._id ? { ...item, isPublic: checked } : item
-    ))
+
+  useEffect(() => {
+    ListBrand()
+  }, [])
+
+  const handleFinish = async (values: IBrand) => {
+    try {
+      if (modalMode === 'add') {
+        await instance.post('/api/v1/brand/', values)
+        message.success('Thêm thương hiệu thành công')
+      } else if (modalMode === 'edit' && editingID) {
+        await instance.patch(`/api/v1/brand/${editingID}`, values)
+        message.success('Cập nhật thương hiệu thành công')
+      }
+      setModalOpen(false)
+      ListBrand()
+    } catch (error) {
+      console.log(error)
+    }
   }
-  const handleDelete = () => {
+
+  const handleDelete = (id: string) => {
+    mutation.mutate(id)
   }
+  const uploadImage = async (file: FileList | null) => {
+    if (!file) return
+    setLoading(true)
+    const formData = new FormData()
+    formData.append('file', file[0])
+    formData.append('upload_preset', 'reacttest')
+
+    try {
+      const { data } = await axios.post(
+        'https://api.cloudinary.com/v1_1/dkpfaleot/image/upload',
+        formData
+      )
+      setImage(data.url)
+      form.setFieldsValue({ avatar: data.url })
+      setLoading(false)
+    } catch (error) {
+      console.error('Upload thất bại:', error)
+      setLoading(false)
+    }
+  }
+
   const columns = [
     {
       title: 'Tên thương hiệu',
       dataIndex: 'name',
       key: 'name'
+    },
+    {
+      title: 'Tên url',
+      dataIndex: 'slug',
+      key: 'slug'
+    },
+    {
+      title: 'Hình ảnh',
+      dataIndex: 'avatar',
+      key: 'avatar',
+      render: (avatar: string) =>
+        avatar ? (
+          <img
+            src={avatar}
+            alt="avatar"
+            style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }}
+          />
+        ) : (
+          <span>Không có ảnh</span>
+        )
     },
     {
       title: 'Trạng thái',
@@ -51,10 +134,20 @@ const Brand = () => {
       render: (isPublic: boolean, record: IBrand) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Switch
-            checked={isPublic}
-            onChange={(checked) => handleToggle(checked, record)}
+            checked={!!isPublic}
             checkedChildren="Hiển thị"
             unCheckedChildren="Ẩn"
+            onChange={async(checked) => {
+              try {
+                await instance.patch(`api/v1/brand/${record._id}`, {
+                  isPublic: checked
+                })
+                message.success('Thay đổi trạng thái thành công')
+                ListBrand()
+              } catch (error) {
+                console.log(error)
+              }
+            }}
           />
         </div>
       )
@@ -62,17 +155,17 @@ const Brand = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      render: (record:IBrand) =>
+      render: (record: IBrand) =>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <Tooltip title="Chỉnh sửa">
-            <Button type='primary' onClick={ () => handleEdit(record)}><EditFilled /></Button>
+            <Button type='primary' onClick={() => handleEdit(record)}><EditFilled /></Button>
           </Tooltip>
           <Popconfirm
             title="Xóa thương hiệu"
             description="Bạn có chắc chắn muốn xóa thương hiệu này?"
             okText="Đồng ý"
             cancelText="Không đồng ý"
-            onConfirm={() => handleDelete()}
+            onConfirm={() => handleDelete(record._id)}
           >
             <Tooltip title="Xóa">
               <Button danger><DeleteFilled /></Button>
@@ -87,10 +180,13 @@ const Brand = () => {
       <div className='flex justify-between items-center mb-6'>
         <div>
           <h1 className='text-2xl font-bold'>Quản lý thương hiệu</h1>
+          <p className='text-gray-500'>Quản lý thương hiệu trong hệ thống</p>
         </div>
-      </div>
-      <div style={{ marginBottom: '20px' }}>
-        <Button type='primary' onClick={handleAdd}><FolderAddFilled />Thêm thương hiệu</Button>
+        <div>
+          <Button type='primary' onClick={handleAdd}>
+            <FolderAddFilled /> Thêm thương hiệu
+          </Button>
+        </div>
       </div>
       <Table dataSource={data} columns={columns} rowKey={(data) => data._id} />
       <Modal
@@ -117,6 +213,40 @@ const Brand = () => {
             <Input />
           </Form.Item>
           <Form.Item
+            name="slug"
+            label="Tên url"
+            rules={[
+              { required: true, message: 'Vui lòng không bỏ trống' },
+              { min: 5, message: 'Tối thiểu 5 ký tự' }
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Ảnh đại diện"
+          >
+            <input
+              type="file"
+              onChange={(e) => uploadImage(e.target.files)}
+              className="w-full p-3 border rounded-lg"
+            />
+            {loading && <p className="text-blue-500 mt-2">Đang tải ảnh...</p>}
+            {image && (
+              <img
+                src={image}
+                alt="Uploaded"
+                className="mt-2 w-32 h-32 object-cover rounded"
+                style={{ display: 'block', margin: '0 auto', width: '350px', height: '350px' }}
+              />
+            )}
+          </Form.Item>
+          <Form.Item name="avatar" style={{ display: 'none' }}>
+            <Input type="hidden" />
+          </Form.Item>
+          <Form.Item name="avatar" style={{ display: 'none' }}>
+            <Input type="hidden" />
+          </Form.Item>
+          <Form.Item
             name="isPublic"
             label="Trạng thái"
             rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
@@ -137,4 +267,5 @@ const Brand = () => {
     </div>
   )
 }
+
 export default Brand
