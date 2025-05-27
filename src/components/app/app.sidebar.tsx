@@ -25,17 +25,7 @@ const items: MenuProps['items'] = [
       {
         key: '/users',
         icon: <UserOutlined />,
-        label: <Link to={'/users'} style={{ color: 'inherit' }}>Khách hàng</Link>,
-        children: [
-          {
-            key: '/users/add',
-            label: <Link to={'/users/add'}>Thêm mới</Link>
-          },
-          {
-            key: '/users/edit',
-            label: <Link to={'/users/edit'}>Chỉnh sửa</Link>
-          }
-        ]
+        label: <Link to={'/users'} style={{ color: 'inherit' }}>Khách hàng</Link>
       },
       {
         key: '/products',

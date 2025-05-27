@@ -9,7 +9,14 @@ declare global {
   }
 
   interface IResponseList<T>{
-    result: T[]
+    results: T[]
     meta: IMeta
+  }
+
+  interface IPagination {
+    current: number
+    pageSize: number
+    total: number
+    pages?: number
   }
 }
