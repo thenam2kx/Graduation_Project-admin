@@ -5,6 +5,7 @@ import DashboardPage from '@/pages/dashboard/dashboard.page'
 import LayoutPage from '@/pages/layout.page'
 import UserPage from '@/pages/user/user.page'
 import ProductPage from '@/pages/product/product.page'
+
 import BlogCategoryPage from '@/pages/blog/category/blogCategory.page'
 import CategoryList from '@/pages/category/category.page'
 import CategoryAdd from '@/pages/category/form.category.add'
@@ -19,6 +20,15 @@ import RolePage from '@/pages/role/role.page'
 import PermissionsPage from '@/pages/permission/permissions.page'
 import AdminContactPage from '@/pages/contact/contact.page'
 
+import RolePage from '@/pages/role/role.page'
+import PermissionsPage from '@/pages/permission/permissions.page'
+import Brand from '@/pages/brand/brandPage'
+import BrandForm from '@/pages/brand/brand.form.page'
+import BrandUpdate from '@/pages/brand/brand.update.page'
+import BlogPage from '@/pages/blog/blog.page'
+import FormBlogAdd from '@/pages/blog/form.blog.add'
+import FormBlogEdit from '@/pages/blog/form.blog.edit'
+
 const Routers = () => {
   const isAuthenticated = true
 
@@ -29,10 +39,15 @@ const Routers = () => {
           <Route index element={<DashboardPage />} />
           <Route path='/users' element={<UserPage />} />
           <Route path='/products' element={<ProductPage />} />
+
           <Route path='/blogCategory' element={<BlogCategoryPage />} />
           <Route path="/categories" element={<CategoryList />} />
           <Route path="/categories/add" element={<CategoryAdd/>} />
           <Route path="/categories/edit/:id" element={<CategoryEdit />} />
+
+          <Route path='/roles' element={<RolePage />} />
+          <Route path='/permissions' element={<PermissionsPage />} />
+
           <Route path='/blogs' element={<BlogPage />} />
           <Route path='/blogs/add' element={<FormBlogAdd />} />
           <Route path='/blogs/edit/:id' element={<FormBlogEdit />} />

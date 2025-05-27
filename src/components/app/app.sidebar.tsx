@@ -65,6 +65,14 @@ const items: MenuProps['items'] = [
         key: '/categories',
         icon: <ProductOutlined />,
         label: <Link to={'/categories'}>Danh mục</Link>
+        key: '/roles',
+        icon: <ControlOutlined />,
+        label: <Link to={'/roles'}>Vai trò</Link>
+      },
+      {
+        key: '/permissions',
+        icon: <InsertRowRightOutlined />,
+        label: <Link to={'/permissions'}>Quyền hạn</Link>
       },
       {
         key: '/blogs',
@@ -85,16 +93,6 @@ const items: MenuProps['items'] = [
             label: <Link to={'/brand/edit/1'}>Chỉnh sửa</Link>
           }
         ]
-      },
-      {
-        key: '/roles',
-        icon: <ControlOutlined />,
-        label: <Link to={'/roles'}>Vai trò</Link>
-      },
-      {
-        key: '/permissions',
-        icon: <InsertRowRightOutlined />,
-        label: <Link to={'/permissions'}>Quyền hạn</Link>
       }
     ]
   }
