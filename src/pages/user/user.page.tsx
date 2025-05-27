@@ -55,7 +55,7 @@ export default function AdminUserManagement() {
   const { data: listUser, isLoading } = useQuery({
     queryKey: [USER_QUERY_KEYS.FETCH_ALL, pagination, searchText],
     queryFn: async () => {
-      const res = await getUserList({ current: pagination.current, pageSize: pagination.pageSize, params: `fullname=/${searchText}/i` })
+      const res = await getUserList({ current: pagination.current, pageSize: pagination.pageSize })
       if (res.data) {
         setPagination({
           current: res.data.meta.current,
