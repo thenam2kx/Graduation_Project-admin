@@ -1,20 +1,37 @@
 import axios from '@/config/axios.customize'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Table, Typography, Button, Space, Switch, Modal, message } from 'antd'
+import { Table, Typography, Button, Space, Switch, Modal, message, Form, Input } from 'antd'
 import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 
 const { Paragraph } = Typography
 
 const BlogPage = () => {
   const queryClient = useQueryClient()
+  const [searchText, setSearchText] = useState('')
+  const [categories, setCategories] = useState<{ _id: string; name: string }[]>([])
 
+  // Lấy danh mục
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const res = await axios.get('/api/v1/cateblog')
+      setCategories(res.data?.results || [])
+    }
+    fetchCategories()
+  }, [])
+
+  // Thêm searchText vào queryKey để refetch khi search
   const fetchList = async () => {
-    const res = await axios.get('/api/v1/blogs')
-    return res.data.results // Giữ nguyên vì backend trả về field này
+    let url = '/api/v1/blogs'
+    if (searchText) {
+      url += `?qs=${encodeURIComponent(searchText)}`
+    }
+    const res = await axios.get(url)
+    return res.data.results
   }
 
   const { data, isLoading } = useQuery({
-    queryKey: ['blogs'],
+    queryKey: ['blogs', searchText],
     queryFn: fetchList,
     refetchOnWindowFocus: false
   })
@@ -64,10 +81,18 @@ const BlogPage = () => {
       key: 'slug'
     },
     {
-      title: 'Nội dung',
-      dataIndex: 'content',
-      key: 'content',
-      render: (text: string) => <Paragraph ellipsis={{ rows: 2 }}>{text}</Paragraph>
+      title: 'Danh mục',
+      dataIndex: 'categoryBlogId',
+      key: 'categoryBlogId',
+      filters: categories.map((cat) => ({
+        text: cat.name,
+        value: cat._id
+      })),
+      onFilter: (value, record) => record.categoryBlogId === value,
+      render: (categoryBlogId: string) => {
+        const cat = categories.find((c) => c._id === categoryBlogId)
+        return cat ? cat.name : 'Bài viết không có danh mục'
+      }
     },
     {
       title: 'Ngày tạo',
@@ -114,6 +139,17 @@ const BlogPage = () => {
           Thêm mới
         </Button>
       </Link>
+      <Space style={{ marginBottom: 16 }}>
+        <Form layout="inline">
+          <Form.Item>
+            <Input
+              placeholder="Tìm kiếm tiêu đề"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+          </Form.Item>
+        </Form>
+      </Space>
       <Table
         rowKey='_id'
         columns={columns}
