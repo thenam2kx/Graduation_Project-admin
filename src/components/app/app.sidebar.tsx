@@ -50,6 +50,10 @@ const items: MenuProps['items'] = [
           {
             key: '/cateblog',
             label: <Link to={'/cateblog'}>Danh mục bài viết</Link>
+          },
+          {
+            key: '/cateblog/add',
+            label: <Link to={'/cateblog/add'}>Thêm mới danh mục bài viết</Link>
           }
         ]
       }

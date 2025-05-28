@@ -21,7 +21,7 @@ const Routers = () => {
           <Route path='/products' element={<ProductPage />} />
           <Route path='/cateblog' element={<BlogCategoryPage />} />
           <Route path='/cateblog/add' element={<FormCateBlogAdd />} />
-          <Route path='/cateblog/edit/1' element={<FormCateBlogEdit />} />
+          <Route path='/cateblog/edit/:id' element={<FormCateBlogEdit />} />
         </Route>
       </Route>
       <Route path='*' element={<NotFoundPage />} />
