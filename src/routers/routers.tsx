@@ -22,14 +22,14 @@ import RolePage from '@/pages/role/role.page'
 import PermissionsPage from '@/pages/permission/permissions.page'
 import AdminContactPage from '@/pages/contact/contact.page'
 
-import RolePage from '@/pages/role/role.page'
-import PermissionsPage from '@/pages/permission/permissions.page'
-import Brand from '@/pages/brand/brandPage'
-import BrandForm from '@/pages/brand/brand.form.page'
-import BrandUpdate from '@/pages/brand/brand.update.page'
-import BlogPage from '@/pages/blog/blog.page'
-import FormBlogAdd from '@/pages/blog/form.blog.add'
-import FormBlogEdit from '@/pages/blog/form.blog.edit'
+// import RolePage from '@/pages/role/role.page'
+// import PermissionsPage from '@/pages/permission/permissions.page'
+// import Brand from '@/pages/brand/brandPage'
+// import BrandForm from '@/pages/brand/brand.form.page'
+// import BrandUpdate from '@/pages/brand/brand.update.page'
+// import BlogPage from '@/pages/blog/blog.page'
+// import FormBlogAdd from '@/pages/blog/form.blog.add'
+// import FormBlogEdit from '@/pages/blog/form.blog.edit'
 
 const Routers = () => {
   const isAuthenticated = true
