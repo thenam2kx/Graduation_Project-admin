@@ -30,22 +30,18 @@ const items: MenuProps['items'] = [
       {
         key: '/products',
         icon: <ProductOutlined />,
-        label: <Link to={'/products'}>Sản phẩm</Link>
-      },
-      {
-        key: '/blog',
-        icon: <UserOutlined />,
-        label: <Link to={'/blog'} style={{ color: 'inherit' }}>Bài viết</Link>,
+        label: <Link to={'/products'}>Sản phẩm</Link>,
         children: [
           {
-            key: '/cateblog',
-            label: <Link to={'/cateblog'}>Danh mục bài viết</Link>
-          },
-          {
-            key: '/cateblog/add',
-            label: <Link to={'/cateblog/add'}>Thêm mới danh mục bài viết</Link>
+            key: '/products/add',
+            label: <Link to={'/products/add'}>Thêm mới sản phẩm</Link>
           }
         ]
+      },
+      {
+        key: '/cateblog',
+        icon: <UserOutlined />,
+        label: <Link to={'/cateblog'} style={{ color: 'inherit' }}>Danh mục bài viết</Link>
       },
       {
         key: '/categories',
@@ -71,29 +67,6 @@ const items: MenuProps['items'] = [
         key: '/brand',
         icon: <ProductOutlined />,
         label: <Link to={'/brand'}>Thương hiệu</Link>
-      },
-      {
-        key: '/roles',
-        icon: <ControlOutlined />,
-        label: <Link to={'/roles'}>Vai trò</Link>
-      },
-      {
-        key: '/permissions',
-        icon: <InsertRowRightOutlined />,
-        label: <Link to={'/permissions'}>Quyền hạn</Link>
-},
-        {
-        label: <Link to={'/brand'}>Thương hiệu</Link>,
-        children: [
-          {
-            key: '/brand/add',
-            label: <Link to={'/brand/add'}>Thêm mới</Link>
-          },
-          {
-            key: '/brand/edit/1',
-            label: <Link to={'/brand/edit/1'}>Chỉnh sửa</Link>
-          }
-        ]
       }
     ]
   }
