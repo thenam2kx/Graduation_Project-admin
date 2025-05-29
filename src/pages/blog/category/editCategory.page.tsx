@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Form, Input, message, Typography, Button } from 'antd'
+import { Form, Input, message, Typography, Button, Row, Col } from 'antd'
 import { useNavigate, useParams } from 'react-router'
 import { useEffect } from 'react'
 import axios from 'axios'
@@ -53,30 +53,35 @@ const FormCateBlogEdit = () => {
         layout='vertical'
         form={form}
         onFinish={onFinish}
-        style={{ maxWidth: 600, margin: '0 auto' }}
+        style={{ maxWidth: 800, margin: '0 auto' }}
       >
-        <Form.Item
-          label='Tên danh mục'
-          name='name'
-          rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}
-        >
-          <Input placeholder='Nhập tên danh mục (vd: Tin tức công nghệ)' />
-        </Form.Item>
-
-        <Form.Item
-          label='Slug'
-          name='slug'
-          rules={[{ required: true, message: 'Vui lòng nhập slug của danh mục!' }]}
-        >
-          <Input placeholder='Nhập slug (vd: tin-tuc-cong-nghe)' />
-        </Form.Item>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label='Tên danh mục'
+              name='name'
+              rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}
+            >
+              <Input placeholder='Nhập tên danh mục (vd: Tin tức công nghệ)' />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label='Slug'
+              name='slug'
+              rules={[{ required: true, message: 'Vui lòng nhập slug của danh mục!' }]}
+            >
+              <Input placeholder='Nhập slug (vd: tin-tuc-cong-nghe)' />
+            </Form.Item>
+          </Col>
+        </Row>
 
         <Form.Item>
           <Button onClick={handleBack}>Quay lại</Button>
           <Button
             type='primary'
             htmlType='submit'
-            style={{ marginBottom: '10px', marginLeft: '10px' }}
+            style={{ marginLeft: 10 }}
           >
             Lưu thay đổi
           </Button>
