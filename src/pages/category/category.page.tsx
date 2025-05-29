@@ -1,4 +1,5 @@
-import { Table, Button, Space, message, Switch, Input, Form } from 'antd'
+import { Table, Button, Space, message, Switch, Input, Form, Modal, Tooltip } from 'antd'
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import axios from '@/config/axios.customize'
@@ -16,11 +17,11 @@ interface Category {
 const CategoryList = () => {
   const queryClient = useQueryClient()
   const [searchText, setSearchText] = useState('')
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 5, total: 0 })
   const navigate = useNavigate()
 
   // Fetch danh mục có phân trang và tìm kiếm
-  const fetchList = async ({ page = 1, pageSize = 10, search = '' }) => {
+  const fetchList = async ({ page = 1, pageSize = 5, search = '' }) => {
     let url = `/api/v1/categories?current=${page}&pageSize=${pageSize}`
     if (search) {
       url += `&qs=${encodeURIComponent(search)}`
@@ -28,12 +29,12 @@ const CategoryList = () => {
     const res = await axios.get(url)
     setPagination(prev => ({
       ...prev,
-      total: res.data?.data?.meta?.total || 0,
-      current: res.data?.data?.meta?.current || 1,
-      pageSize: res.data?.data?.meta?.pageSize || 10
+      total: res.data?.meta?.total || 0,
+      current: res.data?.meta?.current || 1,
+      pageSize: res.data?.meta?.pageSize || 10
     }))
     return {
-      results: res.data?.data?.results || []
+      results: res.data?.results || []
     }
   }
 
@@ -56,6 +57,29 @@ const CategoryList = () => {
     }
   })
 
+  // Hàm xóa danh mục
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => axios.delete(`/api/v1/categories/${id}`),
+    onSuccess: () => {
+      message.success('Xóa danh mục thành công')
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+    },
+    onError: () => {
+      message.error('Xóa danh mục thất bại')
+    }
+  })
+
+  const showDeleteConfirm = (record: Category) => {
+    Modal.confirm({
+      title: 'Xác nhận xóa',
+      content: `Bạn có chắc chắn muốn xóa danh mục "${record.name}"?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: () => deleteMutation.mutate(record._id)
+    })
+  }
+
   const columns: ColumnsType<Category> = [
     { title: 'Tên danh mục', dataIndex: 'name', key: 'name' },
     { title: 'Slug', dataIndex: 'slug', key: 'slug' },
@@ -77,13 +101,26 @@ const CategoryList = () => {
       title: 'Thao tác',
       key: 'actions',
       render: (_, record) => (
-        <Space>
-          <Button onClick={() => navigate(`/categories/edit/${record._id}`)}>Chỉnh sửa</Button>
-          <Button danger>Xóa</Button>
+        <Space size="middle">
+          <Tooltip title="Chỉnh sửa">
+            <Button
+              icon={<EditOutlined />}
+              onClick={() => navigate(`/categories/edit/${record._id}`)}
+              className="text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500"
+            />
+          </Tooltip>
+          <Tooltip title="Xóa danh mục">
+            <Button
+              icon={<DeleteOutlined />}
+              onClick={() => showDeleteConfirm(record)}
+              className="text-red-600 border-red-600 hover:text-red-500 hover:border-red-500"
+            />
+          </Tooltip>
         </Space>
       )
     }
   ]
+
 
   return (
     <div style={{ padding: 24 }}>
