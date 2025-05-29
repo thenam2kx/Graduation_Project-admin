@@ -1,7 +1,7 @@
 import axios from '@/config/axios.customize'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Table, Typography, Button, Space, Switch, Modal, message, Form, Input } from 'antd'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { useState, useEffect } from 'react'
 
 const { Paragraph } = Typography

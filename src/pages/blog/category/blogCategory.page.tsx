@@ -2,8 +2,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
-import { Table, Button, Space, Popconfirm, message, Pagination } from 'antd'
-import { Link } from 'react-router-dom'
+
+import { Table, Button, Space, Popconfirm, message } from 'antd'
+import { Link } from 'react-router'
+
 import axios from 'axios'
 import Search from 'antd/es/input/Search'
 
