@@ -1,5 +1,5 @@
 import { useAppSelector } from '@/redux/hooks'
-import { ControlOutlined, DashboardOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
+import { ContactsOutlined, ControlOutlined, DashboardOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Menu, MenuProps } from 'antd'
 import Sider from 'antd/es/layout/Sider'
 import { Link, useLocation } from 'react-router'
@@ -25,17 +25,7 @@ const items: MenuProps['items'] = [
       {
         key: '/users',
         icon: <UserOutlined />,
-        label: <Link to={'/users'} style={{ color: 'inherit' }}>Khách hàng</Link>,
-        children: [
-          {
-            key: '/users/add',
-            label: <Link to={'/users/add'}>Thêm mới</Link>
-          },
-          {
-            key: '/users/edit',
-            label: <Link to={'/users/edit'}>Chỉnh sửa</Link>
-          }
-        ]
+        label: <Link to={'/users'} style={{ color: 'inherit' }}>Khách hàng</Link>
       },
       {
         key: '/products',
@@ -93,6 +83,22 @@ const items: MenuProps['items'] = [
             label: <Link to={'/brand/edit/1'}>Chỉnh sửa</Link>
           }
         ]
+      },
+      {
+        key: '/roles',
+        icon: <ControlOutlined />,
+        label: <Link to={'/roles'}>Vai trò</Link>
+      },
+      {
+        key: '/permissions',
+        icon: <InsertRowRightOutlined />,
+        label: <Link to={'/permissions'}>Quyền hạn</Link>
+      },
+      {
+        key: '/contact',
+        icon: <ContactsOutlined />,
+        label: <Link to={'/contact'}>Liên hệ</Link>
+
       }
     ]
   }
