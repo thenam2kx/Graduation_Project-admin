@@ -25,22 +25,47 @@ const items: MenuProps['items'] = [
       {
         key: '/users',
         icon: <UserOutlined />,
-        label: <Link to={'/users'} style={{ color: 'inherit' }}>Khách hàng</Link>,
-        children: [
-          {
-            key: '/users/add',
-            label: <Link to={'/users/add'}>Thêm mới</Link>
-          },
-          {
-            key: '/users/edit',
-            label: <Link to={'/users/edit'}>Chỉnh sửa</Link>
-          }
-        ]
+        label: <Link to={'/users'} style={{ color: 'inherit' }}>Khách hàng</Link>
       },
       {
         key: '/products',
         icon: <ProductOutlined />,
         label: <Link to={'/products'}>Sản phẩm</Link>
+      },
+      {
+        key: '/blog',
+        icon: <UserOutlined />,
+        label: <Link to={'/blog'} style={{ color: 'inherit' }}>Bài viết</Link>,
+        children: [
+          {
+            key: '/cateblog',
+            label: <Link to={'/cateblog'}>Danh mục bài viết</Link>
+          },
+          {
+            key: '/cateblog/add',
+            label: <Link to={'/cateblog/add'}>Thêm mới danh mục bài viết</Link>
+          }
+        ]
+      },
+      {
+        key: '/categories',
+        icon: <ProductOutlined />,
+        label: <Link to={'/categories'}>Danh mục</Link>
+      },
+      {
+        key: '/roles',
+        icon: <ControlOutlined />,
+        label: <Link to={'/roles'}>Vai trò</Link>
+      },
+      {
+        key: '/permissions',
+        icon: <InsertRowRightOutlined />,
+        label: <Link to={'/permissions'}>Quyền hạn</Link>
+      },
+      {
+        key: '/blogs',
+        icon: <ProductOutlined />,
+        label: <Link to={'/blogs'}>Bài viết</Link>
       },
       {
         key: '/brand',
@@ -56,6 +81,19 @@ const items: MenuProps['items'] = [
         key: '/permissions',
         icon: <InsertRowRightOutlined />,
         label: <Link to={'/permissions'}>Quyền hạn</Link>
+},
+        {
+        label: <Link to={'/brand'}>Thương hiệu</Link>,
+        children: [
+          {
+            key: '/brand/add',
+            label: <Link to={'/brand/add'}>Thêm mới</Link>
+          },
+          {
+            key: '/brand/edit/1',
+            label: <Link to={'/brand/edit/1'}>Chỉnh sửa</Link>
+          }
+        ]
       }
     ]
   }
