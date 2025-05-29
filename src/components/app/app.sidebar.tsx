@@ -70,6 +70,19 @@ const items: MenuProps['items'] = [
       {
         key: '/brand',
         icon: <ProductOutlined />,
+        label: <Link to={'/brand'}>Thương hiệu</Link>
+      },
+      {
+        key: '/roles',
+        icon: <ControlOutlined />,
+        label: <Link to={'/roles'}>Vai trò</Link>
+      },
+      {
+        key: '/permissions',
+        icon: <InsertRowRightOutlined />,
+        label: <Link to={'/permissions'}>Quyền hạn</Link>
+},
+        {
         label: <Link to={'/brand'}>Thương hiệu</Link>,
         children: [
           {
