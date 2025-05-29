@@ -4,7 +4,8 @@ import { DeleteFilled, EditFilled, FolderAddFilled } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
 import { Button, Popconfirm, Switch, Table, Modal, Form, Input, Select, message, Tooltip } from 'antd'
 import axios from 'axios'
-import { useEffect, useState } from 'react'
+import { debounce } from 'lodash'
+import { useEffect, useMemo, useState } from 'react'
 
 
 const Brand = () => {
@@ -15,24 +16,45 @@ const Brand = () => {
   const [data, setData] = useState<IBrand[]>([])
   const [image, setImage] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
-  const mutation = useMutation({
-    mutationFn: async (id: string) => {
-      try {
-        await instance.delete(`/api/v1/brand/${id}`)
-      } catch (error: any) {
-        console.log(error)
-      }
-    },
-    onSuccess: () => {
-      message.success('Xóa thành công')
-      ListBrand()
+  const [searchText, setSearchText] = useState('')
+  const [pagination, setPagination] = useState<IPagination>({ current: 1, pageSize: 10, total: 10 })
+
+  const ListBrand = async (qs?: string) => {
+    try {
+      const url = `/api/v1/brand?current=${pagination.current}&pageSize=${pagination.pageSize}${qs ? `&qs=${encodeURIComponent(qs)}` : ''}`
+      const res = await instance.get(url)
+      console.log('Request URL:', url)
+
+      const results = res?.data?.results || []
+      setData(results)
+      setPagination((prev) => ({
+        ...prev,
+        total: res?.data?.meta?.total || results.length
+      }))
+    } catch (error) {
+      message.error('Không thể tải danh sách thương hiệu')
+      setData([])
     }
-  })
+  }
+  const debounceSearch = useMemo(() =>
+    debounce((text: string) => {
+      ListBrand(text)
+    }, 500), [pagination.current, pagination.pageSize]
+  )
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await ListBrand(searchText)
+    }
+    fetchData()
+  }, [debounceSearch,pagination.current, pagination.pageSize, searchText])
+
   const handleAdd = () => {
     setModalMode('add')
     form.resetFields()
     setModalOpen(true)
   }
+
   const handleEdit = (brand: IBrand) => {
     setModalMode('edit')
     setEditingID(brand._id)
@@ -44,22 +66,6 @@ const Brand = () => {
     })
     setModalOpen(true)
   }
-
-  const ListBrand = async () => {
-    try {
-      const res = await instance.get('/api/v1/brand/')
-      const results = res?.data?.results
-      console.log('Results:', results)
-      setData(Array.isArray(results) ? results : [])
-    } catch (error) {
-      message.error('Không thể tải danh sách thương hiệu')
-      setData([])
-    }
-  }
-
-  useEffect(() => {
-    ListBrand()
-  }, [])
 
   const handleFinish = async (values: IBrand) => {
     try {
@@ -77,6 +83,19 @@ const Brand = () => {
     }
   }
 
+  const mutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        await instance.delete(`/api/v1/brand/${id}`)
+      } catch (error: any) {
+        console.log(error)
+      }
+    },
+    onSuccess: () => {
+      message.success('Xóa thành công')
+      ListBrand()
+    }
+  })
   const handleDelete = (id: string) => {
     mutation.mutate(id)
   }
@@ -181,14 +200,44 @@ const Brand = () => {
         <div>
           <h1 className='text-2xl font-bold'>Quản lý thương hiệu</h1>
           <p className='text-gray-500'>Quản lý thương hiệu trong hệ thống</p>
+          <Input.Search
+            placeholder="Tìm kiếm thương hiệu"
+            allowClear
+            enterButton
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onSearch={(value) => {
+              setSearchText(value)
+              ListBrand(value)
+            }}
+            style={{ width: 300 }}
+          />
+
         </div>
-        <div>
+        <div style={{}} >
           <Button type='primary' onClick={handleAdd}>
             <FolderAddFilled /> Thêm thương hiệu
           </Button>
         </div>
       </div>
-      <Table dataSource={data} columns={columns} rowKey={(data) => data._id} />
+      <Table
+        dataSource={data}
+        columns={columns}
+        rowKey={(data) => data._id}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          onChange: (page, pageSize) => {
+            setPagination((prev) => ({
+              ...prev,
+              current: page,
+              pageSize
+            }))
+          }
+        }}
+/>
+
       <Modal
         open={modalOpen}
         title={modalMode === 'add' ? 'Thêm thương hiệu' : 'Cập nhật thương hiệu'}
