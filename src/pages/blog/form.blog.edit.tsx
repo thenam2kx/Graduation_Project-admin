@@ -55,7 +55,7 @@ const FormBlogEdit = () => {
     queryKey: ['blog', id],
     queryFn: async () => {
       const res = await axios.get(`/api/v1/blogs/${id}`)
-      return res.data?.results
+      return res.data?.results ?? {}
     },
     enabled: !!id
   })
@@ -66,7 +66,8 @@ const FormBlogEdit = () => {
         title: blogData.title,
         slug: blogData.slug,
         categoryBlogId: blogData.categoryBlogId,
-        isPublic: blogData.isPublic
+        isPublic: blogData.isPublic,
+        content: blogData.content
       })
       setContent(blogData.content)
     }
@@ -101,7 +102,7 @@ const FormBlogEdit = () => {
         layout='vertical'
         form={form}
         onFinish={onFinish}
-        style={{ maxWidth: 800, margin: '0 auto' }}
+        style={{ margin: '0 auto' }}
         initialValues={{ isPublic: true }}
       >
         <Form.Item
@@ -146,7 +147,7 @@ const FormBlogEdit = () => {
             value={content}
             onChange={setContent}
             modules={modules}
-            style={{ minHeight: 200, borderRadius: 6 }}
+            style={{ minHeight: 100, borderRadius: 6, marginBottom: 20, height: 200 }}
           />
         </Form.Item>
 

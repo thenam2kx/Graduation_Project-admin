@@ -99,7 +99,7 @@ const FormBlogAdd = () => {
         layout='vertical'
         form={form}
         onFinish={onFinish}
-        style={{ maxWidth: 800, margin: '0 auto' }}
+        style={{ margin: '0 auto' }}
         initialValues={{ isPublic: true }}
       >
         <Form.Item
@@ -144,7 +144,7 @@ const FormBlogAdd = () => {
             value={content}
             onChange={setContent}
             modules={modules}
-            style={{ minHeight: 200, borderRadius: 6 }}
+            style={{ minHeight: 100, borderRadius: 6, marginBottom: 20, height: 200 }}
           />
         </Form.Item>
 

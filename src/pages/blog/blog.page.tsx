@@ -1,15 +1,14 @@
 import axios from '@/config/axios.customize'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Table, Typography, Button, Space, Switch, Modal, message, Form, Input } from 'antd'
+import { Table, Button, Space, Switch, Modal, message, Form, Input } from 'antd'
 import { Link } from 'react-router'
 import { useState, useEffect } from 'react'
-
-const { Paragraph } = Typography
 
 const BlogPage = () => {
   const queryClient = useQueryClient()
   const [searchText, setSearchText] = useState('')
   const [categories, setCategories] = useState<{ _id: string; name: string }[]>([])
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 5, total: 0 })
 
   // Lấy danh mục
   useEffect(() => {
@@ -20,20 +19,26 @@ const BlogPage = () => {
     fetchCategories()
   }, [])
 
-  // Thêm searchText vào queryKey để refetch khi search
-  const fetchList = async () => {
-    let url = '/api/v1/blogs'
-    if (searchText) {
-      url += `?qs=${encodeURIComponent(searchText)}`
+  const fetchList = async ({ page = 1, pageSize = 5, search = '' }) => {
+    let url = `/api/v1/blogs?current=${page}&pageSize=${pageSize}`
+    if (search) {
+      url += `&qs=${encodeURIComponent(search)}`
     }
     const res = await axios.get(url)
+    // API trả về { meta, results }
+    setPagination(prev => ({
+      ...prev,
+      total: res.data?.meta?.total || 0,
+      current: res.data?.meta?.current || 1,
+      pageSize: res.data?.meta?.pageSize || 5
+    }))
     return res.data.results
   }
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['blogs', searchText],
-    queryFn: fetchList,
-    refetchOnWindowFocus: false
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['blogs', pagination.current, pagination.pageSize, searchText],
+    queryFn: () => fetchList({ page: pagination.current, pageSize: pagination.pageSize, search: searchText }),
+    keepPreviousData: true
   })
 
   const statusMutation = useMutation({
@@ -154,7 +159,13 @@ const BlogPage = () => {
         rowKey='_id'
         columns={columns}
         dataSource={data}
-        pagination={{ pageSize: 5 }}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          onChange: (page, pageSize) => setPagination(prev => ({ ...prev, current: page, pageSize })),
+          showSizeChanger: true
+        }}
         loading={isLoading}
       />
     </div>
