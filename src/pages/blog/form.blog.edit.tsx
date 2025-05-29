@@ -4,7 +4,7 @@ import 'react-quill/dist/quill.snow.css'
 import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from '@/config/axios.customize'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router'
 
 const { Title } = Typography
 
