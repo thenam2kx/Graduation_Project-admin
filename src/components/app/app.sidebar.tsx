@@ -71,6 +71,11 @@ const items: MenuProps['items'] = [
         key: '/brand',
         icon: <ProductOutlined />,
         label: <Link to={'/brand'}>Thương hiệu</Link>
+      },
+      {
+        key: '/discounts',
+        icon: <ProductOutlined />,
+        label: <Link to={'/discounts'}>Mã giảm giá</Link>
       }
     ]
   }
