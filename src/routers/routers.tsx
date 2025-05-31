@@ -19,6 +19,8 @@ import RolePage from '@/pages/role/role.page'
 import PermissionsPage from '@/pages/permission/permissions.page'
 import AdminContactPage from '@/pages/contact/contact.page'
 import Discounts from '@/pages/discounts/discounts.pages'
+import FormProductAdd from '@/pages/product/form.product.add'
+import FormProductEdit from '@/pages/product/form.product.edit'
 
 
 const Routers = () => {
@@ -31,6 +33,8 @@ const Routers = () => {
           <Route index element={<DashboardPage />} />
           <Route path='/users' element={<UserPage />} />
           <Route path='/products' element={<ProductPage />} />
+          <Route path='/products/add' element={<FormProductAdd />} />
+          <Route path='/products/edit/1' element={<FormProductEdit />} />
           <Route path='/cateblog' element={<BlogCategoryPage />} />
           <Route path='/cateblog/add' element={<FormCateBlogAdd />} />
           <Route path='/cateblog/edit/:id' element={<FormCateBlogEdit />} />
