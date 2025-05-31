@@ -2,7 +2,7 @@ import { Button, Form, Input, Switch, message } from 'antd'
 // import { UploadOutlined } from '@ant-design/icons'
 import type { UploadFile } from 'antd/es/upload/interface'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import axios from '@/config/axios.customize'
 
 interface ICategory {

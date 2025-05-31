@@ -1,6 +1,6 @@
 import { Button, Form, Input, Switch, message } from 'antd'
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router'
 import axios from '@/config/axios.customize'
 
 interface ICategory {
