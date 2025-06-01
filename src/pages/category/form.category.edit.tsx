@@ -1,59 +1,94 @@
-import { useParams } from 'react-router'
-import { Button, Form, Input, InputNumber, Switch, Upload, message } from 'antd'
-import { useEffect } from 'react'
-import { UploadOutlined } from '@ant-design/icons'
+import { Button, Form, Input, Switch, message } from 'antd'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
+import axios from '@/config/axios.customize'
 
 interface ICategory {
-  name: string;
-  slug: string;
-  description: string;
-  image: string;
-  order: number;
-  status: boolean;
+  name: string
+  slug: string
+  description: string
+  image: string
+  isPublic: boolean
 }
 
 const CategoryEdit = () => {
-  const { id } = useParams()
   const [form] = Form.useForm<ICategory>()
+  const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
+  const [loading, setLoading] = useState(false)
 
+  // Lấy dữ liệu danh mục hiện tại
   useEffect(() => {
-    form.setFieldsValue({
-      name: 'Danh mục mẫu',
-      slug: 'danh-muc-mau',
-      description: 'Mô tả mẫu',
-      image: 'https://picsum.photos/50',
-      order: 0,
-      status: true
-    })
-  }, [form])
+    const fetchCategory = async () => {
+      setLoading(true)
+      try {
+        const res = await axios.get(`/api/v1/categories/${id}`)
+        form.setFieldsValue(res.data)
+      } catch (error) {
+        message.error('Không tìm thấy danh mục!')
+        navigate('/categories')
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (id) fetchCategory()
+  }, [id, form, navigate])
 
-  const onFinish = (values: ICategory) => {
-    console.log(`Cập nhật danh mục ${id}:`, values)
-    message.success('Cập nhật thành công!')
+  // Cập nhật danh mục
+  const onFinish = async (values: ICategory) => {
+    try {
+      await axios.patch(`/api/v1/categories/${id}`, values)
+      message.success('Cập nhật danh mục thành công!')
+      navigate('/categories')
+    } catch (error) {
+      message.error('Cập nhật danh mục thất bại!')
+    }
   }
 
   return (
     <div>
-      <h2>Chỉnh sửa danh mục</h2>
-      <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ status: true }}>
-        <Form.Item label="Tên danh mục" name="name" rules={[{ required: true, message: 'Vui lòng nhập tên danh mục' }]}>
+      <h2>Cập nhật danh mục</h2>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        initialValues={{ isPublic: true }}
+      >
+        <Form.Item
+          label="Tên danh mục"
+          name="name"
+          rules={[{ required: true, message: 'Vui lòng nhập tên danh mục' }]}
+        >
           <Input placeholder="Nhập tên danh mục" />
         </Form.Item>
-        <Form.Item label="Slug" name="slug"rules={[{ required: true, message: 'Vui lòng nhập slug danh mục' }]}>
-          <Input placeholder="nhap-slug-tu-dong" />
+
+        <Form.Item
+          label="Slug"
+          name="slug"
+          rules={[{ required: true, message: 'Vui lòng nhập slug' }]}
+        >
+          <Input placeholder="slug-danh-muc" />
         </Form.Item>
-        <Form.Item label="Ảnh đại diện" name="image"rules={[{ required: true, message: 'Vui lòng thêm ảnh danh mục' }]}>
-          <Upload name="image" listType="picture" maxCount={1}>
-            <Button icon={<UploadOutlined />}>Tải ảnh lên</Button>
-          </Upload>
+
+        <Form.Item
+          label="Mô tả"
+          name="description"
+          rules={[{ required: true, message: 'Vui lòng nhập mô tả' }]}
+        >
+          <Input.TextArea placeholder="Mô tả danh mục" rows={4} />
         </Form.Item>
-        <Form.Item label="Thứ tự hiển thị" name="order">
-          <InputNumber min={1} />
+
+        <Form.Item
+          label="Hiển thị"
+          name="isPublic"
+          valuePropName="checked"
+        >
+          <Switch />
         </Form.Item>
-        <Form.Item label="Hiển thị" name="isActive" valuePropName="checked">
-          <Switch defaultChecked />
-        </Form.Item>
-        <Button type="primary" htmlType="submit">Cập nhật</Button>
+
+        <Button type="primary" htmlType="submit" loading={loading}>
+          Lưu thay đổi
+        </Button>
       </Form>
     </div>
   )

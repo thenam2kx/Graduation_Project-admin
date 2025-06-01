@@ -2,9 +2,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
-import { Table, Button, Space, Popconfirm, message } from 'antd'
+
+import { Table, Button, Space, Popconfirm, message, Pagination } from 'antd'
 import { Link } from 'react-router'
+
 import axios from 'axios'
+import Search from 'antd/es/input/Search'
 
 const BlogCategoryPage = () => {
   const [data, setData] = useState<any[]>([])
@@ -83,13 +86,25 @@ const BlogCategoryPage = () => {
           Thêm mới
         </Button>
       </Link>
-
+      <Search
+        placeholder="Tìm kiếm danh mục..."
+        allowClear
+        enterButton="Tìm"
+        size="middle"
+        style={{ marginBottom: 16, maxWidth: 300 }}
+      />
       <Table
         rowKey="_id"
         columns={columns}
         dataSource={Array.isArray(data) ? data : []}
         loading={loading}
         pagination={false}
+      />
+      <Pagination
+        current={1}
+        pageSize={5}
+        total={data.length}
+        style={{ marginTop: 16, textAlign: 'right' }}
       />
     </div>
   )
