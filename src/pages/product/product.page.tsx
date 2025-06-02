@@ -9,6 +9,8 @@ import Search from 'antd/es/input/Search'
 const ProductPage = () => {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(5)
 
   const fetchData = async () => {
     setLoading(true)
@@ -70,6 +72,16 @@ const ProductPage = () => {
       message.error('Xóa sản phẩm thất bại!')
     }
   }
+
+  const handlePageChange = (page: number, pageSize?: number) => {
+    setCurrentPage(page)
+    if (pageSize) setPageSize(pageSize)
+  }
+
+  const paginatedData = data.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  )
 
   const columns = [
     {
@@ -151,16 +163,18 @@ const ProductPage = () => {
       <Table
         rowKey="_id"
         columns={columns}
-        dataSource={Array.isArray(data) ? data : []}
+        dataSource={paginatedData}
         loading={loading}
         pagination={false}
       />
-      <Pagination
-        current={1}
-        pageSize={5}
-        total={data.length}
-        style={{ marginTop: 16, textAlign: 'right' }}
-      />
+      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+        <Pagination
+          current={currentPage}
+          pageSize={pageSize}
+          total={data.length}
+          onChange={handlePageChange}
+        />
+      </div>
     </div>
   )
 }

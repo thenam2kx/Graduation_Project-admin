@@ -34,7 +34,7 @@ const items: MenuProps['items'] = [
       },
       {
         key: '/cateblog',
-        icon: <UserOutlined />,
+        icon: <ProductOutlined />,
         label: <Link to={'/cateblog'} style={{ color: 'inherit' }}>Danh mục bài viết</Link>
       },
       {
