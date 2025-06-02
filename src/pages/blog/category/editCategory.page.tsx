@@ -1,11 +1,7 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Form, Input, message, Typography, Button, Row, Col } from 'antd'
+import { Form, Input, message, Button } from 'antd'
 import { useNavigate, useParams } from 'react-router'
 import { useEffect } from 'react'
 import axios from 'axios'
-
-const { Title } = Typography
 
 interface ICateblog {
   name: string
@@ -13,7 +9,7 @@ interface ICateblog {
 }
 
 const FormCateBlogEdit = () => {
-  const [form] = Form.useForm()
+  const [form] = Form.useForm<ICateblog>()
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
 
@@ -23,7 +19,7 @@ const FormCateBlogEdit = () => {
         const { data } = await axios.get(`http://localhost:8080/api/v1/cateblog/${id}`)
         form.setFieldsValue({
           name: data.data.name,
-          slug: data.data.slug
+          slug: data.data.slug,
         })
       } catch (error) {
         message.error('Lấy thông tin danh mục thất bại')
@@ -48,39 +44,34 @@ const FormCateBlogEdit = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <Title level={3}>Trang chỉnh sửa thông tin danh mục bài viết</Title>
+      <h2>Chỉnh sửa danh mục bài viết</h2>
       <Form
-        layout='vertical'
         form={form}
+        layout="vertical"
         onFinish={onFinish}
-        style={{ maxWidth: 800, margin: '0 auto' }}
+        style={{ width: '100%' }}
       >
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label='Tên danh mục'
-              name='name'
-              rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}
-            >
-              <Input placeholder='Nhập tên danh mục (vd: Tin tức công nghệ)' />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label='Slug'
-              name='slug'
-              rules={[{ required: true, message: 'Vui lòng nhập slug của danh mục!' }]}
-            >
-              <Input placeholder='Nhập slug (vd: tin-tuc-cong-nghe)' />
-            </Form.Item>
-          </Col>
-        </Row>
+        <Form.Item
+          label="Tên danh mục"
+          name="name"
+          rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}
+        >
+          <Input placeholder="Nhập tên danh mục (vd: Tin tức công nghệ)" />
+        </Form.Item>
+
+        <Form.Item
+          label="Slug"
+          name="slug"
+          rules={[{ required: true, message: 'Vui lòng nhập slug của danh mục!' }]}
+        >
+          <Input placeholder="Nhập slug (vd: tin-tuc-cong-nghe)" />
+        </Form.Item>
 
         <Form.Item>
           <Button onClick={handleBack}>Quay lại</Button>
           <Button
-            type='primary'
-            htmlType='submit'
+            type="primary"
+            htmlType="submit"
             style={{ marginLeft: 10 }}
           >
             Lưu thay đổi
