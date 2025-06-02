@@ -21,6 +21,7 @@ import AdminContactPage from '@/pages/contact/contact.page'
 import Discounts from '@/pages/discounts/discounts.pages'
 import FormProductAdd from '@/pages/product/form.product.add'
 import FormProductEdit from '@/pages/product/form.product.edit'
+import MediaPage from '@/pages/media/media.page'
 
 
 const Routers = () => {
@@ -51,6 +52,8 @@ const Routers = () => {
           <Route path='/roles' element={<RolePage />} />
           <Route path='/permissions' element={<PermissionsPage />} />
           <Route path='/contact' element={<AdminContactPage />} />
+
+          <Route path='/media' element={<MediaPage />} />
         </Route>
       </Route>
       <Route path='*' element={<NotFoundPage />} />
