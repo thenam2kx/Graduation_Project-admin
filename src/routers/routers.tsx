@@ -22,10 +22,12 @@ import Discounts from '@/pages/discounts/discounts.pages'
 import FormProductAdd from '@/pages/product/form.product.add'
 import FormProductEdit from '@/pages/product/form.product.edit'
 import MediaPage from '@/pages/media/media.page'
+import SigninPage from '@/pages/auth/signin.page'
+import { useAppSelector } from '@/redux/hooks'
 
 
 const Routers = () => {
-  const isAuthenticated = true
+  const isAuthenticated = useAppSelector((state) => state.auth.isSignin)
 
   return (
     <Routes>
@@ -55,6 +57,9 @@ const Routers = () => {
 
           <Route path='/media' element={<MediaPage />} />
         </Route>
+      </Route>
+      <Route element={<PrivateRouters isAllowed={isAuthenticated ? false : true} redirectTo='/' />}>
+        <Route path='/signin' element={<SigninPage />} />
       </Route>
       <Route path='*' element={<NotFoundPage />} />
     </Routes>

@@ -51,7 +51,8 @@ const MediaPage = () => {
       } else {
         throw new Error('Failed to fetch media data')
       }
-    }
+    },
+    refetchOnWindowFocus: false,
   })
 
   const deleteImageMutation = useMutation({
