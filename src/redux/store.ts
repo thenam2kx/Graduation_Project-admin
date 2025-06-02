@@ -3,6 +3,7 @@ import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
 import appReducer from './slices/app.slices'
 import mediaReducer from './slices/media.slice'
+import authReducer from './slices/auth.slice'
 
 // Config redux-persist
 const persistConfig = {
@@ -14,7 +15,8 @@ const persistConfig = {
 
 const rootReducer = combineReducers({
   app: appReducer,
-  media: mediaReducer
+  media: mediaReducer,
+  auth: authReducer,
 })
 
 // Create persist reducer

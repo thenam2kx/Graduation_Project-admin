@@ -29,3 +29,8 @@ export const updateUserStatus = (id: string, status: boolean) => {
 export const deleteUser = (id: string) => {
   return axios.delete(`/api/v1/users/${id}`)
 }
+
+export const fetchAccountAPI = async () => {
+  const url = '/api/v1/auth/account'
+  return axios.get<IBackendResponse<IUserAuth>>(url)
+}
