@@ -3,12 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Table, Button, Space, Switch, Modal, message, Form, Input } from 'antd'
 import { Link } from 'react-router'
 import { useState, useEffect } from 'react'
+import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 
 const BlogPage = () => {
   const queryClient = useQueryClient()
   const [searchText, setSearchText] = useState('')
   const [categories, setCategories] = useState<{ _id: string; name: string }[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 5, total: 0 })
+  const [detailModal, setDetailModal] = useState<{ visible: boolean; data?: any }>({ visible: false })
 
   // Lấy danh mục
   useEffect(() => {
@@ -74,6 +76,12 @@ const BlogPage = () => {
     })
   }
 
+  // Hàm lấy chi tiết bài viết
+  const fetchDetail = async (id: string) => {
+    const res = await axios.get(`/api/v1/blogs/${id}`)
+    setDetailModal({ visible: true, data: res.data })
+  }
+
   const columns = [
     {
       title: 'Tiêu đề',
@@ -125,12 +133,18 @@ const BlogPage = () => {
       key: 'actions',
       render: (_: any, record: any) => (
         <Space size='middle'>
+          <Button
+            icon={<EyeOutlined />}
+            onClick={() => fetchDetail(record._id)}
+          />
           <Link to={`/blogs/edit/${record._id}`}>
-            <Button type='primary'>Sửa</Button>
+            <Button icon={<EditOutlined />} />
           </Link>
-          <Button type='primary' danger onClick={() => handleDelete(record._id)}>
-            Xóa
-          </Button>
+          <Button
+            icon={<DeleteOutlined />}
+            danger
+            onClick={() => handleDelete(record._id)}
+          />
         </Space>
       )
     }
@@ -138,7 +152,8 @@ const BlogPage = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <h1>Trang bài viết</h1>
+      <h1 style={{fontSize: '25px'}} >Quản lý bài viết</h1>
+      <p style={{ marginBottom: 16 }}>Danh sách các bài viết hiện có trong hệ thống.</p>
       <Link to='/blogs/add'>
         <Button type='primary' style={{ marginBottom: 16, float: 'right' }}>
           Thêm mới
@@ -168,6 +183,25 @@ const BlogPage = () => {
         }}
         loading={isLoading}
       />
+      <Modal
+        open={detailModal.visible}
+        title="Chi tiết bài viết"
+        footer={null}
+        onCancel={() => setDetailModal({ visible: false })}
+      >
+        {detailModal.data ? (
+          <div>
+            <p><b>Tiêu đề:</b> {detailModal.data.title}</p>
+            <p><b>Slug:</b> {detailModal.data.slug}</p>
+            <p><b>Danh mục:</b> {categories.find(c => c._id === detailModal.data.categoryBlogId)?.name || 'Không có'}</p>
+            <p><b>Ngày tạo:</b> {new Date(detailModal.data.createdAt).toLocaleString()}</p>
+            <p><b>Nội dung:</b></p>
+            <div style={{ whiteSpace: 'pre-line' }}>{detailModal.data.content}</div>
+          </div>
+        ) : (
+          <p>Đang tải...</p>
+        )}
+      </Modal>
     </div>
   )
 }
