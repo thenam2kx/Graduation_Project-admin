@@ -1,15 +1,16 @@
 import axios from '@/config/axios.customize'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Table, Typography, Button, Space, Switch, Modal, message, Form, Input } from 'antd'
+import { Table, Button, Space, Switch, Modal, message, Form, Input } from 'antd'
 import { Link } from 'react-router'
 import { useState, useEffect } from 'react'
-
-const { Paragraph } = Typography
+import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 
 const BlogPage = () => {
   const queryClient = useQueryClient()
   const [searchText, setSearchText] = useState('')
   const [categories, setCategories] = useState<{ _id: string; name: string }[]>([])
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 5, total: 0 })
+  const [detailModal, setDetailModal] = useState<{ visible: boolean; data?: any }>({ visible: false })
 
   // Lấy danh mục
   useEffect(() => {
@@ -20,20 +21,26 @@ const BlogPage = () => {
     fetchCategories()
   }, [])
 
-  // Thêm searchText vào queryKey để refetch khi search
-  const fetchList = async () => {
-    let url = '/api/v1/blogs'
-    if (searchText) {
-      url += `?qs=${encodeURIComponent(searchText)}`
+  const fetchList = async ({ page = 1, pageSize = 5, search = '' }) => {
+    let url = `/api/v1/blogs?current=${page}&pageSize=${pageSize}`
+    if (search) {
+      url += `&qs=${encodeURIComponent(search)}`
     }
     const res = await axios.get(url)
+    // API trả về { meta, results }
+    setPagination(prev => ({
+      ...prev,
+      total: res.data?.meta?.total || 0,
+      current: res.data?.meta?.current || 1,
+      pageSize: res.data?.meta?.pageSize || 5
+    }))
     return res.data.results
   }
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['blogs', searchText],
-    queryFn: fetchList,
-    refetchOnWindowFocus: false
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['blogs', pagination.current, pagination.pageSize, searchText],
+    queryFn: () => fetchList({ page: pagination.current, pageSize: pagination.pageSize, search: searchText }),
+    keepPreviousData: true
   })
 
   const statusMutation = useMutation({
@@ -67,6 +74,12 @@ const BlogPage = () => {
       cancelText: 'Hủy',
       onOk: () => deleteMutation.mutate(id)
     })
+  }
+
+  // Hàm lấy chi tiết bài viết
+  const fetchDetail = async (id: string) => {
+    const res = await axios.get(`/api/v1/blogs/${id}`)
+    setDetailModal({ visible: true, data: res.data })
   }
 
   const columns = [
@@ -120,12 +133,18 @@ const BlogPage = () => {
       key: 'actions',
       render: (_: any, record: any) => (
         <Space size='middle'>
+          <Button
+            icon={<EyeOutlined />}
+            onClick={() => fetchDetail(record._id)}
+          />
           <Link to={`/blogs/edit/${record._id}`}>
-            <Button type='primary'>Sửa</Button>
+            <Button icon={<EditOutlined />} />
           </Link>
-          <Button type='primary' danger onClick={() => handleDelete(record._id)}>
-            Xóa
-          </Button>
+          <Button
+            icon={<DeleteOutlined />}
+            danger
+            onClick={() => handleDelete(record._id)}
+          />
         </Space>
       )
     }
@@ -133,7 +152,8 @@ const BlogPage = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <h1>Trang bài viết</h1>
+      <h1 style={{fontSize: '25px'}} >Quản lý bài viết</h1>
+      <p style={{ marginBottom: 16 }}>Danh sách các bài viết hiện có trong hệ thống.</p>
       <Link to='/blogs/add'>
         <Button type='primary' style={{ marginBottom: 16, float: 'right' }}>
           Thêm mới
@@ -154,9 +174,34 @@ const BlogPage = () => {
         rowKey='_id'
         columns={columns}
         dataSource={data}
-        pagination={{ pageSize: 5 }}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          onChange: (page, pageSize) => setPagination(prev => ({ ...prev, current: page, pageSize })),
+          showSizeChanger: true
+        }}
         loading={isLoading}
       />
+      <Modal
+        open={detailModal.visible}
+        title="Chi tiết bài viết"
+        footer={null}
+        onCancel={() => setDetailModal({ visible: false })}
+      >
+        {detailModal.data ? (
+          <div>
+            <p><b>Tiêu đề:</b> {detailModal.data.title}</p>
+            <p><b>Slug:</b> {detailModal.data.slug}</p>
+            <p><b>Danh mục:</b> {categories.find(c => c._id === detailModal.data.categoryBlogId)?.name || 'Không có'}</p>
+            <p><b>Ngày tạo:</b> {new Date(detailModal.data.createdAt).toLocaleString()}</p>
+            <p><b>Nội dung:</b></p>
+            <div style={{ whiteSpace: 'pre-line' }}>{detailModal.data.content}</div>
+          </div>
+        ) : (
+          <p>Đang tải...</p>
+        )}
+      </Modal>
     </div>
   )
 }
