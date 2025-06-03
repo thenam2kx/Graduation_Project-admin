@@ -146,7 +146,7 @@ const FormBlogEdit = () => {
             value={content}
             onChange={setContent}
             modules={modules}
-            style={{ minHeight: 200, borderRadius: 6 }}
+            style={{ minHeight: 200, borderRadius: 6, height: 180, marginBottom: 30 }}
           />
         </Form.Item>
 

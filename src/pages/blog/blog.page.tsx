@@ -4,10 +4,12 @@ import { Table, Button, Space, Switch, Modal, message, Form, Input } from 'antd'
 import { Link } from 'react-router'
 import { useState, useEffect } from 'react'
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { debounce } from 'lodash'
 
 const BlogPage = () => {
   const queryClient = useQueryClient()
   const [searchText, setSearchText] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [categories, setCategories] = useState<{ _id: string; name: string }[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 5, total: 0 })
   const [detailModal, setDetailModal] = useState<{ visible: boolean; data?: any }>({ visible: false })
@@ -20,6 +22,18 @@ const BlogPage = () => {
     }
     fetchCategories()
   }, [])
+
+  // Debounce searchText thay đổi
+  useEffect(() => {
+    const handler = debounce((value) => {
+      setDebouncedSearch(value)
+    }, 500) // 500ms
+
+    handler(searchText)
+    return () => {
+      handler.cancel()
+    }
+  }, [searchText])
 
   const fetchList = async ({ page = 1, pageSize = 5, search = '' }) => {
     let url = `/api/v1/blogs?current=${page}&pageSize=${pageSize}`
@@ -38,8 +52,8 @@ const BlogPage = () => {
   }
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['blogs', pagination.current, pagination.pageSize, searchText],
-    queryFn: () => fetchList({ page: pagination.current, pageSize: pagination.pageSize, search: searchText }),
+    queryKey: ['blogs', pagination.current, pagination.pageSize, debouncedSearch],
+    queryFn: () => fetchList({ page: pagination.current, pageSize: pagination.pageSize, search: debouncedSearch }),
     keepPreviousData: true
   })
 
