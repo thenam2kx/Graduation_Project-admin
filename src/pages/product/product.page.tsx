@@ -3,8 +3,58 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
 import { Table, Button, Space, Popconfirm, message, Pagination } from 'antd'
-import { Link } from 'react-router'
+import { Link } from 'react-router-dom'
+import axios from 'axios'
 import Search from 'antd/es/input/Search'
+
+type Category = { _id: string; name: string }
+type Brand = { _id: string; name: string }
+
+const useFetchCategories = () => {
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setLoading(true)
+      try {
+        const res = await axios.get('http://localhost:8080/api/v1/categories')
+        const categoriesData: Category[] = res.data.data?.results || res.data.results || []
+        setCategories(categoriesData)
+      } catch (error) {
+        message.error('Lấy danh mục thất bại')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  return { categories, loading }
+}
+
+const useFetchBrands = () => {
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      setLoading(true)
+      try {
+        const res = await axios.get('http://localhost:8080/api/v1/brand')
+        const brandsData: Brand[] = res.data.data?.results || res.data.results || []
+        setBrands(brandsData)
+      } catch (error) {
+        message.error('Lấy thương hiệu thất bại')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchBrands()
+  }, [])
+
+  return { brands, loading }
+}
 
 const ProductPage = () => {
   const [data, setData] = useState<any[]>([])
@@ -12,46 +62,15 @@ const ProductPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
 
+  useFetchCategories()
+  useFetchBrands()
+
   const fetchData = async () => {
     setLoading(true)
     try {
-      const sampleData = [
-        {
-          _id: '1',
-          name: 'Nước hoa Dior Sauvage Eau de Parfum',
-          description: 'Hương thơm nam tính, mạnh mẽ với nốt hương tiêu đen, ambroxan và vani, phù hợp cho buổi tối và mùa thu đông.',
-          slug: 'dior-sauvage-eau-de-parfum',
-          categoryId: 'vn-1',
-          brandId: 'VietNam',
-          price: 28990000,
-          image: 'https://cdn.vuahanghieu.com/unsafe/0x500/left/top/smart/filters:quality(90)/https://admin.vuahanghieu.com/upload/product/2024/12/nuoc-hoa-nam-dior-sauvage-elixir-eau-de-parfum-100ml-67614857649b4-17122024164559.jpg',
-          stock: 50,
-          capacity: 128,
-          discountId: 'dc-015',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          deletedAt: null,
-          deleted: false
-        },
-        {
-          _id: '2',
-          name: 'Chanel Coco Mademoiselle',
-          description: 'Mùi hương quyến rũ, thanh lịch dành cho phái đẹp hiện đại, kết hợp giữa cam bergamot, hoa nhài và hoắc hương.',
-          slug: 'chanel-coco-mademoiselle',
-          categoryId: 'tl-2',
-          brandId: 'ThaiLand',
-          price: 32990000,
-          image: 'https://tse3.mm.bing.net/th/id/OIP.LOVoLr8GE4runuqXpIDzqQAAAA?rs=1&pid=ImgDetMain',
-          stock: 20,
-          capacity: 512,
-          discountId: 'dc-2',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          deletedAt: null,
-          deleted: false
-        }
-      ]
-      setData(sampleData)
+      const res = await axios.get('http://localhost:8080/api/v1/products')
+      const productsData = res.data.data?.results || res.data.results || []
+      setData(productsData)
     } catch (err) {
       message.error('Lấy danh sách sản phẩm thất bại!')
       setData([])
@@ -66,8 +85,9 @@ const ProductPage = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      setData(prev => prev.filter(item => item._id !== id))
+      await axios.delete(`http://localhost:8080/api/v1/products/${id}`)
       message.success('Xóa sản phẩm thành công!')
+      fetchData()
     } catch (error) {
       message.error('Xóa sản phẩm thất bại!')
     }
@@ -89,7 +109,11 @@ const ProductPage = () => {
       dataIndex: 'image',
       key: 'image',
       render: (url: string) => (
-        <img src={url} alt="Ảnh sản phẩm" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}/>
+        <img
+          src={url}
+          alt="Ảnh sản phẩm"
+          style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}
+        />
       )
     },
     {
@@ -111,12 +135,14 @@ const ProductPage = () => {
     {
       title: 'Thương hiệu',
       dataIndex: 'brandId',
-      key: 'brandId'
+      key: 'brandId',
+      render: (brand: any) => brand?.name || 'Không có thương hiệu'
     },
     {
       title: 'Danh mục',
       dataIndex: 'categoryId',
-      key: 'categoryId'
+      key: 'categoryId',
+      render: (category: any) => category?.name || 'Không có danh mục'
     },
     {
       title: 'Ngày tạo',
@@ -138,7 +164,9 @@ const ProductPage = () => {
             okText="Có"
             cancelText="Không"
           >
-            <Button type="primary" danger>Xóa</Button>
+            <Button type="primary" danger>
+              Xóa
+            </Button>
           </Popconfirm>
         </Space>
       )
