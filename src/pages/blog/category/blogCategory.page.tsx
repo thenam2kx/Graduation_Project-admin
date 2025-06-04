@@ -2,18 +2,38 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
-
-import { Table, Button, Space, Popconfirm, message, Pagination } from 'antd'
-import { Link } from 'react-router'
-
+import {
+  Table,
+  Button,
+  Space,
+  Popconfirm,
+  message,
+  Modal,
+  Pagination,
+  Input,
+  Form
+} from 'antd'
 import axios from 'axios'
-import Search from 'antd/es/input/Search'
+
+const { Search } = Input
+
+interface ICateblog {
+  _id?: string
+  name: string
+  slug: string
+  createdAt?: string
+}
 
 const BlogCategoryPage = () => {
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<ICateblog[]>([])
   const [loading, setLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEdit, setIsEdit] = useState(false)
+  const [form] = Form.useForm<ICateblog>()
+  const [editingItem, setEditingItem] = useState<ICateblog | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const fetchData = async () => {
     setLoading(true)
@@ -22,7 +42,6 @@ const BlogCategoryPage = () => {
       setData(res.data.data?.results || [])
     } catch (err) {
       message.error('Lấy danh sách danh mục thất bại!')
-      setData([])
     } finally {
       setLoading(false)
     }
@@ -31,6 +50,40 @@ const BlogCategoryPage = () => {
   useEffect(() => {
     fetchData()
   }, [])
+
+  useEffect(() => {
+    if (isModalOpen && isEdit && editingItem) {
+      // Đảm bảo form được mount xong mới set giá trị
+      setTimeout(() => {
+        form.setFieldsValue({
+          name: editingItem.name,
+          slug: editingItem.slug
+        })
+      }, 0)
+    }
+  }, [isModalOpen, isEdit, editingItem, form])
+
+  const filteredData = data.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  )
+
+  const openAddModal = () => {
+    form.resetFields()
+    setIsEdit(false)
+    setEditingItem(null)
+    setIsModalOpen(true)
+  }
+
+  const openEditModal = (item: ICateblog) => {
+    setIsEdit(true)
+    setEditingItem(item)
+    setIsModalOpen(true)
+  }
 
   const handleDelete = async (id: string) => {
     try {
@@ -42,84 +95,153 @@ const BlogCategoryPage = () => {
     }
   }
 
+  const handleSubmit = async (values: ICateblog) => {
+    try {
+      if (isEdit && editingItem?._id) {
+        await axios.patch(
+          `http://localhost:8080/api/v1/cateblog/${editingItem._id}`,
+          values
+        )
+        message.success('Chỉnh sửa danh mục thành công!')
+      } else {
+        await axios.post('http://localhost:8080/api/v1/cateblog', values)
+        message.success('Thêm danh mục thành công!')
+      }
+      setIsModalOpen(false)
+      form.resetFields()
+      fetchData()
+    } catch (error) {
+      message.error('Lưu thất bại, vui lòng thử lại!')
+    }
+  }
+
+  const handleCancel = () => {
+    setIsModalOpen(false)
+    form.resetFields()
+  }
+
   const handlePageChange = (page: number, pageSize?: number) => {
     setCurrentPage(page)
     if (pageSize) setPageSize(pageSize)
   }
 
-  const paginatedData = data.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  )
-
-  const columns = [
-    {
-      title: 'Tên danh mục',
-      dataIndex: 'name',
-      key: 'name'
-    },
-    {
-      title: 'Slug',
-      dataIndex: 'slug',
-      key: 'slug'
-    },
-    {
-      title: 'Ngày tạo',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleString()
-    },
-    {
-      title: 'Hành động',
-      key: 'actions',
-      render: (_: any, record: any) => (
-        <Space size="middle">
-          <Link to={`/cateblog/edit/${record._id}`}>
-            <Button type="primary">Sửa</Button>
-          </Link>
-          <Popconfirm
-            title="Bạn có chắc muốn xóa danh mục này không?"
-            onConfirm={() => handleDelete(record._id)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button type="primary" danger>Xóa</Button>
-          </Popconfirm>
-        </Space>
-      )
-    }
-  ]
-
   return (
     <div style={{ padding: 24 }}>
       <h1>Trang danh mục bài viết</h1>
-      <Link to="/cateblog/add">
-        <Button type="primary" style={{ marginBottom: 16, float: 'right' }}>
-          Thêm mới
-        </Button>
-      </Link>
+
+      <Button
+        type="primary"
+        style={{ marginBottom: 16, float: 'right' }}
+        onClick={openAddModal}
+      >
+        Thêm mới
+      </Button>
+
       <Search
         placeholder="Tìm kiếm danh mục..."
         allowClear
         enterButton="Tìm"
         size="middle"
         style={{ marginBottom: 16, maxWidth: 300 }}
+        onSearch={value => {
+          setSearchTerm(value)
+          setCurrentPage(1)
+        }}
       />
+
       <Table
         rowKey="_id"
-        columns={columns}
+        columns={[
+          {
+            title: 'Tên danh mục',
+            dataIndex: 'name',
+            key: 'name'
+          },
+          {
+            title: 'Slug',
+            dataIndex: 'slug',
+            key: 'slug'
+          },
+          {
+            title: 'Ngày tạo',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            render: (date: string) =>
+              date ? new Date(date).toLocaleString() : ''
+          },
+          {
+            title: 'Hành động',
+            key: 'actions',
+            render: (_: any, record: ICateblog) => (
+              <Space size="middle">
+                <Button type="primary" onClick={() => openEditModal(record)}>
+                  Sửa
+                </Button>
+                <Popconfirm
+                  title="Bạn có chắc muốn xóa danh mục này không?"
+                  onConfirm={() => handleDelete(record._id!)}
+                  okText="Có"
+                  cancelText="Không"
+                >
+                  <Button type="primary" danger>
+                    Xóa
+                  </Button>
+                </Popconfirm>
+              </Space>
+            )
+          }
+        ]}
         dataSource={paginatedData}
         loading={loading}
         pagination={false}
       />
+
       <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
         <Pagination
           current={currentPage}
           pageSize={pageSize}
-          total={data.length}
+          total={filteredData.length}
           onChange={handlePageChange}
         />
       </div>
+
+      <Modal
+        title={isEdit ? 'Chỉnh sửa danh mục' : 'Thêm danh mục'}
+        open={isModalOpen}
+        onCancel={handleCancel}
+        footer={null}
+        destroyOnClose
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          preserve={false}
+        >
+          <Form.Item
+            label="Tên danh mục"
+            name="name"
+            rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}
+          >
+            <Input placeholder="Nhập tên danh mục" />
+          </Form.Item>
+
+          <Form.Item
+            label="Slug"
+            name="slug"
+            rules={[{ required: true, message: 'Vui lòng nhập slug!' }]}
+          >
+            <Input placeholder="Nhập slug" />
+          </Form.Item>
+
+          <Form.Item>
+            <Button onClick={handleCancel}>Hủy</Button>
+            <Button type="primary" htmlType="submit" style={{ marginLeft: 10 }}>
+              {isEdit ? 'Lưu thay đổi' : 'Thêm mới'}
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }
