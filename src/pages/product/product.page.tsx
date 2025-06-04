@@ -1,57 +1,29 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from 'react'
-import { Table, Button, Space, Popconfirm, message, Pagination } from 'antd'
-import { Link } from 'react-router'
+// ... giữ nguyên các import và hooks useFetchCategories, useFetchBrands
+
+import { Button, message, Pagination, Popconfirm, Space, Table } from 'antd'
 import Search from 'antd/es/input/Search'
+import axios from 'axios'
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router'
 
 const ProductPage = () => {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null)
+
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const sampleData = [
-        {
-          _id: '1',
-          name: 'Nước hoa Dior Sauvage Eau de Parfum',
-          description: 'Hương thơm nam tính, mạnh mẽ với nốt hương tiêu đen, ambroxan và vani, phù hợp cho buổi tối và mùa thu đông.',
-          slug: 'dior-sauvage-eau-de-parfum',
-          categoryId: 'vn-1',
-          brandId: 'VietNam',
-          price: 28990000,
-          image: 'https://cdn.vuahanghieu.com/unsafe/0x500/left/top/smart/filters:quality(90)/https://admin.vuahanghieu.com/upload/product/2024/12/nuoc-hoa-nam-dior-sauvage-elixir-eau-de-parfum-100ml-67614857649b4-17122024164559.jpg',
-          stock: 50,
-          capacity: 128,
-          discountId: 'dc-015',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          deletedAt: null,
-          deleted: false
-        },
-        {
-          _id: '2',
-          name: 'Chanel Coco Mademoiselle',
-          description: 'Mùi hương quyến rũ, thanh lịch dành cho phái đẹp hiện đại, kết hợp giữa cam bergamot, hoa nhài và hoắc hương.',
-          slug: 'chanel-coco-mademoiselle',
-          categoryId: 'tl-2',
-          brandId: 'ThaiLand',
-          price: 32990000,
-          image: 'https://tse3.mm.bing.net/th/id/OIP.LOVoLr8GE4runuqXpIDzqQAAAA?rs=1&pid=ImgDetMain',
-          stock: 20,
-          capacity: 512,
-          discountId: 'dc-2',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          deletedAt: null,
-          deleted: false
-        }
-      ]
-      setData(sampleData)
+      const res = await axios.get('http://localhost:8080/api/v1/products')
+      const productsData = res.data.data?.results || res.data.results || []
+      setData(productsData)
     } catch (err) {
       message.error('Lấy danh sách sản phẩm thất bại!')
       setData([])
@@ -66,8 +38,9 @@ const ProductPage = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      setData(prev => prev.filter(item => item._id !== id))
+      await axios.delete(`http://localhost:8080/api/v1/products/${id}`)
       message.success('Xóa sản phẩm thành công!')
+      fetchData()
     } catch (error) {
       message.error('Xóa sản phẩm thất bại!')
     }
@@ -78,7 +51,17 @@ const ProductPage = () => {
     if (pageSize) setPageSize(pageSize)
   }
 
-  const paginatedData = data.slice(
+  // --- FILTER & SORT ---
+  const filteredData = data.filter(product =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const sortedData = [...filteredData].sort((a, b) => {
+    if (!sortOrder) return 0
+    return sortOrder === 'ascend' ? a.price - b.price : b.price - a.price
+  })
+
+  const paginatedData = sortedData.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   )
@@ -89,7 +72,11 @@ const ProductPage = () => {
       dataIndex: 'image',
       key: 'image',
       render: (url: string) => (
-        <img src={url} alt="Ảnh sản phẩm" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}/>
+        <img
+          src={url}
+          alt="Ảnh sản phẩm"
+          style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}
+        />
       )
     },
     {
@@ -101,7 +88,9 @@ const ProductPage = () => {
       title: 'Giá',
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `${price.toLocaleString()} ₫`
+      render: (price: number) => `${price.toLocaleString()} ₫`,
+      sorter: true,
+      sortOrder: sortOrder
     },
     {
       title: 'Tồn kho',
@@ -111,12 +100,14 @@ const ProductPage = () => {
     {
       title: 'Thương hiệu',
       dataIndex: 'brandId',
-      key: 'brandId'
+      key: 'brandId',
+      render: (brand: any) => brand?.name || 'Không có thương hiệu'
     },
     {
       title: 'Danh mục',
       dataIndex: 'categoryId',
-      key: 'categoryId'
+      key: 'categoryId',
+      render: (category: any) => category?.name || 'Không có danh mục'
     },
     {
       title: 'Ngày tạo',
@@ -138,7 +129,9 @@ const ProductPage = () => {
             okText="Có"
             cancelText="Không"
           >
-            <Button type="primary" danger>Xóa</Button>
+            <Button type="primary" danger>
+              Xóa
+            </Button>
           </Popconfirm>
         </Space>
       )
@@ -148,30 +141,45 @@ const ProductPage = () => {
   return (
     <div style={{ padding: 24 }}>
       <h1>Trang quản lý sản phẩm</h1>
+
       <Link to="/products/add">
         <Button type="primary" style={{ marginBottom: 16, float: 'right' }}>
           Thêm mới
         </Button>
       </Link>
+
       <Search
         placeholder="Tìm kiếm sản phẩm..."
         allowClear
         enterButton="Tìm"
         size="middle"
         style={{ marginBottom: 16, maxWidth: 300 }}
+        onSearch={value => {
+          setSearchTerm(value)
+          setCurrentPage(1)
+        }}
       />
+
       <Table
         rowKey="_id"
         columns={columns}
         dataSource={paginatedData}
         loading={loading}
         pagination={false}
+        onChange={(_, __, sorter: any) => {
+          if (sorter.order === 'ascend' || sorter.order === 'descend') {
+            setSortOrder(sorter.order)
+          } else {
+            setSortOrder(null)
+          }
+        }}
       />
+
       <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
         <Pagination
           current={currentPage}
           pageSize={pageSize}
-          total={data.length}
+          total={filteredData.length}
           onChange={handlePageChange}
         />
       </div>

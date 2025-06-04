@@ -1,98 +1,226 @@
-import { Form, Input, Button, Select, InputNumber, Row, Col } from 'antd'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useEffect, useState } from 'react'
+import {
+  Form,
+  Input,
+  Button,
+  Select,
+  InputNumber,
+  Row,
+  Col,
+  message,
+  Spin
+} from 'antd'
 import { useNavigate } from 'react-router'
+import axios from 'axios'
+
+interface ProductFormValues {
+  name: string
+  description: string
+  slug: string
+  categoryId: string
+  brandId: string
+  price: number
+  stock: number
+  capacity: number
+  image: string
+  discountId?: string
+}
+
+interface Category {
+  _id: string
+  name: string
+}
+
+interface Brand {
+  _id: string
+  name: string
+}
+
+interface Discount {
+  _id: string
+  code: string
+}
 
 const FormProductAdd = () => {
   const navigate = useNavigate()
   const [form] = Form.useForm()
+  const [loading, setLoading] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [discounts, setDiscounts] = useState<Discount[]>([])
+  const [fetching, setFetching] = useState(false)
 
-  const categories = [
-    { _id: 'cat1', name: 'Nước hoa' },
-    { _id: 'cat2', name: 'Mỹ phẩm' }
-  ]
-  const brands = [
-    { _id: 'brand1', name: 'Brand A' },
-    { _id: 'brand2', name: 'Brand B' }
-  ]
+  useEffect(() => {
+    const fetchData = async () => {
+      setFetching(true)
+      try {
+        const [catRes, brandRes, discountRes] = await Promise.all([
+          axios.get('http://localhost:8080/api/v1/categories'),
+          axios.get('http://localhost:8080/api/v1/brand'),
+          axios.get('http://localhost:8080/api/v1/discounts')
+        ])
+        setCategories(catRes.data.data?.results || catRes.data.results || [])
+        setBrands(brandRes.data.data?.results || brandRes.data.results || [])
+        setDiscounts(discountRes.data.data?.results || discountRes.data.results || [])
+      } catch (error) {
+        message.error('Lỗi khi lấy danh mục, thương hiệu hoặc mã giảm giá')
+      } finally {
+        setFetching(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   const handleBack = () => {
     navigate(-1)
   }
 
-  const onFinish = () => {
+  const onFinish = async (values: ProductFormValues) => {
+    setLoading(true)
+    try {
+      await axios.post('http://localhost:8080/api/v1/products', values)
+      message.success('Thêm sản phẩm thành công!')
+      navigate(-1)
+    } catch (error: any) {
+      const errMsg = error?.response?.data?.message || 'Thêm sản phẩm thất bại, vui lòng kiểm tra dữ liệu'
+      message.error(errMsg)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div style={{ padding: 24 }}>
       <h2>Thêm sản phẩm</h2>
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={onFinish}
-        style={{ width: '100%' }}
-      >
-        <Form.Item label="Tên sản phẩm" name="name" rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm' }]}>
-          <Input placeholder="Nhập tên sản phẩm" />
-        </Form.Item>
 
-        <Form.Item label="Slug" name="slug" rules={[{ required: true, message: 'Vui lòng nhập slug sản phẩm' }]}>
-          <Input placeholder="Nhập slug sản phẩm" />
-        </Form.Item>
+      <Spin spinning={fetching} tip="Đang tải dữ liệu...">
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={onFinish}
+          style={{ width: '100%', marginTop: 20 }}
+        >
+          <Form.Item
+            label="Tên sản phẩm"
+            name="name"
+            rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm' }]}
+          >
+            <Input placeholder="Nhập tên sản phẩm" />
+          </Form.Item>
 
-        <Form.Item label="Danh mục" name="categoryId" rules={[{ required: true, message: 'Vui lòng chọn danh mục' }]}>
-          <Select placeholder="Chọn danh mục">
-            {categories.map(cat => (
-              <Select.Option key={cat._id} value={cat._id}>
-                {cat.name}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
+          <Form.Item
+            label="Mô tả sản phẩm"
+            name="description"
+            rules={[{ required: true, message: 'Vui lòng nhập mô tả sản phẩm' }]}
+          >
+            <Input.TextArea rows={4} placeholder="Nhập mô tả sản phẩm" />
+          </Form.Item>
 
-        <Form.Item label="Thương hiệu" name="brandId" rules={[{ required: true, message: 'Vui lòng chọn thương hiệu' }]}>
-          <Select placeholder="Chọn thương hiệu">
-            {brands.map(brand => (
-              <Select.Option key={brand._id} value={brand._id}>
-                {brand.name}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
+          <Form.Item
+            label="Slug"
+            name="slug"
+            rules={[{ required: true, message: 'Vui lòng nhập slug sản phẩm' }]}
+          >
+            <Input placeholder="Nhập slug sản phẩm" />
+          </Form.Item>
 
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item label="Giá" name="price" rules={[{ required: true, message: 'Vui lòng nhập giá' }]}>
-              <InputNumber style={{ width: '100%' }} min={0} placeholder="Nhập giá" />
-            </Form.Item>
-          </Col>
+          <Form.Item
+            label="Danh mục"
+            name="categoryId"
+            rules={[{ required: true, message: 'Vui lòng chọn danh mục' }]}
+          >
+            <Select placeholder="Chọn danh mục">
+              {categories.map(cat => (
+                <Select.Option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
 
-          <Col span={8}>
-            <Form.Item label="Tồn kho" name="stock" rules={[{ required: true, message: 'Vui lòng nhập tồn kho' }]}>
-              <InputNumber style={{ width: '100%' }} min={0} placeholder="Nhập tồn kho" />
-            </Form.Item>
-          </Col>
+          <Form.Item
+            label="Thương hiệu"
+            name="brandId"
+            rules={[{ required: true, message: 'Vui lòng chọn thương hiệu' }]}
+          >
+            <Select placeholder="Chọn thương hiệu">
+              {brands.map(brand => (
+                <Select.Option key={brand._id} value={brand._id}>
+                  {brand.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
 
-          <Col span={8}>
-            <Form.Item label="Dung lượng (ML)" name="capacity" rules={[{ required: true, message: 'Vui lòng nhập dung lượng' }]}>
-              <InputNumber style={{ width: '100%' }} min={0} placeholder="Nhập dung lượng" />
-            </Form.Item>
-          </Col>
-        </Row>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item
+                label="Giá"
+                name="price"
+                rules={[{ required: true, message: 'Vui lòng nhập giá' }]}
+              >
+                <InputNumber style={{ width: '100%' }} min={0} placeholder="Nhập giá" />
+              </Form.Item>
+            </Col>
 
-        <Form.Item label="Ảnh (URL)" name="image" rules={[{ required: true, message: 'Vui lòng nhập link ảnh sản phẩm' }]}>
-          <Input placeholder="Nhập link ảnh sản phẩm" />
-        </Form.Item>
+            <Col span={8}>
+              <Form.Item
+                label="Tồn kho"
+                name="stock"
+                rules={[{ required: true, message: 'Vui lòng nhập tồn kho' }]}
+              >
+                <InputNumber style={{ width: '100%' }} min={0} placeholder="Nhập tồn kho" />
+              </Form.Item>
+            </Col>
 
-        <Form.Item label="Mã giảm giá" name="discountId">
-          <Input placeholder="Nhập mã giảm giá (nếu có)" />
-        </Form.Item>
+            <Col span={8}>
+              <Form.Item
+                label="Dung lượng (ML)"
+                name="capacity"
+                rules={[{ required: true, message: 'Vui lòng nhập dung lượng' }]}
+              >
+                <InputNumber style={{ width: '100%' }} min={0} placeholder="Nhập dung lượng" />
+              </Form.Item>
+            </Col>
+          </Row>
 
-        <Form.Item>
-          <Button onClick={handleBack}>Quay lại</Button>
-          <Button type="primary" htmlType="submit" style={{ marginLeft: 10 }}>
-            Thêm sản phẩm
-          </Button>
-        </Form.Item>
-      </Form>
+          <Form.Item
+            label="Ảnh (URL)"
+            name="image"
+            rules={[{ required: true, message: 'Vui lòng nhập link ảnh sản phẩm' }]}
+          >
+            <Input placeholder="Nhập link ảnh sản phẩm" />
+          </Form.Item>
+
+          <Form.Item label="Mã giảm giá" name="discountId">
+            <Select placeholder="Chọn mã giảm giá" allowClear>
+              {discounts.map(discount => (
+                <Select.Option key={discount._id} value={discount._id}>
+                  {discount.code}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item>
+            <Button onClick={handleBack} disabled={loading}>
+              Quay lại
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              style={{ marginLeft: 10 }}
+              loading={loading}
+            >
+              Thêm sản phẩm
+            </Button>
+          </Form.Item>
+        </Form>
+      </Spin>
     </div>
   )
 }
