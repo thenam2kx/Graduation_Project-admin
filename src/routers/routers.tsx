@@ -29,6 +29,9 @@ import NotificationAdd from '@/pages/notification/form.notification.add'
 import ContactAddPage from '@/pages/contact/contact.form.add'
 import OrderPage from '@/pages/orders/orders_items.page'
 import OrderItemAddPage from '@/pages/orders/orders_items.page.add'
+import ProductVariantsPage from '@/pages/productVariant/productVariant.page'
+import AttributePage from '@/pages/attribute/attribute.page'
+import VariantAttributePage from '@/pages/variantsat/variantAttribute.page'
 
 
 const Routers = () => {
@@ -41,6 +44,9 @@ const Routers = () => {
           <Route index element={<DashboardPage />} />
           <Route path='/users' element={<UserPage />} />
           <Route path='/products' element={<ProductPage />} />
+          <Route path='/variants' element={<ProductVariantsPage />} />
+          <Route path='/attributes' element={<AttributePage />} />
+          <Route path='/variantsat' element={<VariantAttributePage />} />
           <Route path='/products/add' element={<FormProductAdd />} />
           <Route path='/products/edit/:id' element={<FormProductEdit />} />
           <Route path='/cateblog' element={<BlogCategoryPage />} />
@@ -51,6 +57,8 @@ const Routers = () => {
           <Route path='/notification' element={<NotificationList/>}/>
           {/* <Route path='/notification/add' element={<NotificationAdd />}/> */}
 
+          <Route path="/categories/add" element={<CategoryAdd/>} />
+          <Route path="/categories/edit/:id" element={<CategoryEdit />} />
           <Route path='/blogs' element={<BlogPage />} />
           <Route path='/blogs/add' element={<FormBlogAdd />} />
           <Route path='/blogs/edit/:id' element={<FormBlogEdit />} />

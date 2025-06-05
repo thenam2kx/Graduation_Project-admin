@@ -26,7 +26,6 @@ interface ProductFormValues {
   stock: number
   capacity: number
   image: string
-  discountId?: string
 }
 
 interface Category {
@@ -39,34 +38,26 @@ interface Brand {
   name: string
 }
 
-interface Discount {
-  _id: string
-  code: string
-}
-
 const FormProductAdd = () => {
   const navigate = useNavigate()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
-  const [discounts, setDiscounts] = useState<Discount[]>([])
   const [fetching, setFetching] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       setFetching(true)
       try {
-        const [catRes, brandRes, discountRes] = await Promise.all([
+        const [catRes, brandRes] = await Promise.all([
           axios.get('http://localhost:8080/api/v1/categories'),
-          axios.get('http://localhost:8080/api/v1/brand'),
-          axios.get('http://localhost:8080/api/v1/discounts')
+          axios.get('http://localhost:8080/api/v1/brand')
         ])
         setCategories(catRes.data.data?.results || catRes.data.results || [])
         setBrands(brandRes.data.data?.results || brandRes.data.results || [])
-        setDiscounts(discountRes.data.data?.results || discountRes.data.results || [])
       } catch (error) {
-        message.error('Lỗi khi lấy danh mục, thương hiệu hoặc mã giảm giá')
+        message.error('Lỗi khi lấy danh mục hoặc thương hiệu')
       } finally {
         setFetching(false)
       }
@@ -194,16 +185,6 @@ const FormProductAdd = () => {
             rules={[{ required: true, message: 'Vui lòng nhập link ảnh sản phẩm' }]}
           >
             <Input placeholder="Nhập link ảnh sản phẩm" />
-          </Form.Item>
-
-          <Form.Item label="Mã giảm giá" name="discountId">
-            <Select placeholder="Chọn mã giảm giá" allowClear>
-              {discounts.map(discount => (
-                <Select.Option key={discount._id} value={discount._id}>
-                  {discount.code}
-                </Select.Option>
-              ))}
-            </Select>
           </Form.Item>
 
           <Form.Item>
