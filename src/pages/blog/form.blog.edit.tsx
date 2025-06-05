@@ -51,7 +51,7 @@ const FormBlogEdit = () => {
   }, [])
 
   // Lấy thông tin bài viết
-  const { data: blogData, isLoading } = useQuery({
+  const { data: blogData } = useQuery({
     queryKey: ['blog', id],
     queryFn: async () => {
       const res = await axios.get(`/api/v1/blogs/${id}`)
@@ -163,7 +163,7 @@ const FormBlogEdit = () => {
             type='primary'
             htmlType='submit'
             style={{ marginTop: 16 }}
-            loading={editBlogMutation.isLoading}
+            loading={editBlogMutation.isPending}
           >
             Cập nhật bài viết
           </Button>
