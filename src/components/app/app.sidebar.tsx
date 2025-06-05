@@ -33,6 +33,21 @@ const items: MenuProps['items'] = [
         label: <Link to={'/products'}>Sản phẩm</Link>
       },
       {
+        key: '/variants',
+        icon: <ProductOutlined />,
+        label: <Link to={'/variants'}>Biến thể sản phẩm</Link>
+      },
+      {
+        key: '/attributes',
+        icon: <ProductOutlined />,
+        label: <Link to={'/attributes'}>Thuộc tính</Link>
+      },
+      {
+        key: '/variantsat',
+        icon: <ProductOutlined />,
+        label: <Link to={'/variantsat'}>Biến thể thuộc tính</Link>
+      },
+      {
         key: '/cateblog',
         icon: <ProductOutlined />,
         label: <Link to={'/cateblog'} style={{ color: 'inherit' }}>Danh mục bài viết</Link>
