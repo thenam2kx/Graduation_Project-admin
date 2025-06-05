@@ -1,5 +1,5 @@
 import { useAppSelector } from '@/redux/hooks'
-import { ControlOutlined, DashboardOutlined, FileImageOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
+import { ContactsOutlined, ControlOutlined, DashboardOutlined, FileImageOutlined, InsertRowRightOutlined, LogoutOutlined, OrderedListOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Menu, MenuProps } from 'antd'
 import Sider from 'antd/es/layout/Sider'
 import { Link, useLocation } from 'react-router'
@@ -68,9 +68,19 @@ const items: MenuProps['items'] = [
         label: <Link to={'/discounts'}>Mã giảm giá</Link>
       },
       {
+        key: '/contact',
+        icon: <ContactsOutlined />,
+        label: <Link to={'/contact'}>Liên hệ</Link>
+      },
+      {
         key: '/media',
         icon: <FileImageOutlined />,
         label: <Link to={'/media'}>Media</Link>
+      },
+      {
+        key: '/orderitems',
+        icon: <OrderedListOutlined />,
+        label: <Link to={'/orderitems'}>Đơn hàng</Link>
       }
     ]
   }

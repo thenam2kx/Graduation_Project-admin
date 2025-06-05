@@ -22,6 +22,9 @@ import FormProductEdit from '@/pages/product/form.product.edit'
 import MediaPage from '@/pages/media/media.page'
 import SigninPage from '@/pages/auth/signin.page'
 import { useAppSelector } from '@/redux/hooks'
+import ContactAddPage from '@/pages/contact/contact.form.add'
+import OrderPage from '@/pages/orders/orders_items.page'
+import OrderItemAddPage from '@/pages/orders/orders_items.page.add'
 
 
 const Routers = () => {
@@ -50,6 +53,11 @@ const Routers = () => {
           <Route path='/roles' element={<RolePage />} />
           <Route path='/permissions' element={<PermissionsPage />} />
           <Route path='/contact' element={<AdminContactPage />} />
+          <Route path='/contact/add' element={<ContactAddPage />} />
+
+          <Route path='/orderitems' element={<OrderPage />} />
+          <Route path='/orderitems/add' element={<OrderItemAddPage />} />
+
 
           <Route path='/media' element={<MediaPage />} />
         </Route>
