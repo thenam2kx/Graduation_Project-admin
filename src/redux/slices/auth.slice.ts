@@ -10,8 +10,8 @@ interface IState {
 }
 
 interface ISigninAuth {
-  user: IUserAuth
-  access_token: string
+  user: IUserAuth | null
+  access_token: string | null
 }
 
 const initialState: IState = {
@@ -39,10 +39,16 @@ const authSlice = createSlice({
     setRefreshToken: (state, action: PayloadAction<{ status: boolean, message: string }>) => {
       state.isRefreshToken = action.payload?.status ?? false
       state.errorRefreshToken = action.payload?.message ?? ''
+    },
+
+    setStateSignout: (state) => {
+      state.isSignin = false
+      state.user = null
+      state.access_token = null
     }
   }
 })
 
-export const { setStateSignin, setAccessToken, setRefreshToken } = authSlice.actions
+export const { setStateSignin, setAccessToken, setRefreshToken, setStateSignout } = authSlice.actions
 
 export default authSlice.reducer

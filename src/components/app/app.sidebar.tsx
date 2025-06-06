@@ -1,8 +1,11 @@
-import { useAppSelector } from '@/redux/hooks'
+import { useAppDispatch, useAppSelector } from '@/redux/hooks'
+import { setStateSignout } from '@/redux/slices/auth.slice'
+import { signoutAPI } from '@/services/auth-service/auth.apis'
 import { ControlOutlined, DashboardOutlined, FileImageOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
-import { Button, Menu, MenuProps } from 'antd'
+import { useMutation } from '@tanstack/react-query'
+import { Button, Menu, MenuProps, message, Popconfirm, PopconfirmProps } from 'antd'
 import Sider from 'antd/es/layout/Sider'
-import { Link, useLocation } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 
 const items: MenuProps['items'] = [
   {
@@ -91,10 +94,36 @@ const items: MenuProps['items'] = [
   }
 ]
 
+
 const AppSidebar = () => {
   const isOpenDrawer = useAppSelector((state) => state.app.isOpenDrawer)
-
   const location = useLocation()
+  const navigate = useNavigate()
+  const dispatch = useAppDispatch()
+
+  const signoutMutation = useMutation({
+    mutationFn: async () => {
+      const res = await signoutAPI()
+      if (res.data) {
+        dispatch(setStateSignout())
+        navigate('/signin')
+      }
+    },
+    onSuccess: () => {
+      message.success('Đăng xuất thành công')
+    },
+    onError: (error) => {
+      message.error(`Đăng xuất thất bại: ${error.message}`)
+    }
+  })
+
+  const confirm: PopconfirmProps['onConfirm'] = () => {
+    signoutMutation.mutate()
+  };
+
+  const cancel: PopconfirmProps['onCancel'] = () => {
+    message.error('Click on No');
+  };
 
   return (
     <Sider trigger={null} collapsible collapsed={!isOpenDrawer}>
@@ -118,7 +147,16 @@ const AppSidebar = () => {
         </section>
 
         <section style={{ margin: '0 10px' }}>
+          <Popconfirm
+            title="Đăng xuất"
+            description="Bạn có chắc chắn muốn đăng xuất không?"
+            onConfirm={confirm}
+            onCancel={cancel}
+            okText="Có"
+            cancelText="Không"
+          >
           <Button type="primary" icon={<LogoutOutlined />} style={{ width: '100%' }}>Đăng xuất</Button>
+          </Popconfirm>
         </section>
       </div>
     </Sider>
