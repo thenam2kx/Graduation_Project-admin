@@ -54,6 +54,7 @@ const Brand = () => {
   const handleAdd = () => {
     setModalMode("add");
     form.resetFields();
+    form.setFieldsValue({isPublic:true})
     setModalOpen(true);
   };
 

@@ -8,6 +8,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 
+
+
 const Discounts = () => {
   const nav = useNavigate()
   const [data, setData] = useState<IDiscounts[]>([])
