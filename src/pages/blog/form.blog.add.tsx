@@ -1,10 +1,10 @@
+import { useState, useEffect } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router'
 import { Form, Input, Typography, Button, Switch, Select } from 'antd'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
-import { useState, useEffect } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from '@/config/axios.customize'
-import { useNavigate } from 'react-router'
 
 const { Title } = Typography
 
@@ -29,12 +29,28 @@ interface IBlog {
   category?: string
 }
 
+// Hàm chuyển title thành slug
+function toSlug(str: string) {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
 const FormBlogAdd = () => {
   const [form] = Form.useForm()
   const [content, setContent] = useState('')
   const [categories, setCategories] = useState<{ _id: string; name: string }[]>([])
+  const [isSlugTouched, setIsSlugTouched] = useState(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+
+  // Theo dõi giá trị title
+  const titleValue = Form.useWatch('title', form)
 
   // Call API lấy danh mục
   useEffect(() => {
@@ -48,6 +64,13 @@ const FormBlogAdd = () => {
     }
     fetchCategories()
   }, [])
+
+  // Auto cập nhật slug khi title thay đổi, nếu slug chưa bị sửa thủ công
+  useEffect(() => {
+    if (!isSlugTouched) {
+      form.setFieldsValue({ slug: toSlug(titleValue || '') })
+    }
+  }, [titleValue, isSlugTouched, form])
 
   const addBlogMutation = useMutation({
     mutationFn: async (values: IBlog) => {
@@ -107,15 +130,21 @@ const FormBlogAdd = () => {
           name='title'
           rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}
         >
-          <Input placeholder='Nhập tiêu đề' />
+          <Input
+            placeholder='Nhập tiêu đề'
+            onChange={() => setIsSlugTouched(false)}
+          />
         </Form.Item>
 
         <Form.Item
-          label='Mô tả ngắn'
+          label='Slug'
           name='slug'
-          rules={[{ required: true, message: 'Vui lòng nhập mô tả ngắn' }]}
+          rules={[{ required: true, message: 'Vui lòng nhập slug' }]}
         >
-          <Input placeholder='Nhập mô tả ngắn' />
+          <Input
+            placeholder='Nhập slug'
+            onChange={() => setIsSlugTouched(true)}
+          />
         </Form.Item>
 
         <Form.Item
@@ -161,7 +190,6 @@ const FormBlogAdd = () => {
             type='primary'
             htmlType='submit'
             style={{ marginTop: 16 }}
-            loading={addBlogMutation.isLoading}
           >
             Tạo bài viết
           </Button>
