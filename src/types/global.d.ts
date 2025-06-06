@@ -19,4 +19,15 @@ declare global {
     total: number
     pages?: number
   }
+
+  interface IUserAuth {
+    _id: string
+    email: string
+    role: string
+  }
+
+  interface IAuth {
+    access_token: string
+    user: IUserAuth
+  }
 }

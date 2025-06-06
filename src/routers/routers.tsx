@@ -16,15 +16,19 @@ import FormBlogEdit from '@/pages/blog/form.blog.edit'
 import RolePage from '@/pages/role/role.page'
 import PermissionsPage from '@/pages/permission/permissions.page'
 import AdminContactPage from '@/pages/contact/contact.page'
+import Discounts from '@/pages/discounts/discounts.pages'
 import FormProductAdd from '@/pages/product/form.product.add'
 import FormProductEdit from '@/pages/product/form.product.edit'
 import ProductVariantsPage from '@/pages/productVariant/productVariant.page'
 import AttributePage from '@/pages/attribute/attribute.page'
 import VariantAttributePage from '@/pages/variantsat/variantAttribute.page'
+import MediaPage from '@/pages/media/media.page'
+import SigninPage from '@/pages/auth/signin.page'
+import { useAppSelector } from '@/redux/hooks'
 
 
 const Routers = () => {
-  const isAuthenticated = true
+  const isAuthenticated = useAppSelector((state) => state.auth.isSignin)
 
   return (
     <Routes>
@@ -47,10 +51,16 @@ const Routers = () => {
           <Route path='/blogs/add' element={<FormBlogAdd />} />
           <Route path='/blogs/edit/:id' element={<FormBlogEdit />} />
           <Route path='/brand' element={<Brand />} />
+          <Route path='/discounts' element={<Discounts />} />
           <Route path='/roles' element={<RolePage />} />
           <Route path='/permissions' element={<PermissionsPage />} />
           <Route path='/contact' element={<AdminContactPage />} />
+
+          <Route path='/media' element={<MediaPage />} />
         </Route>
+      </Route>
+      <Route element={<PrivateRouters isAllowed={isAuthenticated ? false : true} redirectTo='/' />}>
+        <Route path='/signin' element={<SigninPage />} />
       </Route>
       <Route path='*' element={<NotFoundPage />} />
     </Routes>
