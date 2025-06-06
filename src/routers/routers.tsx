@@ -19,6 +19,9 @@ import AdminContactPage from '@/pages/contact/contact.page'
 import Discounts from '@/pages/discounts/discounts.pages'
 import FormProductAdd from '@/pages/product/form.product.add'
 import FormProductEdit from '@/pages/product/form.product.edit'
+import ProductVariantsPage from '@/pages/productVariant/productVariant.page'
+import AttributePage from '@/pages/attribute/attribute.page'
+import VariantAttributePage from '@/pages/variantsat/variantAttribute.page'
 import MediaPage from '@/pages/media/media.page'
 import SigninPage from '@/pages/auth/signin.page'
 import { useAppSelector } from '@/redux/hooks'
@@ -37,6 +40,9 @@ const Routers = () => {
           <Route index element={<DashboardPage />} />
           <Route path='/users' element={<UserPage />} />
           <Route path='/products' element={<ProductPage />} />
+          <Route path='/variants' element={<ProductVariantsPage />} />
+          <Route path='/attributes' element={<AttributePage />} />
+          <Route path='/variantsat' element={<VariantAttributePage />} />
           <Route path='/products/add' element={<FormProductAdd />} />
           <Route path='/products/edit/:id' element={<FormProductEdit />} />
           <Route path='/cateblog' element={<BlogCategoryPage />} />
@@ -44,7 +50,6 @@ const Routers = () => {
           <Route path="/categories" element={<CategoryList />} />
           <Route path="/categories/add" element={<CategoryAdd/>} />
           <Route path="/categories/edit/:id" element={<CategoryEdit />} />
-
           <Route path='/blogs' element={<BlogPage />} />
           <Route path='/blogs/add' element={<FormBlogAdd />} />
           <Route path='/blogs/edit/:id' element={<FormBlogEdit />} />

@@ -29,13 +29,29 @@ interface IBlog {
   categoryBlogId?: string
 }
 
+// Hàm chuyển title thành slug
+function toSlug(str: string) {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
 const FormBlogEdit = () => {
   const [form] = Form.useForm()
   const [content, setContent] = useState('')
   const [categories, setCategories] = useState<{ _id: string; name: string }[]>([])
+  const [isSlugTouched, setIsSlugTouched] = useState(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { id } = useParams<{ id: string }>()
+
+  // Theo dõi giá trị title
+  const titleValue = Form.useWatch('title', form)
 
   // Lấy danh mục
   useEffect(() => {
@@ -69,8 +85,16 @@ const FormBlogEdit = () => {
         isPublic: blogData.isPublic
       })
       setContent(blogData.content)
+      setIsSlugTouched(false) // reset khi load bài viết mới
     }
   }, [blogData, form])
+
+  // Auto cập nhật slug khi title thay đổi, nếu slug chưa bị sửa thủ công
+  useEffect(() => {
+    if (!isSlugTouched) {
+      form.setFieldsValue({ slug: toSlug(titleValue || '') })
+    }
+  }, [titleValue, isSlugTouched, form])
 
   const editBlogMutation = useMutation({
     mutationFn: async (values: IBlog) => {
@@ -109,15 +133,21 @@ const FormBlogEdit = () => {
           name='title'
           rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}
         >
-          <Input placeholder='Nhập tiêu đề' />
+          <Input
+            placeholder='Nhập tiêu đề'
+            onChange={() => setIsSlugTouched(false)}
+          />
         </Form.Item>
 
         <Form.Item
-          label='Mô tả ngắn'
+          label='Slug'
           name='slug'
-          rules={[{ required: true, message: 'Vui lòng nhập mô tả ngắn' }]}
+          rules={[{ required: true, message: 'Vui lòng nhập Slug' }]}
         >
-          <Input placeholder='Nhập mô tả ngắn' />
+          <Input
+            placeholder='Nhập slug'
+            onChange={() => setIsSlugTouched(true)}
+          />
         </Form.Item>
 
         <Form.Item
