@@ -71,6 +71,11 @@ const items: MenuProps['items'] = [
         key: '/media',
         icon: <FileImageOutlined />,
         label: <Link to={'/media'}>Media</Link>
+      },
+      {
+        key: '/notification',
+        icon: <ProductOutlined />,
+        label: <Link to={'/notification'}>Thông báo</Link>
       }
     ]
   }

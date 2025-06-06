@@ -22,6 +22,8 @@ import FormProductEdit from '@/pages/product/form.product.edit'
 import MediaPage from '@/pages/media/media.page'
 import SigninPage from '@/pages/auth/signin.page'
 import { useAppSelector } from '@/redux/hooks'
+import NotificationList from '@/pages/notification/notification.page'
+import NotificationAdd from '@/pages/notification/form.notification.add'
 
 
 const Routers = () => {
@@ -39,8 +41,10 @@ const Routers = () => {
           <Route path='/cateblog' element={<BlogCategoryPage />} />
           <Route path='/blogCategory' element={<BlogCategoryPage />} />
           <Route path="/categories" element={<CategoryList />} />
-          <Route path="/categories/add" element={<CategoryAdd/>} />
-          <Route path="/categories/edit/:id" element={<CategoryEdit />} />
+          {/* <Route path="/categories/add" element={<CategoryAdd/>} />
+          <Route path="/categories/edit/:id" element={<CategoryEdit />} /> */}
+          <Route path='/notification' element={<NotificationList/>}/>
+          {/* <Route path='/notification/add' element={<NotificationAdd />}/> */}
 
           <Route path='/blogs' element={<BlogPage />} />
           <Route path='/blogs/add' element={<FormBlogAdd />} />

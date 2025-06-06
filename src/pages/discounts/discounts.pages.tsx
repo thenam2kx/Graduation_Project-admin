@@ -6,7 +6,7 @@ import { Button, Modal, Form, Input, Select, message, DatePicker, Row, Col, Popc
 import TextArea from 'antd/es/input/TextArea'
 import debounce from 'debounce'
 import { useEffect, useMemo, useState } from 'react'
-import moment from 'moment'
+import dayjs from 'dayjs'
 import { AxiosError } from 'axios'
 
 
