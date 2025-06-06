@@ -7,8 +7,6 @@ import UserPage from '@/pages/user/user.page'
 import ProductPage from '@/pages/product/product.page'
 import Brand from '@/pages/brand/brand.page'
 import BlogCategoryPage from '@/pages/blog/category/blogCategory.page'
-import FormCateBlogAdd from '@/pages/blog/category/addCategory.page'
-import FormCateBlogEdit from '@/pages/blog/category/editCategory.page'
 import CategoryList from '@/pages/category/category.page'
 import CategoryAdd from '@/pages/category/form.category.add'
 import CategoryEdit from '@/pages/category/form.category.edit'
@@ -21,10 +19,15 @@ import AdminContactPage from '@/pages/contact/contact.page'
 import Discounts from '@/pages/discounts/discounts.pages'
 import DiscountsAdd from '@/pages/discounts/discounts.add'
 import DiscountsUpdate from '@/pages/discounts/discounts.update'
+import FormProductAdd from '@/pages/product/form.product.add'
+import FormProductEdit from '@/pages/product/form.product.edit'
+import MediaPage from '@/pages/media/media.page'
+import SigninPage from '@/pages/auth/signin.page'
+import { useAppSelector } from '@/redux/hooks'
 
 
 const Routers = () => {
-  const isAuthenticated = true
+  const isAuthenticated = useAppSelector((state) => state.auth.isSignin)
 
   return (
     <Routes>
@@ -33,9 +36,9 @@ const Routers = () => {
           <Route index element={<DashboardPage />} />
           <Route path='/users' element={<UserPage />} />
           <Route path='/products' element={<ProductPage />} />
+          <Route path='/products/add' element={<FormProductAdd />} />
+          <Route path='/products/edit/:id' element={<FormProductEdit />} />
           <Route path='/cateblog' element={<BlogCategoryPage />} />
-          <Route path='/cateblog/add' element={<FormCateBlogAdd />} />
-          <Route path='/cateblog/edit/:id' element={<FormCateBlogEdit />} />
           <Route path='/blogCategory' element={<BlogCategoryPage />} />
           <Route path="/categories" element={<CategoryList />} />
           <Route path="/categories/add" element={<CategoryAdd/>} />
@@ -50,7 +53,12 @@ const Routers = () => {
           <Route path='/roles' element={<RolePage />} />
           <Route path='/permissions' element={<PermissionsPage />} />
           <Route path='/contact' element={<AdminContactPage />} />
+
+          <Route path='/media' element={<MediaPage />} />
         </Route>
+      </Route>
+      <Route element={<PrivateRouters isAllowed={isAuthenticated ? false : true} redirectTo='/' />}>
+        <Route path='/signin' element={<SigninPage />} />
       </Route>
       <Route path='*' element={<NotFoundPage />} />
     </Routes>

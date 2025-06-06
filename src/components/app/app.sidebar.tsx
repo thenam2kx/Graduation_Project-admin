@@ -1,5 +1,5 @@
 import { useAppSelector } from '@/redux/hooks'
-import { ControlOutlined, DashboardOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
+import { ControlOutlined, DashboardOutlined, FileImageOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Menu, MenuProps } from 'antd'
 import Sider from 'antd/es/layout/Sider'
 import { Link, useLocation } from 'react-router'
@@ -33,19 +33,9 @@ const items: MenuProps['items'] = [
         label: <Link to={'/products'}>Sản phẩm</Link>
       },
       {
-        key: '/blog',
-        icon: <UserOutlined />,
-        label: <Link to={'/blog'} style={{ color: 'inherit' }}>Bài viết</Link>,
-        children: [
-          {
-            key: '/cateblog',
-            label: <Link to={'/cateblog'}>Danh mục bài viết</Link>
-          },
-          {
-            key: '/cateblog/add',
-            label: <Link to={'/cateblog/add'}>Thêm mới danh mục bài viết</Link>
-          }
-        ]
+        key: '/cateblog',
+        icon: <ProductOutlined />,
+        label: <Link to={'/cateblog'} style={{ color: 'inherit' }}>Danh mục bài viết</Link>
       },
       {
         key: '/categories',
@@ -76,6 +66,11 @@ const items: MenuProps['items'] = [
         key: '/discounts',
         icon: <ProductOutlined />,
         label: <Link to={'/discounts'}>Mã giảm giá</Link>
+      },
+      {
+        key: '/media',
+        icon: <FileImageOutlined />,
+        label: <Link to={'/media'}>Media</Link>
       }
     ]
   }

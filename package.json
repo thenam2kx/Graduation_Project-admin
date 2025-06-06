@@ -37,7 +37,6 @@
     "react-quill": "^2.0.0",
     "react-redux": "^9.2.0",
     "react-router": "^7.4.0",
-    "react-router-dom": "^7.6.0",
     "react-toastify": "^11.0.5",
     "redux": "^5.0.1",
     "redux-persist": "^6.0.0",
@@ -48,6 +47,7 @@
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@types/lodash": "^4.17.17",
+    "@types/node": "^22.15.29",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react-swc": "^3.8.0",
