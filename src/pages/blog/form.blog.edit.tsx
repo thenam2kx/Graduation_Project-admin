@@ -193,6 +193,7 @@ const FormBlogEdit = () => {
             type='primary'
             htmlType='submit'
             style={{ marginTop: 16 }}
+            loading={editBlogMutation.isPending}
           >
             Cập nhật bài viết
           </Button>

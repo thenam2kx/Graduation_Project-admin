@@ -1,3 +1,6 @@
+import { useAppSelector } from '@/redux/hooks'
+import { ContactsOutlined, ControlOutlined, DashboardOutlined, FileImageOutlined, InsertRowRightOutlined, LogoutOutlined, OrderedListOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
+import { Button, Menu, MenuProps } from 'antd'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { setStateSignout } from '@/redux/slices/auth.slice'
 import { signoutAPI } from '@/services/auth-service/auth.apis'
@@ -86,9 +89,19 @@ const items: MenuProps['items'] = [
         label: <Link to={'/discounts'}>Mã giảm giá</Link>
       },
       {
+        key: '/contact',
+        icon: <ContactsOutlined />,
+        label: <Link to={'/contact'}>Liên hệ</Link>
+      },
+      {
         key: '/media',
         icon: <FileImageOutlined />,
         label: <Link to={'/media'}>Media</Link>
+      },
+      {
+        key: '/orderitems',
+        icon: <OrderedListOutlined />,
+        label: <Link to={'/orderitems'}>Đơn hàng</Link>
       }
     ]
   }

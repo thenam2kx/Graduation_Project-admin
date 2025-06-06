@@ -1,47 +1,40 @@
-import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import axios from '@/config/axios.customize'
 import {
   Table, Modal, Button, Tag, Space, message
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-
-interface Contact {
-  _id: string;
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt?: string;
-  deleted: boolean;
-}
-
-const dummyContacts: Contact[] = [
-  {
-    _id: '1',
-    name: 'Nguyễn Văn A',
-    email: 'a@example.com',
-    phone: '0901234567',
-    message: 'Tôi muốn hỏi về dịch vụ...',
-    createdAt: '2025-05-13T10:00:00Z',
-    updatedAt: '2025-05-13T10:00:00Z',
-    deleted: false
-  },
-  {
-    _id: '2',
-    name: 'Trần Thị B',
-    email: 'b@example.com',
-    phone: '0912345678',
-    message: 'Trang web của bạn có lỗi...',
-    createdAt: '2025-05-12T14:30:00Z',
-    updatedAt: '2025-05-12T14:30:00Z',
-    deleted: false
-  }
-]
+import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { IContact } from '@/types/contact'
 
 export default function AdminContactPage() {
-  const [contacts, setContacts] = useState<Contact[]>(dummyContacts)
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const queryClient = useQueryClient()
+  const [selectedContact, setSelectedContact] = useState<IContact | null>(null)
+
+  const { data: contacts, isLoading } = useQuery({
+    queryKey: ['contacts'],
+    queryFn: async () => {
+      const res = await axios.get('/api/v1/contacts')
+      return res.data?.results || []
+    }
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (_id: string) => {
+      await axios.patch(`/api/v1/contacts/soft-delete/${_id}`, {
+        deleted: true,
+        deletedAt: new Date().toISOString()
+      })
+    },
+    onSuccess: () => {
+      message.success('Xoá liên hệ thành công')
+      queryClient.invalidateQueries({ queryKey: ['contacts'] })
+    },
+    onError: () => {
+      message.error('Xoá liên hệ thất bại')
+    }
+  })
 
   const handleSoftDelete = (_id: string) => {
     Modal.confirm({
@@ -51,21 +44,16 @@ export default function AdminContactPage() {
       okType: 'danger',
       cancelText: 'Huỷ',
       onOk() {
-        setContacts((prev) =>
-          prev.map((c) =>
-            c._id === _id ? { ...c, deleted: true, deletedAt: new Date().toISOString() } : c
-          )
-        )
-        message.success('Đã xoá liên hệ (mềm)')
+        deleteMutation.mutate(_id)
       }
     })
   }
 
-  const handleView = (contact: Contact) => {
+  const handleView = (contact: IContact) => {
     setSelectedContact(contact)
   }
 
-  const columns: ColumnsType<Contact> = [
+  const columns: ColumnsType<IContact> = [
     {
       title: 'Tên',
       dataIndex: 'name',
@@ -91,9 +79,9 @@ export default function AdminContactPage() {
       title: 'Trạng thái',
       key: 'status',
       render: (_, record) => (
-        <>
-          {!record.deleted ? <Tag color='green'>Đang hoạt động</Tag> : <Tag color='red'>Đã xoá</Tag>}
-        </>
+        !record.deleted
+          ? <Tag color='green'>Đã đọc</Tag>
+          : <Tag color='red'>Đã xoá</Tag>
       )
     },
     {
@@ -117,23 +105,23 @@ export default function AdminContactPage() {
 
   return (
     <div style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
-      <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16 }}>
-        Quản lý liên hệ
-      </h2>
+      <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16 }}>Quản lý liên hệ</h2>
+      <Link to='/contact/add'>
+        <Button type='primary' style={{ marginBottom: 20 }}>Thêm mới liên hệ</Button>
+      </Link>
       <Table
         columns={columns}
-        dataSource={contacts.filter((c) => !c.deleted)}
+        dataSource={contacts?.filter((c: any) => !c.deleted)}
         rowKey='_id'
         bordered
+        loading={isLoading}
       />
 
       <Modal
         open={!!selectedContact}
         onCancel={() => setSelectedContact(null)}
         title='Chi tiết liên hệ'
-        footer={[
-          <Button key='cancel' onClick={() => setSelectedContact(null)}>Đóng</Button>
-        ]}
+        footer={<Button onClick={() => setSelectedContact(null)}>Đóng</Button>}
       >
         {selectedContact && (
           <>
