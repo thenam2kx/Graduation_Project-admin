@@ -50,6 +50,7 @@ const ProductVariantPage = () => {
   const [form] = Form.useForm<IProductVariant>()
   const [editingItem, setEditingItem] = useState<IProductVariant | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [searchInput, setSearchInput] = useState('')
 
   const fetchData = async () => {
     setLoading(true)
@@ -96,6 +97,17 @@ const ProductVariantPage = () => {
       }, 0)
     }
   }, [isModalOpen, isEdit, editingItem, form])
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(searchInput)
+      setCurrentPage(1)
+    }, 300)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [searchInput])
 
   const filteredData = data.filter(item =>
     item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -186,8 +198,11 @@ const ProductVariantPage = () => {
         enterButton="Tìm"
         size="middle"
         style={{ marginBottom: 16, maxWidth: 350 }}
+        value={searchInput}
+        onChange={e => setSearchInput(e.target.value)}
         onSearch={value => {
           setSearchTerm(value)
+          setSearchInput(value)
           setCurrentPage(1)
         }}
       />
