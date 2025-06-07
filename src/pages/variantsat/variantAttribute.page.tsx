@@ -47,6 +47,9 @@ const VariantAttributePage = () => {
   const [isEdit, setIsEdit] = useState(false)
   const [form] = Form.useForm<IVariantAttribute>()
   const [editingItem, setEditingItem] = useState<IVariantAttribute | null>(null)
+
+  // Thêm 2 state cho debounce tìm kiếm
+  const [searchInput, setSearchInput] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
   const fetchData = async () => {
@@ -91,6 +94,19 @@ const VariantAttributePage = () => {
     }
   }, [isModalOpen, isEdit, editingItem, form])
 
+  // Debounce tìm kiếm: khi searchInput thay đổi, sau 500ms mới cập nhật searchTerm
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(searchInput)
+      setCurrentPage(1) // reset page về 1 khi tìm kiếm
+    }, 500)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [searchInput])
+
+  // Lọc data dựa trên searchTerm
   const filteredData = data.filter(item => {
     const variantSku = (item.variantId as any)?.sku || ''
     const attributeName = (item.attributeId as any)?.name || ''
@@ -173,8 +189,11 @@ const VariantAttributePage = () => {
           enterButton="Tìm"
           size="middle"
           style={{ maxWidth: 400 }}
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
+          // Có thể thêm onSearch nếu muốn cho nút "Tìm" làm việc giống onChange:
           onSearch={value => {
-            setSearchTerm(value)
+            setSearchInput(value)
             setCurrentPage(1)
           }}
         />

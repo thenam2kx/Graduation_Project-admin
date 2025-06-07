@@ -14,8 +14,8 @@ const ProductPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
   const [searchTerm, setSearchTerm] = useState('')
+  const [searchValue, setSearchValue] = useState('')
   const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null)
-
 
   const fetchData = async () => {
     setLoading(true)
@@ -35,6 +35,15 @@ const ProductPage = () => {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setSearchTerm(searchValue)
+      setCurrentPage(1)
+    }, 500)
+
+    return () => clearTimeout(timeout)
+  }, [searchValue])
+
   const handleDelete = async (id: string) => {
     try {
       await axios.delete(`http://localhost:8080/api/v1/products/${id}`)
@@ -50,7 +59,6 @@ const ProductPage = () => {
     if (pageSize) setPageSize(pageSize)
   }
 
-  // --- FILTER & SORT ---
   const filteredData = data.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -153,10 +161,8 @@ const ProductPage = () => {
         enterButton="Tìm"
         size="middle"
         style={{ marginBottom: 16, maxWidth: 300 }}
-        onSearch={value => {
-          setSearchTerm(value)
-          setCurrentPage(1)
-        }}
+        onChange={e => setSearchValue(e.target.value)}
+        value={searchValue}
       />
 
       <Table
