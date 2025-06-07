@@ -17,6 +17,8 @@ import RolePage from '@/pages/role/role.page'
 import PermissionsPage from '@/pages/permission/permissions.page'
 import AdminContactPage from '@/pages/contact/contact.page'
 import Discounts from '@/pages/discounts/discounts.pages'
+import DiscountsAdd from '@/pages/discounts/discounts.add'
+import DiscountsUpdate from '@/pages/discounts/discounts.update'
 import FormProductAdd from '@/pages/product/form.product.add'
 import FormProductEdit from '@/pages/product/form.product.edit'
 import ProductVariantsPage from '@/pages/productVariant/productVariant.page'
@@ -55,6 +57,8 @@ const Routers = () => {
           <Route path='/blogs/edit/:id' element={<FormBlogEdit />} />
           <Route path='/brand' element={<Brand />} />
           <Route path='/discounts' element={<Discounts />} />
+          <Route path='/discounts/add' element={<DiscountsAdd />} />
+          <Route path='/discounts/update/:id' element={<DiscountsUpdate />} />
           <Route path='/roles' element={<RolePage />} />
           <Route path='/permissions' element={<PermissionsPage />} />
           <Route path='/contact' element={<AdminContactPage />} />
