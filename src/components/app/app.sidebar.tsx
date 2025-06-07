@@ -1,8 +1,14 @@
 import { useAppSelector } from '@/redux/hooks'
-import { ControlOutlined, DashboardOutlined, FileImageOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
+import { ContactsOutlined, ControlOutlined, DashboardOutlined, FileImageOutlined, InsertRowRightOutlined, LogoutOutlined, OrderedListOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Menu, MenuProps } from 'antd'
+import { useAppDispatch, useAppSelector } from '@/redux/hooks'
+import { setStateSignout } from '@/redux/slices/auth.slice'
+import { signoutAPI } from '@/services/auth-service/auth.apis'
+import { ControlOutlined, DashboardOutlined, FileImageOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
+import { useMutation } from '@tanstack/react-query'
+import { Button, Menu, MenuProps, message, Popconfirm, PopconfirmProps } from 'antd'
 import Sider from 'antd/es/layout/Sider'
-import { Link, useLocation } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 
 const items: MenuProps['items'] = [
   {
@@ -31,6 +37,21 @@ const items: MenuProps['items'] = [
         key: '/products',
         icon: <ProductOutlined />,
         label: <Link to={'/products'}>Sản phẩm</Link>
+      },
+      {
+        key: '/variants',
+        icon: <ProductOutlined />,
+        label: <Link to={'/variants'}>Biến thể sản phẩm</Link>
+      },
+      {
+        key: '/attributes',
+        icon: <ProductOutlined />,
+        label: <Link to={'/attributes'}>Thuộc tính</Link>
+      },
+      {
+        key: '/variantsat',
+        icon: <ProductOutlined />,
+        label: <Link to={'/variantsat'}>Biến thể thuộc tính</Link>
       },
       {
         key: '/cateblog',
@@ -68,6 +89,11 @@ const items: MenuProps['items'] = [
         label: <Link to={'/discounts'}>Mã giảm giá</Link>
       },
       {
+        key: '/contact',
+        icon: <ContactsOutlined />,
+        label: <Link to={'/contact'}>Liên hệ</Link>
+      },
+      {
         key: '/media',
         icon: <FileImageOutlined />,
         label: <Link to={'/media'}>Media</Link>
@@ -76,15 +102,46 @@ const items: MenuProps['items'] = [
         key: '/notification',
         icon: <ProductOutlined />,
         label: <Link to={'/notification'}>Thông báo</Link>
+      },
+      {
+        key: '/orderitems',
+        icon: <OrderedListOutlined />,
+        label: <Link to={'/orderitems'}>Đơn hàng</Link>
       }
     ]
   }
 ]
 
+
 const AppSidebar = () => {
   const isOpenDrawer = useAppSelector((state) => state.app.isOpenDrawer)
-
   const location = useLocation()
+  const navigate = useNavigate()
+  const dispatch = useAppDispatch()
+
+  const signoutMutation = useMutation({
+    mutationFn: async () => {
+      const res = await signoutAPI()
+      if (res.data) {
+        dispatch(setStateSignout())
+        navigate('/signin')
+      }
+    },
+    onSuccess: () => {
+      message.success('Đăng xuất thành công')
+    },
+    onError: (error) => {
+      message.error(`Đăng xuất thất bại: ${error.message}`)
+    }
+  })
+
+  const confirm: PopconfirmProps['onConfirm'] = () => {
+    signoutMutation.mutate()
+  };
+
+  const cancel: PopconfirmProps['onCancel'] = () => {
+    message.error('Click on No');
+  };
 
   return (
     <Sider trigger={null} collapsible collapsed={!isOpenDrawer}>
@@ -108,7 +165,16 @@ const AppSidebar = () => {
         </section>
 
         <section style={{ margin: '0 10px' }}>
+          <Popconfirm
+            title="Đăng xuất"
+            description="Bạn có chắc chắn muốn đăng xuất không?"
+            onConfirm={confirm}
+            onCancel={cancel}
+            okText="Có"
+            cancelText="Không"
+          >
           <Button type="primary" icon={<LogoutOutlined />} style={{ width: '100%' }}>Đăng xuất</Button>
+          </Popconfirm>
         </section>
       </div>
     </Sider>

@@ -51,7 +51,7 @@ const BlogPage = () => {
     return res.data.results
   }
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['blogs', pagination.current, pagination.pageSize, debouncedSearch],
     queryFn: () => fetchList({ page: pagination.current, pageSize: pagination.pageSize, search: debouncedSearch }),
     keepPreviousData: true
