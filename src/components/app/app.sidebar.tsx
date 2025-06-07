@@ -1,12 +1,10 @@
-import { useAppSelector } from '@/redux/hooks'
 import { ContactsOutlined, ControlOutlined, DashboardOutlined, FileImageOutlined, InsertRowRightOutlined, LogoutOutlined, OrderedListOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Menu, MenuProps } from 'antd'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { setStateSignout } from '@/redux/slices/auth.slice'
 import { signoutAPI } from '@/services/auth-service/auth.apis'
-import { ControlOutlined, DashboardOutlined, FileImageOutlined, InsertRowRightOutlined, LogoutOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
-import { Button, Menu, MenuProps, message, Popconfirm, PopconfirmProps } from 'antd'
+import { message, Popconfirm, PopconfirmProps } from 'antd'
 import Sider from 'antd/es/layout/Sider'
 import { Link, useLocation, useNavigate } from 'react-router'
 
