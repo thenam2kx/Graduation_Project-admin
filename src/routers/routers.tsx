@@ -27,6 +27,8 @@ import VariantAttributePage from '@/pages/variantsat/variantAttribute.page'
 import MediaPage from '@/pages/media/media.page'
 import SigninPage from '@/pages/auth/signin.page'
 import { useAppSelector } from '@/redux/hooks'
+import NotificationList from '@/pages/notification/notification.page'
+import NotificationAdd from '@/pages/notification/form.notification.add'
 import ContactAddPage from '@/pages/contact/contact.form.add'
 import OrderPage from '@/pages/orders/orders_items.page'
 import OrderItemAddPage from '@/pages/orders/orders_items.page.add'
@@ -50,6 +52,11 @@ const Routers = () => {
           <Route path='/cateblog' element={<BlogCategoryPage />} />
           <Route path='/blogCategory' element={<BlogCategoryPage />} />
           <Route path="/categories" element={<CategoryList />} />
+          {/* <Route path="/categories/add" element={<CategoryAdd/>} />
+          <Route path="/categories/edit/:id" element={<CategoryEdit />} /> */}
+          <Route path='/notification' element={<NotificationList/>}/>
+          {/* <Route path='/notification/add' element={<NotificationAdd />}/> */}
+
           <Route path="/categories/add" element={<CategoryAdd/>} />
           <Route path="/categories/edit/:id" element={<CategoryEdit />} />
           <Route path='/blogs' element={<BlogPage />} />
