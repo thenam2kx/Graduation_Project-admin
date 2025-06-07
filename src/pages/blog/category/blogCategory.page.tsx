@@ -15,7 +15,6 @@ import {
 } from 'antd'
 import axios from 'axios'
 
-const { Search } = Input
 
 interface ICateblog {
   _id?: string
@@ -33,6 +32,7 @@ const BlogCategoryPage = () => {
   const [isEdit, setIsEdit] = useState(false)
   const [form] = Form.useForm<ICateblog>()
   const [editingItem, setEditingItem] = useState<ICateblog | null>(null)
+  const [searchInput, setSearchInput] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
   const fetchData = async () => {
@@ -51,9 +51,18 @@ const BlogCategoryPage = () => {
     fetchData()
   }, [])
 
+  // Debounce cho ô tìm kiếm
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setSearchTerm(searchInput)
+      setCurrentPage(1)
+    }, 300)
+
+    return () => clearTimeout(timeout)
+  }, [searchInput])
+
   useEffect(() => {
     if (isModalOpen && isEdit && editingItem) {
-      // Đảm bảo form được mount xong mới set giá trị
       setTimeout(() => {
         form.setFieldsValue({
           name: editingItem.name,
@@ -129,25 +138,19 @@ const BlogCategoryPage = () => {
     <div style={{ padding: 24 }}>
       <h1>Trang danh mục bài viết</h1>
 
-      <Button
-        type="primary"
-        style={{ marginBottom: 16, float: 'right' }}
-        onClick={openAddModal}
-      >
-        Thêm mới
-      </Button>
-
-      <Search
-        placeholder="Tìm kiếm danh mục..."
-        allowClear
-        enterButton="Tìm"
-        size="middle"
-        style={{ marginBottom: 16, maxWidth: 300 }}
-        onSearch={value => {
-          setSearchTerm(value)
-          setCurrentPage(1)
-        }}
-      />
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+        <Input
+          placeholder="Tìm kiếm danh mục..."
+          allowClear
+          size="middle"
+          style={{ maxWidth: 300 }}
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
+        />
+        <Button type="primary" onClick={openAddModal}>
+          Thêm mới
+        </Button>
+      </div>
 
       <Table
         rowKey="_id"
@@ -167,7 +170,7 @@ const BlogCategoryPage = () => {
             dataIndex: 'createdAt',
             key: 'createdAt',
             render: (date: string) =>
-              date ? new Date(date).toLocaleString() : ''
+              date ? new Date(date).toLocaleString('vi-VN') : ''
           },
           {
             title: 'Hành động',

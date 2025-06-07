@@ -13,7 +13,6 @@ import {
 } from 'antd'
 import axios from 'axios'
 
-const { Search } = Input
 
 interface IAttribute {
   _id: string
@@ -32,6 +31,7 @@ const AttributePage = () => {
   const [isEdit, setIsEdit] = useState(false)
   const [form] = Form.useForm<IAttribute>()
   const [editingItem, setEditingItem] = useState<IAttribute | null>(null)
+  const [searchValue, setSearchValue] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
   const fetchData = async () => {
@@ -60,6 +60,15 @@ const AttributePage = () => {
       }, 0)
     }
   }, [isModalOpen, isEdit, editingItem, form])
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      setSearchTerm(searchValue)
+      setCurrentPage(1)
+    }, 300)
+
+    return () => clearTimeout(delayDebounce)
+  }, [searchValue])
 
   const filteredData = data.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -126,16 +135,13 @@ const AttributePage = () => {
       <h1>Trang quản lý thuộc tính</h1>
 
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Search
+        <Input
           placeholder="Tìm kiếm theo tên hoặc slug..."
           allowClear
-          enterButton="Tìm"
           size="middle"
           style={{ maxWidth: 350 }}
-          onSearch={value => {
-            setSearchTerm(value)
-            setCurrentPage(1)
-          }}
+          value={searchValue}
+          onChange={e => setSearchValue(e.target.value)}
         />
         <Button type="primary" onClick={openAddModal}>
           Thêm mới
