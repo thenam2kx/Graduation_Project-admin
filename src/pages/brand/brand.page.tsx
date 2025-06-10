@@ -82,21 +82,17 @@ const Brand = () => {
     form.resetFields();
     await ListBrand();
   } catch (error: any) {
-    // Nếu error response có message, hiển thị cho người dùng
     const errMsg = error?.response?.data?.message || "Đã có lỗi xảy ra. Vui lòng thử lại.";
     message.error(errMsg);
   }
 };
 
-// Khi 'name' thay đổi thì update slug
 const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const name = e.target.value;
   form.setFieldsValue({
     slug: createSlug(name),
   });
 };
-
-
 
   const mutation = useMutation({
     mutationFn: async (id: string) => {
