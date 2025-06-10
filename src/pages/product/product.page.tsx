@@ -1,3 +1,8 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import { Button, message, Pagination, Popconfirm, Space, Table } from 'antd'
 import Search from 'antd/es/input/Search'
 import axios from 'axios'
@@ -124,7 +129,10 @@ const ProductPage = () => {
       render: (_: any, record: any) => (
         <Space size="middle">
           <Link to={`/products/edit/${record._id}`}>
-            <Button type="primary">Sửa</Button>
+            <Button
+              icon={<EditOutlined />}
+              className='text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500'
+            />
           </Link>
           <Popconfirm
             title="Bạn có chắc muốn xóa sản phẩm này không?"
@@ -132,9 +140,10 @@ const ProductPage = () => {
             okText="Có"
             cancelText="Không"
           >
-            <Button type="primary" danger>
-              Xóa
-            </Button>
+            <Button
+              icon={<DeleteOutlined />}
+              className='text-red-600 border-red-600 hover:text-red-500 hover:border-red-500'
+            />
           </Popconfirm>
         </Space>
       )

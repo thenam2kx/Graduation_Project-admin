@@ -14,6 +14,7 @@ import {
   Form
 } from 'antd'
 import axios from 'axios'
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 
 
 interface ICateblog {
@@ -177,18 +178,18 @@ const BlogCategoryPage = () => {
             key: 'actions',
             render: (_: any, record: ICateblog) => (
               <Space size="middle">
-                <Button type="primary" onClick={() => openEditModal(record)}>
-                  Sửa
-                </Button>
+                <Button icon={<EditOutlined />}
+                  className='text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500' onClick={() => openEditModal(record)}/>
                 <Popconfirm
                   title="Bạn có chắc muốn xóa danh mục này không?"
                   onConfirm={() => handleDelete(record._id!)}
                   okText="Có"
                   cancelText="Không"
                 >
-                  <Button type="primary" danger>
-                    Xóa
-                  </Button>
+                  <Button
+                    icon={<DeleteOutlined />}
+                    className='text-red-600 border-red-600 hover:text-red-500 hover:border-red-500'
+                  />
                 </Popconfirm>
               </Space>
             )
