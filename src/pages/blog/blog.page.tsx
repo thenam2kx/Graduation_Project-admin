@@ -165,7 +165,7 @@ const BlogPage = () => {
   ]
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24 }} >
       <h1 style={{fontSize: '25px'}} >Quản lý bài viết</h1>
       <p style={{ marginBottom: 16 }}>Danh sách các bài viết hiện có trong hệ thống.</p>
       <Link to='/blogs/add'>
@@ -210,7 +210,7 @@ const BlogPage = () => {
             <p><b>Danh mục:</b> {categories.find(c => c._id === detailModal.data.categoryBlogId)?.name || 'Không có'}</p>
             <p><b>Ngày tạo:</b> {new Date(detailModal.data.createdAt).toLocaleString()}</p>
             <p><b>Nội dung:</b></p>
-            <div style={{ whiteSpace: 'pre-line' }}>{detailModal.data.content}</div>
+            <div dangerouslySetInnerHTML={{ __html: detailModal.data.content }} />
           </div>
         ) : (
           <p>Đang tải...</p>

@@ -5,6 +5,9 @@ import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from '@/config/axios.customize'
 import { useNavigate, useParams } from 'react-router'
+import { useAppDispatch, useAppSelector } from '@/redux/hooks'
+import { UploadOutlined } from '@ant-design/icons'
+import { setIsOpenModalUpload } from '@/redux/slices/media.slice'
 
 const { Title } = Typography
 
@@ -49,6 +52,8 @@ const FormBlogEdit = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { id } = useParams<{ id: string }>()
+  const dispatch = useAppDispatch()
+  const mediaUrl = useAppSelector((state) => state.media.selectedMedia)
 
   // Theo dõi giá trị title
   const titleValue = Form.useWatch('title', form)
@@ -111,6 +116,14 @@ const FormBlogEdit = () => {
     }
   })
 
+    // Khi mediaUrl thay đổi, tự động set vào form
+  useEffect(() => {
+    console.log('mediaUrl effect:', mediaUrl)
+    if (mediaUrl) {
+      form.setFieldsValue({ image: mediaUrl })
+    }
+  }, [mediaUrl, form])
+
   const onFinish = async (values: IBlog) => {
     if (!content || content === '<p><br></p>') {
       return
@@ -121,6 +134,9 @@ const FormBlogEdit = () => {
   return (
     <div style={{ padding: 24 }}>
       <Title level={3}>Chỉnh sửa bài viết</Title>
+        <Button icon={<UploadOutlined />} onClick={() => dispatch(setIsOpenModalUpload(true))}>
+          Tải lên
+        </Button>
       <Form
         layout='vertical'
         form={form}
@@ -178,6 +194,13 @@ const FormBlogEdit = () => {
             modules={modules}
             style={{ minHeight: 200, borderRadius: 6, height: 180, marginBottom: 30 }}
           />
+        </Form.Item>
+
+        <Form.Item
+          label="Hình ảnh (URL)"
+          name="image"
+        >
+          <Input placeholder="Đường dẫn ảnh sẽ tự động điền sau khi tải lên" value={form.getFieldValue('image') || ''} />
         </Form.Item>
 
         <Form.Item
