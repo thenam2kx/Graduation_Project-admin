@@ -81,7 +81,8 @@ const FormBlogAdd = () => {
   useEffect(() => {
     console.log('mediaUrl effect:', mediaUrl)
     if (mediaUrl) {
-      form.setFieldsValue({ image: mediaUrl })
+      const fullImageUrl = mediaUrl.startsWith('http') ? mediaUrl : `http://localhost:8080${mediaUrl}`
+      form.setFieldsValue({ image: fullImageUrl })
     }
   }, [mediaUrl, form])
 
@@ -131,9 +132,6 @@ const FormBlogAdd = () => {
   return (
     <div style={{ padding: 24 }}>
       <Title level={3}>Trang tạo bài viết</Title>
-      <Button icon={<UploadOutlined />} onClick={() => dispatch(setIsOpenModalUpload(true))}>
-        Tải lên
-      </Button>
       <Form
         layout='vertical'
         form={form}
@@ -158,7 +156,7 @@ const FormBlogAdd = () => {
           rules={[{ required: true, message: 'Vui lòng nhập slug' }]}
         >
           <Input
-            placeholder='Nhập slug'
+            placeholder='Slug' disabled
             onChange={() => setIsSlugTouched(true)}
           />
         </Form.Item>
@@ -189,7 +187,7 @@ const FormBlogAdd = () => {
             value={content}
             onChange={setContent}
             modules={modules}
-            style={{ minHeight: 200, borderRadius: 6, height: 180, marginBottom: 30 }}
+            style={{ minHeight: 200, borderRadius: 6, height: 180, marginBottom: 50 }}
           />
         </Form.Item>
 
@@ -197,7 +195,23 @@ const FormBlogAdd = () => {
           label="Hình ảnh (URL)"
           name="image"
         >
-          <Input placeholder="Đường dẫn ảnh sẽ tự động điền sau khi tải lên" value={form.getFieldValue('image') || ''} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <Input placeholder="Đường dẫn ảnh sẽ tự động điền sau khi tải lên" disabled value={form.getFieldValue('image') || ''} />
+            {form.getFieldValue('image') && (
+              <div style={{ marginTop: '10px' }}>
+                <img 
+                  src={form.getFieldValue('image')} 
+                  alt="Hình ảnh bài viết" 
+                  style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', border: '1px solid #f0f0f0', padding: '5px' }} 
+                />
+              </div>
+            )}
+            <div style={{ marginTop: '10px' }}>
+              <Button icon={<UploadOutlined />} onClick={() => dispatch(setIsOpenModalUpload(true))}>
+                {form.getFieldValue('image') ? 'Thay đổi ảnh' : 'Tải ảnh lên'}
+              </Button>
+            </div>
+          </div>
         </Form.Item>
 
         <Form.Item

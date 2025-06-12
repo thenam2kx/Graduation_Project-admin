@@ -49,6 +49,7 @@ const FormBlogEdit = () => {
   const [content, setContent] = useState('')
   const [categories, setCategories] = useState<{ _id: string; name: string }[]>([])
   const [isSlugTouched, setIsSlugTouched] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { id } = useParams<{ id: string }>()
@@ -76,20 +77,24 @@ const FormBlogEdit = () => {
     queryKey: ['blog', id],
     queryFn: async () => {
       const res = await axios.get(`/api/v1/blogs/${id}`)
-      return res.data?.results
+      return res.data
     },
     enabled: !!id
   })
 
   useEffect(() => {
     if (blogData) {
+      console.log('blogData:', blogData) // Để debug
       form.setFieldsValue({
         title: blogData.title,
         slug: blogData.slug,
         categoryBlogId: blogData.categoryBlogId,
-        isPublic: blogData.isPublic
+        content: blogData.content,
+        isPublic: blogData.isPublic,
+        image: blogData.image
       })
-      setContent(blogData.content)
+      setContent(blogData.content || '')
+      setImageUrl(blogData.image || '')
       setIsSlugTouched(false) // reset khi load bài viết mới
     }
   }, [blogData, form])
@@ -118,9 +123,16 @@ const FormBlogEdit = () => {
 
     // Khi mediaUrl thay đổi, tự động set vào form
   useEffect(() => {
-    console.log('mediaUrl effect:', mediaUrl)
+    console.log('mediaUrl ban đầu:', mediaUrl)
     if (mediaUrl) {
-      form.setFieldsValue({ image: mediaUrl })
+      // Thêm tiền tố http://localhost:8080 nếu chưa có
+      const fullImageUrl = mediaUrl.startsWith('http') ? mediaUrl : `http://localhost:8080${mediaUrl}`
+      console.log('Đường dẫn hình ảnh đầy đủ:', fullImageUrl)
+      
+      // Cập nhật giá trị vào form và state
+      form.setFieldsValue({ image: fullImageUrl })
+      setImageUrl(fullImageUrl)
+      console.log('Đã gán đường dẫn vào form:', form.getFieldValue('image'))
     }
   }, [mediaUrl, form])
 
@@ -134,9 +146,6 @@ const FormBlogEdit = () => {
   return (
     <div style={{ padding: 24 }}>
       <Title level={3}>Chỉnh sửa bài viết</Title>
-        <Button icon={<UploadOutlined />} onClick={() => dispatch(setIsOpenModalUpload(true))}>
-          Tải lên
-        </Button>
       <Form
         layout='vertical'
         form={form}
@@ -161,7 +170,7 @@ const FormBlogEdit = () => {
           rules={[{ required: true, message: 'Vui lòng nhập Slug' }]}
         >
           <Input
-            placeholder='Nhập slug'
+            placeholder='Slug' disabled
             onChange={() => setIsSlugTouched(true)}
           />
         </Form.Item>
@@ -192,7 +201,7 @@ const FormBlogEdit = () => {
             value={content}
             onChange={setContent}
             modules={modules}
-            style={{ minHeight: 200, borderRadius: 6, height: 180, marginBottom: 30 }}
+            style={{ minHeight: 200, borderRadius: 6, height: 180, marginBottom: 50 }}
           />
         </Form.Item>
 
@@ -200,7 +209,23 @@ const FormBlogEdit = () => {
           label="Hình ảnh (URL)"
           name="image"
         >
-          <Input placeholder="Đường dẫn ảnh sẽ tự động điền sau khi tải lên" value={form.getFieldValue('image') || ''} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <Input placeholder="Đường dẫn ảnh sẽ tự động điền sau khi tải lên" disabled value={form.getFieldValue('image') || ''} />
+            {imageUrl && (
+              <div style={{ marginTop: '10px' }}>
+                <img 
+                  src={imageUrl} 
+                  alt="Hình ảnh bài viết" 
+                  style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', border: '1px solid #f0f0f0', padding: '5px' }} 
+                />
+              </div>
+            )}
+            <div style={{ marginTop: '10px' }}>
+              <Button icon={<UploadOutlined />} onClick={() => dispatch(setIsOpenModalUpload(true))}>
+                {imageUrl ? 'Thay đổi ảnh' : 'Tải ảnh lên'}
+              </Button>
+            </div>
+          </div>
         </Form.Item>
 
         <Form.Item

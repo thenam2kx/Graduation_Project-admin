@@ -207,6 +207,7 @@ const BlogPage = () => {
           <div>
             <p><b>Tiêu đề:</b> {detailModal.data.title}</p>
             <p><b>Slug:</b> {detailModal.data.slug}</p>
+            <p><b>Image:</b> <img src={detailModal.data.image} alt="Hình ảnh" style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }} /> </p>
             <p><b>Danh mục:</b> {categories.find(c => c._id === detailModal.data.categoryBlogId)?.name || 'Không có'}</p>
             <p><b>Ngày tạo:</b> {new Date(detailModal.data.createdAt).toLocaleString()}</p>
             <p><b>Nội dung:</b></p>
