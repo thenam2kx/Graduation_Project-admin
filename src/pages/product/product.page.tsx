@@ -1,7 +1,3 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import { Button, message, Pagination, Popconfirm, Space, Table } from 'antd'
 import Search from 'antd/es/input/Search'

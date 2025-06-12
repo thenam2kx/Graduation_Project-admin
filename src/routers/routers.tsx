@@ -19,7 +19,7 @@ import AdminContactPage from '@/pages/contact/contact.page'
 import Discounts from '@/pages/discounts/discounts.pages'
 import DiscountsAdd from '@/pages/discounts/discounts.add'
 import DiscountsUpdate from '@/pages/discounts/discounts.update'
-import FormProductAdd from '@/pages/product/form.product.add'
+import FormProductAdd from '@/pages/product/product.form'
 import FormProductEdit from '@/pages/product/form.product.edit'
 import ProductVariantsPage from '@/pages/productVariant/productVariant.page'
 import AttributePage from '@/pages/attribute/attribute.page'
@@ -32,6 +32,7 @@ import NotificationAdd from '@/pages/notification/form.notification.add'
 import ContactAddPage from '@/pages/contact/contact.form.add'
 import OrderPage from '@/pages/orders/orders_items.page'
 import OrderItemAddPage from '@/pages/orders/orders_items.page.add'
+import ProductAddPage from '@/pages/product/product.add.page'
 
 
 const Routers = () => {
@@ -47,7 +48,7 @@ const Routers = () => {
           <Route path='/variants' element={<ProductVariantsPage />} />
           <Route path='/attributes' element={<AttributePage />} />
           <Route path='/variantsat' element={<VariantAttributePage />} />
-          <Route path='/products/add' element={<FormProductAdd />} />
+          <Route path='/products/add' element={<ProductAddPage />} />
           <Route path='/products/edit/:id' element={<FormProductEdit />} />
           <Route path='/cateblog' element={<BlogCategoryPage />} />
           <Route path='/blogCategory' element={<BlogCategoryPage />} />

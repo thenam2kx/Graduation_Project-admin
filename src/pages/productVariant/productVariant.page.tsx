@@ -216,7 +216,7 @@ const ProductVariantPage = () => {
             key: 'productId',
             width: 200,
             render: (productId: any) =>
-              typeof productId === 'object' ? productId.name : 'Không rõ sản phẩm'
+              typeof productId === 'object' ? productId?.name : 'Không rõ sản phẩm'
           },
           {
             title: 'SKU',
