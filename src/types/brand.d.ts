@@ -5,3 +5,4 @@ export interface IBrand {
   avatar: string
   isPublic: boolean
 }
+
