@@ -5,6 +5,9 @@ import { Form, Input, Typography, Button, Switch, Select } from 'antd'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import axios from '@/config/axios.customize'
+import { UploadOutlined } from '@ant-design/icons'
+import { setIsOpenModalUpload } from '@/redux/slices/media.slice'
+import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 
 const { Title } = Typography
 
@@ -48,6 +51,8 @@ const FormBlogAdd = () => {
   const [isSlugTouched, setIsSlugTouched] = useState(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const dispatch = useAppDispatch()
+  const mediaUrl = useAppSelector((state) => state.media.selectedMedia)
 
   // Theo dõi giá trị title
   const titleValue = Form.useWatch('title', form)
@@ -71,6 +76,14 @@ const FormBlogAdd = () => {
       form.setFieldsValue({ slug: toSlug(titleValue || '') })
     }
   }, [titleValue, isSlugTouched, form])
+
+  // Khi mediaUrl thay đổi, tự động set vào form
+  useEffect(() => {
+    console.log('mediaUrl effect:', mediaUrl)
+    if (mediaUrl) {
+      form.setFieldsValue({ image: mediaUrl })
+    }
+  }, [mediaUrl, form])
 
   const addBlogMutation = useMutation({
     mutationFn: async (values: IBlog) => {
@@ -118,6 +131,9 @@ const FormBlogAdd = () => {
   return (
     <div style={{ padding: 24 }}>
       <Title level={3}>Trang tạo bài viết</Title>
+      <Button icon={<UploadOutlined />} onClick={() => dispatch(setIsOpenModalUpload(true))}>
+        Tải lên
+      </Button>
       <Form
         layout='vertical'
         form={form}
@@ -175,6 +191,13 @@ const FormBlogAdd = () => {
             modules={modules}
             style={{ minHeight: 200, borderRadius: 6, height: 180, marginBottom: 30 }}
           />
+        </Form.Item>
+
+        <Form.Item
+          label="Hình ảnh (URL)"
+          name="image"
+        >
+          <Input placeholder="Đường dẫn ảnh sẽ tự động điền sau khi tải lên" value={form.getFieldValue('image') || ''} />
         </Form.Item>
 
         <Form.Item

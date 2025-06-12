@@ -1,3 +1,4 @@
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import { Button, message, Pagination, Popconfirm, Space, Table } from 'antd'
 import Search from 'antd/es/input/Search'
 import axios from 'axios'
@@ -10,8 +11,8 @@ const ProductPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
   const [searchTerm, setSearchTerm] = useState('')
+  const [searchValue, setSearchValue] = useState('')
   const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null)
-
 
   const fetchData = async () => {
     setLoading(true)
@@ -31,6 +32,15 @@ const ProductPage = () => {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setSearchTerm(searchValue)
+      setCurrentPage(1)
+    }, 500)
+
+    return () => clearTimeout(timeout)
+  }, [searchValue])
+
   const handleDelete = async (id: string) => {
     try {
       await axios.delete(`http://localhost:8080/api/v1/products/${id}`)
@@ -46,7 +56,6 @@ const ProductPage = () => {
     if (pageSize) setPageSize(pageSize)
   }
 
-  // --- FILTER & SORT ---
   const filteredData = data.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -116,7 +125,10 @@ const ProductPage = () => {
       render: (_: any, record: any) => (
         <Space size="middle">
           <Link to={`/products/edit/${record._id}`}>
-            <Button type="primary">Sửa</Button>
+            <Button
+              icon={<EditOutlined />}
+              className='text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500'
+            />
           </Link>
           <Popconfirm
             title="Bạn có chắc muốn xóa sản phẩm này không?"
@@ -124,9 +136,10 @@ const ProductPage = () => {
             okText="Có"
             cancelText="Không"
           >
-            <Button type="primary" danger>
-              Xóa
-            </Button>
+            <Button
+              icon={<DeleteOutlined />}
+              className='text-red-600 border-red-600 hover:text-red-500 hover:border-red-500'
+            />
           </Popconfirm>
         </Space>
       )
@@ -149,10 +162,8 @@ const ProductPage = () => {
         enterButton="Tìm"
         size="middle"
         style={{ marginBottom: 16, maxWidth: 300 }}
-        onSearch={value => {
-          setSearchTerm(value)
-          setCurrentPage(1)
-        }}
+        onChange={e => setSearchValue(e.target.value)}
+        value={searchValue}
       />
 
       <Table
