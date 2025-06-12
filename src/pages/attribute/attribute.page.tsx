@@ -12,8 +12,8 @@ import {
   Form
 } from 'antd'
 import axios from 'axios'
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 
-const { Search } = Input
 
 interface IAttribute {
   _id: string
@@ -32,6 +32,7 @@ const AttributePage = () => {
   const [isEdit, setIsEdit] = useState(false)
   const [form] = Form.useForm<IAttribute>()
   const [editingItem, setEditingItem] = useState<IAttribute | null>(null)
+  const [searchValue, setSearchValue] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
   const fetchData = async () => {
@@ -60,6 +61,15 @@ const AttributePage = () => {
       }, 0)
     }
   }, [isModalOpen, isEdit, editingItem, form])
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      setSearchTerm(searchValue)
+      setCurrentPage(1)
+    }, 300)
+
+    return () => clearTimeout(delayDebounce)
+  }, [searchValue])
 
   const filteredData = data.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -126,16 +136,13 @@ const AttributePage = () => {
       <h1>Trang quản lý thuộc tính</h1>
 
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Search
+        <Input
           placeholder="Tìm kiếm theo tên hoặc slug..."
           allowClear
-          enterButton="Tìm"
           size="middle"
           style={{ maxWidth: 350 }}
-          onSearch={value => {
-            setSearchTerm(value)
-            setCurrentPage(1)
-          }}
+          value={searchValue}
+          onChange={e => setSearchValue(e.target.value)}
         />
         <Button type="primary" onClick={openAddModal}>
           Thêm mới
@@ -185,21 +192,20 @@ const AttributePage = () => {
             render: (_: any, record: IAttribute) => (
               <Space size="middle">
                 <Button
-                  type="primary"
-                  size="small"
+                  icon={<EditOutlined />}
+                  className='text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500'
                   onClick={() => openEditModal(record)}
-                >
-                  Sửa
-                </Button>
+                />
                 <Popconfirm
                   title="Bạn có chắc muốn xóa thuộc tính này không?"
                   onConfirm={() => handleDelete(record._id)}
                   okText="Có"
                   cancelText="Không"
                 >
-                  <Button type="primary" danger size="small">
-                    Xóa
-                  </Button>
+                  <Button
+                    icon={<DeleteOutlined />}
+                    className='text-red-600 border-red-600 hover:text-red-500 hover:border-red-500'
+                  />
                 </Popconfirm>
               </Space>
             )
