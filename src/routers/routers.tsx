@@ -33,6 +33,7 @@ import ContactAddPage from '@/pages/contact/contact.form.add'
 import OrderPage from '@/pages/orders/orders_items.page'
 import OrderItemAddPage from '@/pages/orders/orders_items.page.add'
 import ProductAddPage from '@/pages/product/product.add.page'
+import ProductUpdatePage from '@/pages/product/product.update.page'
 
 
 const Routers = () => {
@@ -49,7 +50,7 @@ const Routers = () => {
           <Route path='/attributes' element={<AttributePage />} />
           <Route path='/variantsat' element={<VariantAttributePage />} />
           <Route path='/products/add' element={<ProductAddPage />} />
-          <Route path='/products/edit/:id' element={<FormProductEdit />} />
+          <Route path='/products/edit/:id' element={<ProductUpdatePage />} />
           <Route path='/cateblog' element={<BlogCategoryPage />} />
           <Route path='/blogCategory' element={<BlogCategoryPage />} />
           <Route path="/categories" element={<CategoryList />} />

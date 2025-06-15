@@ -1,4 +1,20 @@
-import { ContactsOutlined, ControlOutlined, DashboardOutlined, FileImageOutlined, InsertRowRightOutlined, LogoutOutlined, OrderedListOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons'
+import {
+  ApartmentOutlined,
+  CodeOutlined,
+  CommentOutlined,
+  ContactsOutlined,
+  ControlOutlined,
+  DashboardOutlined,
+  DatabaseOutlined,
+  FileImageOutlined,
+  IdcardOutlined,
+  InsertRowRightOutlined,
+  LogoutOutlined,
+  OrderedListOutlined,
+  PercentageOutlined,
+  ProductOutlined,
+  UserOutlined
+} from '@ant-design/icons'
 import { Button, Menu, MenuProps } from 'antd'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { setStateSignout } from '@/redux/slices/auth.slice'
@@ -18,48 +34,104 @@ const items: MenuProps['items'] = [
         key: '/',
         icon: <DashboardOutlined />,
         label: <Link to={'/'}>Thống kê</Link>
-      }
+      },
+      {
+        key: '/media',
+        icon: <FileImageOutlined />,
+        label: <Link to={'/media'}>Media</Link>
+      },
     ]
   },
   {
     key: 'management',
     type: 'group',
-    label: 'Quản lý',
+    label: 'Sản phẩm',
+    children: [
+      {
+        key: '/products',
+        icon: <ProductOutlined />,
+        label: <Link to={'/products'}>Danh sách</Link>,
+      },
+      {
+        key: '/attributes',
+        icon: <ApartmentOutlined />,
+        label: <Link to={'/attributes'}>Thuộc tính</Link>
+      },
+      {
+        key: '/categories',
+        icon: <DatabaseOutlined />,
+        label: <Link to={'/categories'}>Danh mục</Link>
+      },
+      {
+        key: '/brand',
+        icon: <IdcardOutlined />,
+        label: <Link to={'/brand'}>Thương hiệu</Link>
+      },
+      // {
+      //   key: '',
+      //   icon: <ProductOutlined />,
+      //   label: 'Sản phẩm',
+      //   children: [
+      //     {
+      //       key: '/products',
+      //       icon: <ProductOutlined />,
+      //       label: <Link to={'/products'}>Danh sách</Link>,
+      //     },
+      //     {
+      //       key: '/attributes',
+      //       icon: <ProductOutlined />,
+      //       label: <Link to={'/attributes'}>Thuộc tính</Link>
+      //     },
+      //     {
+      //       key: '/variants',
+      //       icon: <ProductOutlined />,
+      //       label: <Link to={'/variants'}>Biến thể</Link>
+      //     },
+      //     {
+      //       key: '/variantsat',
+      //       icon: <ProductOutlined />,
+      //       label: <Link to={'/variantsat'}>Biến thể thuộc tính</Link>
+      //     },
+      //     {
+      //       key: '/categories',
+      //       icon: <ProductOutlined />,
+      //       label: <Link to={'/categories'}>Danh mục</Link>
+      //     },
+      //     {
+      //       key: '/brand',
+      //       icon: <ProductOutlined />,
+      //       label: <Link to={'/brand'}>Thương hiệu</Link>
+      //     },
+      //   ]
+      // },
+    ]
+  },
+  {
+    key: 'order',
+    type: 'group',
+    label: 'Bán hàng',
+    children: [
+      {
+        key: '/orderitems',
+        icon: <OrderedListOutlined />,
+        label: <Link to={'/orderitems'}>Đơn hàng</Link>
+      },
+      {
+        key: '/discounts',
+        icon: <PercentageOutlined />,
+        label: <Link to={'/discounts'}>Mã giảm giá</Link>
+      },
+    ]
+  },
+  {
+    key: 'auth',
+    type: 'group',
+    label: 'Tài khoản',
     children: [
       {
         key: '/users',
         icon: <UserOutlined />,
         label: <Link to={'/users'} style={{ color: 'inherit' }}>Khách hàng</Link>
-      },
-      {
-        key: '/products',
-        icon: <ProductOutlined />,
-        label: <Link to={'/products'}>Sản phẩm</Link>
-      },
-      {
-        key: '/variants',
-        icon: <ProductOutlined />,
-        label: <Link to={'/variants'}>Biến thể sản phẩm</Link>
-      },
-      {
-        key: '/attributes',
-        icon: <ProductOutlined />,
-        label: <Link to={'/attributes'}>Thuộc tính</Link>
-      },
-      {
-        key: '/variantsat',
-        icon: <ProductOutlined />,
-        label: <Link to={'/variantsat'}>Biến thể thuộc tính</Link>
-      },
-      {
-        key: '/cateblog',
-        icon: <ProductOutlined />,
-        label: <Link to={'/cateblog'} style={{ color: 'inherit' }}>Danh mục bài viết</Link>
-      },
-      {
-        key: '/categories',
-        icon: <ProductOutlined />,
-        label: <Link to={'/categories'}>Danh mục</Link>
       },
       {
         key: '/roles',
@@ -71,41 +143,33 @@ const items: MenuProps['items'] = [
         icon: <InsertRowRightOutlined />,
         label: <Link to={'/permissions'}>Quyền hạn</Link>
       },
+    ]
+  },
+  {
+    key: '/settings',
+    type: 'group',
+    label:  'khác',
+    children: [
       {
         key: '/blogs',
-        icon: <ProductOutlined />,
+        icon: <CodeOutlined />,
         label: <Link to={'/blogs'}>Bài viết</Link>
       },
       {
-        key: '/brand',
+        key: '/cateblog',
         icon: <ProductOutlined />,
-        label: <Link to={'/brand'}>Thương hiệu</Link>
+        label: <Link to={'/cateblog'} style={{ color: 'inherit' }}>Danh mục bài viết</Link>
       },
       {
-        key: '/discounts',
-        icon: <ProductOutlined />,
-        label: <Link to={'/discounts'}>Mã giảm giá</Link>
+        key: '/notification',
+        icon: <CommentOutlined />,
+        label: <Link to={'/notification'}>Thông báo</Link>
       },
       {
         key: '/contact',
         icon: <ContactsOutlined />,
         label: <Link to={'/contact'}>Liên hệ</Link>
       },
-      {
-        key: '/media',
-        icon: <FileImageOutlined />,
-        label: <Link to={'/media'}>Media</Link>
-      },
-      {
-        key: '/notification',
-        icon: <ProductOutlined />,
-        label: <Link to={'/notification'}>Thông báo</Link>
-      },
-      {
-        key: '/orderitems',
-        icon: <OrderedListOutlined />,
-        label: <Link to={'/orderitems'}>Đơn hàng</Link>
-      }
     ]
   }
 ]
@@ -142,16 +206,30 @@ const AppSidebar = () => {
   };
 
   return (
-    <Sider trigger={null} collapsible collapsed={!isOpenDrawer}>
+    <Sider
+      trigger={null}
+      collapsible
+      collapsed={!isOpenDrawer}
+      width={240}
+      style={{
+        overflow: 'auto',
+        height: '100vh',
+        position: 'sticky',
+        insetInlineStart: 0,
+        top: 0,
+        bottom: 0,
+        scrollbarWidth: 'thin',
+        scrollbarGutter: 'stable',
+      }}
+    >
       <div style={{
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         height: '100%',
-        padding: '0 0 20px 0'
+        padding: '0 0 20px 0',
       }}>
         <section>
-          <div style={{ height: 64 }} />
 
           <Menu
             theme='dark'
