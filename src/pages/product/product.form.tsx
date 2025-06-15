@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Form,
   Input,
@@ -11,8 +11,8 @@ import {
   Row,
   Col,
   message,
-  Tag,
   Divider,
+  Image,
 } from "antd"
 import { PlusOutlined, DeleteOutlined, UploadOutlined } from "@ant-design/icons"
 import { convertSlugUrl } from "@/utils/utils"
@@ -23,14 +23,24 @@ import { fetchAllBrandsAPI } from "@/services/brand-service/brand.apis"
 import { BRAND_QUERY_KEYS } from "@/services/brand-service/brand.keys"
 import { ATTRIBUTE_QUERY_KEYS } from "@/services/product-service/product.key"
 import { fetchAllAttributes } from "@/services/product-service/attributes.apis"
+import { useAppDispatch, useAppSelector } from "@/redux/hooks"
+import { setIsOpenModalUpload } from "@/redux/slices/media.slice"
 
 const { TextArea } = Input
 const { Option } = Select
 
-export default function ProductCreator() {
+interface IProps {
+  onSubmit?: (data: any) => void,
+  initialValues?: IProductInitialData
+}
+
+const ProductForm = (props: IProps) => {
+  const { onSubmit, initialValues } = props
   const [form] = Form.useForm()
-  const [hasVariants, setHasVariants] = useState(false)
+  const [hasVariants, setHasVariants] = useState<boolean>(false)
   const [variants, setVariants] = useState<IVariants[]>([])
+  const dispatch = useAppDispatch()
+  const selectedMedia = useAppSelector((state) => state.media.selectedMedia)
 
   const { data: listCategories } = useQuery({
     queryKey: [CATEGORY_QUERY_KEYS.FETCH_ALL],
@@ -90,40 +100,38 @@ export default function ProductCreator() {
     setVariants([...variants, newVariant])
   }
 
-  const removeVariant = (id: string) => {
-    setVariants(variants.filter((variant) => variant._id !== id))
-  }
-
   const updateVariant = (id: string, field: keyof IVariants, value: any) => {
-    setVariants(variants.map((variant) => (variant._id === id ? { ...variant, [field]: value } : variant)))
+    setVariants(
+      variants.map((variant) =>
+        variant._id === id ? { ...variant, [field]: value } : variant,
+      ),
+    )
   }
 
   const updateVariantAttribute = (variantId: string, attributeId: string, value: string) => {
-    setVariants(
-      variants.map((variant) => {
-        if (variant._id === variantId) {
-          const existingAttrIndex = variant.attributes.findIndex((attr) => attr._id === attributeId)
-          const selectedAttribute = listAttributes?.find((attr) => attr._id === attributeId)
-
-          if (!selectedAttribute) return variant
-
-          const newAttribute: IAttributes = {
-            _id: attributeId,
-            name: selectedAttribute.name,
-            slug: convertSlugUrl(value),
+  const trimmedValue = value.trim();
+  setVariants(
+    variants.map((variant) =>
+      variant._id === variantId
+        ? {
+            ...variant,
+            attributes: trimmedValue
+              ? variant.attributes.some((attr) => attr._id === attributeId)
+                ? variant.attributes.map((attr) =>
+                    attr._id === attributeId
+                      ? { ...attr, name: trimmedValue, slug: convertSlugUrl(trimmedValue), value: trimmedValue }
+                      : attr
+                  )
+                : [...variant.attributes, { _id: attributeId, name: trimmedValue, slug: convertSlugUrl(trimmedValue), value: trimmedValue }]
+              : variant.attributes.filter((attr) => attr._id !== attributeId),
           }
-
-          if (existingAttrIndex >= 0) {
-            const newAttributes = [...variant.attributes]
-            newAttributes[existingAttrIndex] = newAttribute
-            return { ...variant, attributes: newAttributes }
-          } else {
-            return { ...variant, attributes: [...variant.attributes, newAttribute] }
-          }
-        }
-        return variant
-      }),
+        : variant
     )
+  );
+};
+
+  const removeVariant = (id: string) => {
+    setVariants(variants.filter((variant) => variant._id !== id))
   }
 
   const removeVariantAttribute = (variantId: string, attributeId: string) => {
@@ -136,14 +144,68 @@ export default function ProductCreator() {
     )
   }
 
-  const onFinish = (values: any) => {
-    const productData: IProductFormData = {
-      ...values,
-      variants: hasVariants ? variants : undefined,
+  useEffect(() => {
+    if (initialValues) {
+      form.setFieldsValue({
+        name: initialValues.name,
+        category: initialValues.categoryId?._id,
+        brand: initialValues.brandId?._id,
+        price: initialValues.price,
+        stock: initialValues.stock,
+        // status: initialValues?.status || "Active",
+        description: initialValues.description,
+      });
+      setHasVariants(!!initialValues.variants);
+      if (initialValues.variants) {
+        setVariants(initialValues.variants?.map((variant: any) => {
+          console.log('🚀 ~ setVariants ~ variant:', variant)
+          return {
+            _id: variant._id || Date.now().toString(),
+            sku: variant.sku || `SKU-${Date.now()}`,
+            stock: variant.stock || 0,
+            price: variant.price || 0,
+            image: variant.image ? variant.image[0] : "",
+            attributes: variant.variant_attributes?.map((attr: any) => ({
+              _id: attr.attributeId || Date.now().toString(),
+              name: attr.attributeId.name,
+              slug: convertSlugUrl(attr.value || attr.name),
+              value: attr.value,
+            })),
+          }
+        }));
+      }
     }
+  }, [initialValues])
+
+  const onFinish = (values: any) => {
+    const slug = convertSlugUrl(values.name);
+    const images = selectedMedia ? [`http://localhost:8080${selectedMedia}`] : [];
+    const productData = {
+    name: values.name,
+    slug: slug,
+    price: hasVariants ? undefined : values.price,
+    description: values.description,
+    categoryId: values.category,
+    brandId: values.brand,
+    image: images,
+    stock: hasVariants ? undefined : values.stock,
+    capacity: values.capacity || 0,
+    variants: hasVariants && variants
+      ? variants.map((variant) => ({
+          sku: variant.sku,
+          price: variant.price,
+          stock: variant.stock,
+          image: variant.image,
+          attributes: variant.attributes.map((attr) => ({
+            attributeId: attr._id || attr._id,
+            value: attr.value || attr.name,
+          })),
+        }))
+      : undefined,
+    };
+    onSubmit && onSubmit(productData)
 
     console.log("Product Data:", productData)
-    message.success("Product created successfully!")
   }
 
 
@@ -163,8 +225,36 @@ export default function ProductCreator() {
   }
 
   return (
-    <Form form={form} layout="vertical" onFinish={onFinish} className="space-y-6">
-      <Card type="inner" title="Basic Information" className="mb-6">
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={onFinish}
+      className="space-y-6"
+    >
+      {
+        selectedMedia && (
+          <div className="flex justify-center mb-6">
+            <Image
+              width={100}
+              src={selectedMedia.startsWith("http") ? selectedMedia : `http://localhost:8080${selectedMedia}`}
+            />
+          </div>
+        )
+      }
+      <Card type="inner" title="Thông tin cơ bản" className="mb-6" extra={
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-600">Biến thể</span>
+          <Switch
+            checked={hasVariants}
+            onChange={(checked) => {
+              setHasVariants(checked)
+              if (!checked) {
+                setVariants([])
+              }
+            }}
+          />
+        </div>
+      }>
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
@@ -203,18 +293,14 @@ export default function ProductCreator() {
           </Col>
         </Row>
 
-        <Form.Item name="description" label="Mô tả">
-          <TextArea rows={4} placeholder="Nhập mô tả sản phẩm" />
-        </Form.Item>
-
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item
               name="price"
               label="Giá ($)"
-              rules={[{ required: true, message: "Vui lòng nhập giá" }]}
+              rules={[{ required: !hasVariants, message: "Vui lòng nhập giá" }]}
             >
-              <InputNumber min={0} step={0.01} placeholder="0.00" size="large" style={{ width: "100%" }} />
+              <InputNumber min={0} step={0.01} placeholder="0.00" size="large" disabled={hasVariants} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -239,188 +325,140 @@ export default function ProductCreator() {
           </Col>
         </Row>
 
-        <Form.Item name="images" label="Product Images">
-          <Upload>
-            <div className="flex flex-col items-center">
-              <UploadOutlined className="text-2xl mb-2" />
-              <div>Upload Images</div>
-            </div>
-          </Upload>
+        <Form.Item name="description" label="Mô tả">
+          <TextArea rows={4} placeholder="Nhập mô tả sản phẩm" />
         </Form.Item>
+
+        {/* <Form.Item name="images" label="Hình ảnh sản phẩm">
+          <Input type="text" placeholder="Nhập URL hình ảnh" />
+        </Form.Item> */}
+        <Button
+          type="primary"
+          style={{ marginTop: 4 }}
+          onClick={() => dispatch(setIsOpenModalUpload(true))}
+        >
+          Thêm ảnh
+        </Button>
       </Card>
 
-      {/* Variants Section */}
-      <Card type="inner" title="Biến thể sản phẩm" className="mb-6">
-        {/* <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Kích hoạt biến thể sản phẩm</span>
-            <Switch
-              checked={hasVariants}
-              onChange={(checked) => {
-                setHasVariants(checked)
-                if (!checked) {
-                  setVariants([])
-                }
-              }}
-            />
-          </div>
-        </div> */}
+      {
+        hasVariants && (
+          <Card type="inner" title="Biến thể sản phẩm" className="mb-6">
+            <div className="space-y-6">
+              <div className="space-y-4">
+                {variants.map((variant, index) => (
+                  <Card
+                    key={variant._id}
+                    size="small"
+                    title={`Biến thể ${index + 1}`}
+                    extra={
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => removeVariant(variant._id!)}
+                      >
+                        Xóa
+                      </Button>
+                    }
+                    className="border-l-4 border-l-blue-500"
+                  >
+                    <Row gutter={16}>
+                      <Col span={6}>
+                        <div className="mb-3">
+                          <label className="block text-sm font-medium mb-1">SKU *</label>
+                          <Input placeholder="Mã SKU" />
+                        </div>
+                      </Col>
+                      <Col span={6}>
+                        <div className="mb-3">
+                          <label className="block text-sm font-medium mb-1">Giá ($) *</label>
+                          <InputNumber
+                            min={0}
+                            step={0.01}
+                            placeholder="0.00"
+                            style={{ width: "100%" }}
+                          />
+                        </div>
+                      </Col>
+                      <Col span={6}>
+                        <div className="mb-3">
+                          <label className="block text-sm font-medium mb-1">Số lượng tồn kho *</label>
+                          <InputNumber
+                            min={0}
+                            value={variant.stock}
+                            onChange={(value) => updateVariant(variant._id!, "stock", value || 0)}
+                            placeholder="Số lượng tồn kho"
+                            style={{ width: "100%" }}
+                          />
+                        </div>
+                      </Col>
+                      <Col span={6}>
+                        <div className="mb-3">
+                          <label className="block text-sm font-medium mb-1">Hình ảnh</label>
+                          <Upload {...variantUploadProps}>
+                            <Button icon={<UploadOutlined />} size="small">
+                              Tải lên
+                            </Button>
+                          </Upload>
+                        </div>
+                      </Col>
+                    </Row>
 
-        <div className="space-y-6">
-          {/* Attribute Management */}
-          {/* <Card size="small" title="Quản lý thuộc tính" className="bg-gray-50">
-            <div className="mb-4">
-              <div className="flex flex-wrap gap-2 mb-3">
-                {availableAttributes.map((attr) => (
-                  <Tag key={attr._id} closable onClose={() => removeAttribute(attr._id!)} className="px-3 py-1">
-                    {attr.name} ({attr.slug})
-                  </Tag>
+                    <Divider orientation="left" orientationMargin="0">
+                      <span className="text-sm">Thuộc tính</span>
+                    </Divider>
+
+                    <div className="space-y-3">
+                      {listAttributes && listAttributes?.length > 0 && listAttributes.map((attr) => {
+                        const variantAttr = variant.attributes?.find((va) => va._id === attr._id)
+                        return (
+                          <Row key={attr._id} gutter={8} align="middle">
+                            <Col span={6}>
+                              <span className="text-sm font-medium">{attr.name}:</span>
+                            </Col>
+                            <Col span={12}>
+                              <Input
+                                placeholder={`Nhập ${attr.name.toLowerCase()}`}
+                                value={variantAttr?.name || ""}
+                                onChange={(e) => updateVariantAttribute(variant._id!, attr._id!, e.target.value)}
+                              />
+                            </Col>
+                            <Col span={6}>
+                              <span className="text-xs text-gray-500">
+                                Slug: {variantAttr?.slug || "auto-generated"}
+                              </span>
+                              {variantAttr && (
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  danger
+                                  onClick={() => removeVariantAttribute(variant._id!, attr._id!)}
+                                >
+                                  Xóa
+                                </Button>
+                              )}
+                            </Col>
+                          </Row>
+                        )
+                      })}
+                    </div>
+                  </Card>
                 ))}
               </div>
 
-              <Row gutter={8}>
-                <Col span={8}>
-                  <Input
-                    placeholder="Tên thuộc tính"
-                    value={newAttribute.name}
-                    onChange={(e) => handleAttributeNameChange(e.target.value)}
-                  />
-                </Col>
-                <Col span={8}>
-                  <Input
-                    placeholder="Slug (tự động tạo)"
-                    value={newAttribute.slug}
-                    onChange={(e) => setNewAttribute({ ...newAttribute, slug: e.target.value })}
-                  />
-                </Col>
-                <Col span={8}>
-                  <Button onClick={addAttribute} type="dashed" className="w-full">
-                    Thêm thuộc tính
-                  </Button>
-                </Col>
-              </Row>
-            </div>
-          </Card> */}
-
-          {/* Variants List */}
-          <div className="space-y-4">
-            {variants.map((variant, index) => (
-              <Card
-                key={variant._id}
-                size="small"
-                title={`Biến thể ${index + 1}`}
-                extra={
-                  <Button
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => removeVariant(variant._id!)}
-                  >
-                    Xóa
-                  </Button>
-                }
-                className="border-l-4 border-l-blue-500"
+              <Button
+                type="dashed"
+                onClick={addVariant}
+                icon={<PlusOutlined />}
+                className="w-full h-12 border-2 border-dashed border-blue-300 text-blue-600 hover:border-blue-500 hover:text-blue-700"
               >
-                <Row gutter={16}>
-                  <Col span={6}>
-                    <div className="mb-3">
-                      <label className="block text-sm font-medium mb-1">SKU *</label>
-                      <Input
-                        value={variant.sku}
-                        onChange={(e) => updateVariant(variant._id!, "sku", e.target.value)}
-                        placeholder="Mã SKU"
-                      />
-                    </div>
-                  </Col>
-                  <Col span={6}>
-                    <div className="mb-3">
-                      <label className="block text-sm font-medium mb-1">Giá ($) *</label>
-                      <InputNumber
-                        min={0}
-                        step={0.01}
-                        value={variant.price}
-                        onChange={(value) => updateVariant(variant._id!, "price", value || 0)}
-                        placeholder="0.00"
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                  </Col>
-                  <Col span={6}>
-                    <div className="mb-3">
-                      <label className="block text-sm font-medium mb-1">Số lượng tồn kho *</label>
-                      <InputNumber
-                        min={0}
-                        value={variant.stock}
-                        onChange={(value) => updateVariant(variant._id!, "stock", value || 0)}
-                        placeholder="Số lượng tồn kho"
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                  </Col>
-                  <Col span={6}>
-                    <div className="mb-3">
-                      <label className="block text-sm font-medium mb-1">Variant Image</label>
-                      <Upload {...variantUploadProps}>
-                        <Button icon={<UploadOutlined />} size="small">
-                          Tải lên
-                        </Button>
-                      </Upload>
-                    </div>
-                  </Col>
-                </Row>
-
-                <Divider orientation="left" orientationMargin="0">
-                  <span className="text-sm">Attributes</span>
-                </Divider>
-
-                <div className="space-y-3">
-                  {listAttributes && listAttributes?.length > 0 && listAttributes.map((attr) => {
-                    const variantAttr = variant.attributes.find((va) => va._id === attr._id)
-                    return (
-                      <Row key={attr._id} gutter={8} align="middle">
-                        <Col span={6}>
-                          <span className="text-sm font-medium">{attr.name}:</span>
-                        </Col>
-                        <Col span={12}>
-                          <Input
-                            placeholder={`Nhập ${attr.name.toLowerCase()}`}
-                            value={variantAttr?.name || ""}
-                            onChange={(e) => updateVariantAttribute(variant._id!, attr._id!, e.target.value)}
-                          />
-                        </Col>
-                        <Col span={6}>
-                          <span className="text-xs text-gray-500">
-                            Slug: {variantAttr?.slug || "auto-generated"}
-                          </span>
-                          {variantAttr && (
-                            <Button
-                              type="text"
-                              size="small"
-                              danger
-                              onClick={() => removeVariantAttribute(variant._id!, attr._id!)}
-                            >
-                              Xóa
-                            </Button>
-                          )}
-                        </Col>
-                      </Row>
-                    )
-                  })}
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          <Button
-            type="dashed"
-            onClick={addVariant}
-            icon={<PlusOutlined />}
-            className="w-full h-12 border-2 border-dashed border-blue-300 text-blue-600 hover:border-blue-500 hover:text-blue-700"
-          >
-            Thêm biến thể mới
-          </Button>
-        </div>
-      </Card>
+                Thêm biến thể mới
+              </Button>
+            </div>
+          </Card>
+        )
+      }
 
       {/* Submit Buttons */}
       <div className="flex justify-end gap-5 pt-6">
@@ -428,9 +466,11 @@ export default function ProductCreator() {
           Đặt lại
         </Button>
         <Button type="primary" htmlType="submit" size="large" className="px-8">
-          Tạo sản phẩm
+          { initialValues ? 'Cập nhật sản phẩm' : 'Tạo sản phẩm' }
         </Button>
       </div>
     </Form>
   )
 }
+
+export default ProductForm
