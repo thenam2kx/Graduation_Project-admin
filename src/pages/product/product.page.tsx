@@ -1,78 +1,53 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
+import { deleteProductAPI, fetchAllProducts } from '@/services/product-service/product.apis'
+import { PRODUCT_QUERY_KEYS } from '@/services/product-service/product.key'
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
-import { Button, message, Pagination, Popconfirm, Space, Table } from 'antd'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Button, message, Popconfirm, Space, Table } from 'antd'
 import Search from 'antd/es/input/Search'
-import axios from 'axios'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 
 const ProductPage = () => {
-  const [data, setData] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5)
-  const [searchTerm, setSearchTerm] = useState('')
   const [searchValue, setSearchValue] = useState('')
-  const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null)
+  const [pagination, setPagination] = useState<IPagination>({ current: 1, pageSize: 10, total: 10 })
+  const queryClient = useQueryClient()
 
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const res = await axios.get('http://localhost:8080/api/v1/products')
-      const productsData = res.data.data?.results || res.data.results || []
-      setData(productsData)
-    } catch (err) {
-      message.error('Lấy danh sách sản phẩm thất bại!')
-      setData([])
-    } finally {
-      setLoading(false)
+  const { data: listProducts, isLoading } = useQuery({
+    queryKey: [PRODUCT_QUERY_KEYS.FETCH_ALL, pagination.current, pagination.pageSize],
+    queryFn: async () => {
+      const params = `?current=${pagination.current}&pageSize=${pagination.pageSize}&sort=-createdAt`
+      const res = await fetchAllProducts(params)
+      if (res && res.data) {
+        return res.data
+      } else {
+        message.error('Lấy danh sách sản phẩm thất bại!')
+      }
     }
-  }
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setSearchTerm(searchValue)
-      setCurrentPage(1)
-    }, 500)
-
-    return () => clearTimeout(timeout)
-  }, [searchValue])
-
-  const handleDelete = async (id: string) => {
-    try {
-      await axios.delete(`http://localhost:8080/api/v1/products/${id}`)
-      message.success('Xóa sản phẩm thành công!')
-      fetchData()
-    } catch (error) {
-      message.error('Xóa sản phẩm thất bại!')
-    }
-  }
-
-  const handlePageChange = (page: number, pageSize?: number) => {
-    setCurrentPage(page)
-    if (pageSize) setPageSize(pageSize)
-  }
-
-  const filteredData = data.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const sortedData = [...filteredData].sort((a, b) => {
-    if (!sortOrder) return 0
-    return sortOrder === 'ascend' ? a.price - b.price : b.price - a.price
   })
 
-  const paginatedData = sortedData.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  )
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await deleteProductAPI(id)
+      if (res && res.data) {
+        message.success('Xóa sản phẩm thành công!')
+        return res.data
+      } else {
+        message.error('Xóa sản phẩm thất bại!')
+      }
+    },
+    onSuccess: () => {
+      message.success('Xóa sản phẩm thành công!')
+      // Refetch the product list after deletion
+      queryClient.invalidateQueries({ queryKey: [PRODUCT_QUERY_KEYS.FETCH_ALL] })
+    },
+    onError: () => {
+      message.error('Xóa sản phẩm thất bại!')
+    }
+  })
+
+  const handleDelete = (id: string) => {
+    deleteProductMutation.mutate(id)
+  }
 
   const columns = [
     {
@@ -96,9 +71,6 @@ const ProductPage = () => {
       title: 'Giá',
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `${price.toLocaleString()} ₫`,
-      sorter: true,
-      sortOrder: sortOrder
     },
     {
       title: 'Tồn kho',
@@ -173,26 +145,18 @@ const ProductPage = () => {
       <Table
         rowKey="_id"
         columns={columns}
-        dataSource={paginatedData}
-        loading={loading}
-        pagination={false}
-        onChange={(_, __, sorter: any) => {
-          if (sorter.order === 'ascend' || sorter.order === 'descend') {
-            setSortOrder(sorter.order)
-          } else {
-            setSortOrder(null)
-          }
+        dataSource={listProducts?.results || []}
+        loading={isLoading}
+        pagination={{
+          total: listProducts?.meta.total || 0,
+          pageSize: listProducts?.meta.pageSize || 10,
+          current: listProducts?.meta.current || 1,
+          onChange: (page, pageSize) => setPagination({ current: page, pageSize, total: listProducts?.meta.total || 0 }),
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} sản phẩm`
         }}
       />
-
-      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
-        <Pagination
-          current={currentPage}
-          pageSize={pageSize}
-          total={filteredData.length}
-          onChange={handlePageChange}
-        />
-      </div>
     </div>
   )
 }
