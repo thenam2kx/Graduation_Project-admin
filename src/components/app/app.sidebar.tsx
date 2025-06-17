@@ -13,6 +13,7 @@ import {
   OrderedListOutlined,
   PercentageOutlined,
   ProductOutlined,
+  ThunderboltOutlined,
   UserOutlined
 } from '@ant-design/icons'
 import { Button, Menu, MenuProps } from 'antd'
@@ -119,7 +120,12 @@ const items: MenuProps['items'] = [
       {
         key: '/discounts',
         icon: <PercentageOutlined />,
-        label: <Link to={'/discounts'}>Mã giảm giá</Link>
+        label: <Link to={'/discounts'}>Mã giảm giá</Link>
+      },
+      {
+        key: '/flash-sales',
+        icon: <ThunderboltOutlined />,
+        label: <Link to={'/flash-sales'}>Flash Sale</Link>
       },
     ]
   },
