@@ -15,7 +15,7 @@ export const createSlug = (text: string) => {
     .trim()
     .replace(/ /g, "-")
     .replace(/[^\w-]+/g, "");
-};
+}
 
 export const convertTimeVietnam = (date: string | number | Date) => {
   const options: Intl.DateTimeFormatOptions = {

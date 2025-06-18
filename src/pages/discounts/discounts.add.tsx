@@ -151,7 +151,6 @@ const variantOptions = variants?.map((v: any) => ({
                 <Input className="w-full" min={100} placeholder="Giới hạn sử dụng" />
               </Form.Item>
             </Col>
-            {/* Cột phải */}
             <Col span={12}>
               <Form.Item label="Sản phẩm áp dụng" name="applies_product">
               <Select

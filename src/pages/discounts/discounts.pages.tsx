@@ -2,12 +2,10 @@ import instance from '@/config/axios.customize'
 import { IDiscounts } from '@/types/discounts'
 import { DeleteFilled, EditFilled, FolderAddFilled } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
-import { Button, Input, message, Popconfirm,  Tooltip, Table, Tag, } from 'antd'
+import { Button, Input, message, Popconfirm, Tooltip, Table, Tag, } from 'antd'
 import debounce from 'debounce'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
-
-
 
 
 const Discounts = () => {
@@ -20,7 +18,6 @@ const Discounts = () => {
       const url = `/api/v1/discounts?current=${pagination.current}&pageSize=${pagination.pageSize}${qs ? `&qs=${encodeURIComponent(qs)}` : ''}`
       const res = await instance.get(url)
       // console.log('Request URL:', url)
-
       const results = res?.data?.results || []
       setData(results)
       setPagination((prev) => ({
@@ -99,7 +96,7 @@ useEffect(() => {
     width: 180,
     render: (date: string | Date) => new Date(date).toLocaleString()
   },
-   {
+ {
   title: 'Trạng thái',
   dataIndex: 'status',
   key: 'status',
@@ -126,8 +123,6 @@ useEffect(() => {
     return <Tag color={color}>{statusLabel}</Tag>;
   }
 },
-  
-
   {
     title: 'Thao tác',
     key: 'action',
@@ -172,7 +167,6 @@ useEffect(() => {
           onSearch={(value) => setSearchText(value)}  
           style={{ width: 300 }}
           />
-
         </div>
         <div style={{}} >
           <Button type='primary' onClick={()=>nav('/discounts/add')}>
