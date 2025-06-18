@@ -2,7 +2,7 @@ import instance from '@/config/axios.customize'
 import { IDiscounts } from '@/types/discounts'
 import { DeleteFilled, EditFilled, FolderAddFilled } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
-import { Button, Input, message, Popconfirm, Tooltip, Table, Tag, } from 'antd'
+import { Button, Input, message, Popconfirm,  Tooltip, Table, Tag, } from 'antd'
 import debounce from 'debounce'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
@@ -97,7 +97,7 @@ useEffect(() => {
     width: 180,
     render: (date: string | Date) => new Date(date).toLocaleString()
   },
-{
+   {
   title: 'Trạng thái',
   dataIndex: 'status',
   key: 'status',
@@ -124,6 +124,8 @@ useEffect(() => {
     return <Tag color={color}>{statusLabel}</Tag>;
   }
 },
+  
+
   {
     title: 'Thao tác',
     key: 'action',

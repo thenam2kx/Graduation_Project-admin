@@ -248,15 +248,15 @@ const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       >
         <Form form={form} layout="vertical" onFinish={handleFinish}>
           <Form.Item
-  name="name"
-  label="Tên"
-  rules={[
-    { required: true, message: "Vui lòng không bỏ trống" },
-    { min: 5, message: "Tối thiểu 5 ký tự" },
-  ]}
->
-  <Input onChange={handleNameChange} />
-</Form.Item>
+          name="name"
+          label="Tên"
+          rules={[
+            { required: true, message: "Vui lòng không bỏ trống" },
+            { min: 5, message: "Tối thiểu 5 ký tự" },
+          ]}
+        >
+          <Input onChange={handleNameChange} />
+        </Form.Item>
         
           <Form.Item label="Ảnh đại diện">
             <input type="file" onChange={(e) => uploadImage(e.target.files)} className="w-full p-3 border rounded-lg" />

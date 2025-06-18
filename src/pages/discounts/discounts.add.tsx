@@ -16,34 +16,18 @@ import {
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useNavigate } from "react-router";
+import { useQuery } from "@tanstack/react-query";
+
 
 const { Title } = Typography;
-
 const DiscountsAdd = () => {
-  const options = [
-  { label: 'Nước gucci', value: 'Nước hoa gucci' },
-  { label: 'Nước chanel', value: 'Nước hoa chanel' },
-  { label: 'Son môi', value: 'Son môi' },
-];
-  const cate = [
-  { label: 'Nước hoa nam', value: 'Nước hoa nam' },
-  { label: 'Nước hoa nữ ', value: 'Nước hoa nữ' },
-  { label: 'Son môi', value: 'Son môi' },
-];
-  const variants = [
-  { label: '100ml', value: '100ml' },
-  { label: '150ml ', value: '150ml' },
-  { label: '200ml', value: '200ml' },
-];
-
   const [form] = Form.useForm();
   const nav = useNavigate();
 
 const handleFinish = async (values: IDiscounts) => {
   try {
-    const now = dayjs(); 
+    const now = dayjs();
     const { startDate, endDate } = values;
-
     let status = "Sắp diễn ra";
     if (startDate && endDate) {
       if (now.isBefore(startDate)) {
@@ -65,12 +49,56 @@ const handleFinish = async (values: IDiscounts) => {
     await instance.post("/api/v1/discounts/", payload);
     message.success("Thêm mã giảm giá thành công");
     nav("/discounts");
-  } catch (err : any) {
-    console.error(err);
+  } catch (err:any) {
+     console.error(err);
     const errMessage = err.response?.data?.message || "Lỗi khi thêm mã giảm giá";
     message.error(errMessage);
   }
 };
+const fetchProducts = async () => {
+  const res = await instance.get("/api/v1/products/");
+  console.log("Products fetched:", res.data.results); 
+  return res.data.results || []; 
+};
+
+const fetchCategories = async () => {
+  const res = await instance.get("/api/v1/categories");
+  console.log(res);
+     return res.data.results || [];
+
+};
+const fetchVariants = async () => {
+    const res = await instance.get("/api/v1/variants");
+     return res.data.results || [];
+
+}
+
+const { data: products = [], isLoading: loadingProducts } = useQuery({
+  queryKey: ["products"],
+  queryFn: fetchProducts
+});
+const { data: categories = [], isLoading: loadingCategories } = useQuery({
+  queryKey: ["categories"],
+  queryFn: fetchCategories
+});
+const { data: variants = [], isLoading: loadingVariants } = useQuery({
+  queryKey: ["variants"],
+  queryFn: fetchVariants
+});
+const productOptions = products?.map((p: any) => ({
+  label: p.name,
+  value: p._id
+})) || [];
+
+const categoryOptions = categories?.map((c: any) => ({
+  label: c.name,
+  value: c._id
+})) || [];
+
+const variantOptions = variants?.map((v: any) => ({
+  label: `${v.sku} - ${v.productId?.name || "Không rõ sản phẩm"}`,
+  value: v._id
+})) || [];
 
   return (
     <div className="p-4">
@@ -122,10 +150,7 @@ const handleFinish = async (values: IDiscounts) => {
               <Form.Item label="Giới hạn toàn hệ thống" name="usage_limit">
                 <Input className="w-full" min={100} placeholder="Giới hạn sử dụng" />
               </Form.Item>
-
-              
             </Col>
-
             {/* Cột phải */}
             <Col span={12}>
               <Form.Item label="Sản phẩm áp dụng" name="applies_product">
@@ -134,7 +159,8 @@ const handleFinish = async (values: IDiscounts) => {
                 allowClear
                 style={{ width: '100%' }}
                 placeholder="Tên sản phẩm"
-                options={options}
+                options={productOptions}
+                loading={loadingProducts}
               />
             </Form.Item>
               <Form.Item label="Danh mục áp dụng" name="applies_category">
@@ -143,21 +169,20 @@ const handleFinish = async (values: IDiscounts) => {
               allowClear
               style={{ width: '100%' }}
               placeholder="Tên danh mục"
-              options={cate}
+              options={categoryOptions}
+              loading={loadingCategories}
             />
           </Form.Item>
-
           <Form.Item label="Biến thể áp dụng" name="applies_variant">
             <Select
               mode="multiple"
               allowClear
               style={{ width: '100%' }}
               placeholder="Tên biến thể"
-              options={variants}
+              options={variantOptions}
+              loading={loadingVariants}
             />
           </Form.Item>
-
-
               <Form.Item
                 name="startDate"
                 label="Ngày bắt đầu"
@@ -165,7 +190,6 @@ const handleFinish = async (values: IDiscounts) => {
               >
                 <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" className="w-full" />
               </Form.Item>
-
               <Form.Item
                 name="endDate"
                 label="Ngày kết thúc"
@@ -176,12 +200,8 @@ const handleFinish = async (values: IDiscounts) => {
               <Form.Item label="Giới hạn mỗi người dùng" name="usage_per_user">
                 <Input className="w-full" min={1} placeholder="Mỗi người dùng" />
               </Form.Item>
-
-             
             </Col>
           </Row>
-
-          {/* Mô tả toàn chiều rộng */}
           <Row>
             <Col span={24}>
               <Form.Item
@@ -196,10 +216,7 @@ const handleFinish = async (values: IDiscounts) => {
               </Form.Item>
             </Col>
           </Row>
-
-          <Divider />
-
-          {/* Nút hành động canh giữa */}
+          <Divider />         
           <Row justify="center">
             <Col>
               <Form.Item>
