@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Form, Input, DatePicker, Button, Modal, message, Alert, Radio, Divider } from 'antd'
+import { Form, Input, DatePicker, Button, Modal, message, Alert, Divider } from 'antd'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { createFlashSale, updateFlashSale } from '@/services/flash-sale-service/flash-sale.apis'
@@ -17,7 +17,6 @@ const FlashSaleForm = ({ open, onCancel, flashSale }: FlashSaleFormProps) => {
   const queryClient = useQueryClient()
   const isEditing = !!flashSale
 
-  // Reset form when modal opens/closes or when editing different flash sale
   useEffect(() => {
     if (open) {
       if (flashSale) {
@@ -35,7 +34,6 @@ const FlashSaleForm = ({ open, onCancel, flashSale }: FlashSaleFormProps) => {
     }
   }, [open, flashSale, form])
 
-  // Create mutation
   const createMutation = useMutation({
     mutationFn: createFlashSale,
     onSuccess: (response) => {
@@ -50,7 +48,6 @@ const FlashSaleForm = ({ open, onCancel, flashSale }: FlashSaleFormProps) => {
     }
   })
 
-  // Update mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<IFlashSale> }) => 
       updateFlashSale(id, data),

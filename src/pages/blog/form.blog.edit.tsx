@@ -32,7 +32,6 @@ interface IBlog {
   categoryBlogId?: string
 }
 
-// Hàm chuyển title thành slug
 function toSlug(str: string) {
   return str
     .toLowerCase()
@@ -56,10 +55,8 @@ const FormBlogEdit = () => {
   const dispatch = useAppDispatch()
   const mediaUrl = useAppSelector((state) => state.media.selectedMedia)
 
-  // Theo dõi giá trị title
   const titleValue = Form.useWatch('title', form)
 
-  // Lấy danh mục
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -72,7 +69,6 @@ const FormBlogEdit = () => {
     fetchCategories()
   }, [])
 
-  // Lấy thông tin bài viết
   const { data: blogData } = useQuery({
     queryKey: ['blog', id],
     queryFn: async () => {
@@ -95,11 +91,10 @@ const FormBlogEdit = () => {
       })
       setContent(blogData.content || '')
       setImageUrl(blogData.image || '')
-      setIsSlugTouched(false) // reset khi load bài viết mới
+      setIsSlugTouched(false)
     }
   }, [blogData, form])
 
-  // Auto cập nhật slug khi title thay đổi, nếu slug chưa bị sửa thủ công
   useEffect(() => {
     if (!isSlugTouched) {
       form.setFieldsValue({ slug: toSlug(titleValue || '') })
@@ -121,15 +116,12 @@ const FormBlogEdit = () => {
     }
   })
 
-    // Khi mediaUrl thay đổi, tự động set vào form
   useEffect(() => {
     console.log('mediaUrl ban đầu:', mediaUrl)
     if (mediaUrl) {
-      // Thêm tiền tố http://localhost:8080 nếu chưa có
       const fullImageUrl = mediaUrl.startsWith('http') ? mediaUrl : `http://localhost:8080${mediaUrl}`
       console.log('Đường dẫn hình ảnh đầy đủ:', fullImageUrl)
       
-      // Cập nhật giá trị vào form và state
       form.setFieldsValue({ image: fullImageUrl })
       setImageUrl(fullImageUrl)
       console.log('Đã gán đường dẫn vào form:', form.getFieldValue('image'))

@@ -32,28 +32,7 @@ export const deactivateFlashSale = async (id: string) => {
   return axios.post(`/api/v1/flashsales/${id}/deactivate`)
 }
 
-// API cho cron jobs
-export interface CronJobData {
-  flashSaleId: string
-  jobType: 'start' | 'end'
-  scheduledTime?: string
-}
-
-export const createCronJob = async (data: CronJobData) => {
-  return axios.post('/api/v1/cron-jobs', data)
-}
-
-export const getCronJobs = async () => {
-  return axios.get('/api/v1/cron-jobs')
-}
-
-export const updateCronJob = async (id: string, data: Partial<CronJobData>) => {
-  return axios.patch(`/api/v1/cron-jobs/${id}`, data)
-}
-
-export const deleteCronJob = async (id: string) => {
-  return axios.delete(`/api/v1/cron-jobs/${id}`)
-}
+// Cron job functionality has been moved to backend
 
 // Flash Sale Item APIs
 export const createFlashSaleItem = async (data: Omit<IFlashSaleItem, '_id'>) => {

@@ -35,7 +35,6 @@ import OrderItemAddPage from '@/pages/orders/orders_items.page.add'
 import ProductAddPage from '@/pages/product/product.add.page'
 import ProductUpdatePage from '@/pages/product/product.update.page'
 import FlashSalePage from '@/pages/flash_sale/flash-sale.page'
-import FlashSaleCronService from '@/pages/flash_sale/flash-sale-cron.service'
 
 
 const Routers = () => {
@@ -81,7 +80,6 @@ const Routers = () => {
 
           <Route path='/media' element={<MediaPage />} />
           <Route path='/flash-sales' element={<FlashSalePage />} />
-          <Route path='/flash-sales/cron' element={<FlashSaleCronService />} />
         </Route>
       </Route>
       <Route element={<PrivateRouters isAllowed={isAuthenticated ? false : true} redirectTo='/' />}>

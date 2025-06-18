@@ -21,24 +21,11 @@ interface FlashSaleItemsModalProps {
   flashSaleId: string
 }
 
-interface ProductVariant {
-  _id: string
-  sku: string
-  price: number
-  stock: number
-}
-
-interface Product {
-  _id: string
-  name: string
-  variants: ProductVariant[]
-}
-
 const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModalProps) => {
   const [form] = Form.useForm()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
-  const [selectedVariant, setSelectedVariant] = useState<string | null>(null)
+  const [_, setSelectedVariant] = useState<string | null>(null)
   const [editingItem, setEditingItem] = useState<IFlashSaleItem | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -46,7 +33,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
   
   const queryClient = useQueryClient()
 
-  // Fetch flash sale items
   const { data: itemsData, isLoading } = useQuery({
     queryKey: [FLASH_SALE_ITEM_QUERY_KEYS.FETCH_BY_FLASH_SALE, { flashSaleId, current: currentPage, pageSize }],
     queryFn: () => getFlashSaleItems({ 
@@ -58,7 +44,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     enabled: open && !!flashSaleId
   })
 
-  // Fetch products for selection
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
     queryKey: [PRODUCT_QUERY_KEYS.FETCH_ALL, { current: 1, pageSize: 100 }],
     queryFn: async () => {
@@ -69,7 +54,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     enabled: isAddModalOpen
   })
 
-  // Create mutation
   const createMutation = useMutation({
     mutationFn: createFlashSaleItem,
     onSuccess: (response) => {
@@ -86,7 +70,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     }
   })
 
-  // Update mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<IFlashSaleItem> }) => 
       updateFlashSaleItem(id, data),
@@ -103,7 +86,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     }
   })
 
-  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: deleteFlashSaleItem,
     onSuccess: () => {
@@ -132,7 +114,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
         setSelectedProduct(productId)
         setSelectedVariant(variantId || null)
         
-        // Xác định loại áp dụng dựa trên dữ liệu
         setApplyType(variantId ? 'variant' : 'product')
         
         form.setFieldsValue({
@@ -336,7 +317,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     }
   ]
 
-  // Get variants for selected product
   const getVariantsForProduct = () => {
     if (!selectedProduct || !productsData?.results) return []
     
@@ -349,7 +329,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     return product.variants
   }
   
-  // Check if a flash sale already exists for this product (without variant)
   const checkProductFlashSaleExists = () => {
     if (!selectedProduct || !itemsData?.results) return false
     
@@ -359,7 +338,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     })
   }
   
-  // Check if a flash sale already exists for this variant
   const checkVariantFlashSaleExists = (variantId: string) => {
     if (!itemsData?.results) return false
     
@@ -369,7 +347,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     })
   }
   
-  // Check if any variant of this product already has a flash sale
   const checkAnyVariantHasFlashSale = () => {
     if (!selectedProduct || !itemsData?.results) return false
     
@@ -465,7 +442,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
               label="Áp dụng cho"
               rules={[{ required: true, message: 'Vui lòng chọn loại áp dụng' }]}
               initialValue="product"
-              disabled={!!editingItem}
               help="Chọn áp dụng Flash Sale cho toàn bộ sản phẩm hoặc chỉ cho một biến thể cụ thể"
             >
               <Radio.Group onChange={handleApplyTypeChange} disabled={!!editingItem}>
@@ -498,7 +474,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
               name="productId"
               label="Sản phẩm"
               rules={[{ required: true, message: 'Vui lòng chọn sản phẩm' }]}
-              disabled={!!editingItem}
             >
               <Select
                 placeholder="Chọn sản phẩm"
@@ -518,7 +493,6 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
                 name="variantId"
                 label="Biến thể"
                 rules={[{ required: applyType === 'variant', message: 'Vui lòng chọn biến thể' }]}
-                disabled={!!editingItem}
                 help="Chọn biến thể cụ thể để áp dụng Flash Sale"
               >
                 <Select

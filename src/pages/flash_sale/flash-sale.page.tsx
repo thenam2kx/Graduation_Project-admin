@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Button, Card, Col, Input, Popconfirm, Row, Space, Table, Tag, message, Tooltip } from 'antd'
 import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined, PlayCircleOutlined, PauseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -14,44 +14,34 @@ import { debounce } from 'lodash'
 
 const FlashSalePage = () => {
   const [searchText, setSearchText] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingFlashSale, setEditingFlashSale] = useState<IFlashSale | null>(null)
   const [selectedFlashSaleId, setSelectedFlashSaleId] = useState<string | null>(null)
   const [isItemsModalOpen, setIsItemsModalOpen] = useState(false)
-  const [refreshTime, setRefreshTime] = useState(0) // Thêm state để cập nhật thời gian
+  const [_, setForceUpdate] = useState(0)
   
   const queryClient = useQueryClient()
   
-  // Cập nhật thời gian mỗi phút
   useEffect(() => {
     const timer = setInterval(() => {
-      setRefreshTime(prev => prev + 1)
-    }, 60000) // Cập nhật mỗi phút
+      setForceUpdate(prev => prev + 1)
+    }, 2000)
     
     return () => clearInterval(timer)
   }, [])
 
-  // Debounce function
-  const debounceSearch = debounce((value: string) => {
-    setDebouncedSearch(value)
-  }, 400)
-
-  // Fetch flash sales
   const { data: flashSalesData, isLoading } = useQuery({
-    queryKey: [FLASH_SALE_QUERY_KEYS.FETCH_ALL, { current: 1, pageSize: 1000, refresh: refreshTime }],
+    queryKey: [FLASH_SALE_QUERY_KEYS.FETCH_ALL, { current: 1, pageSize: 1000 }],
     queryFn: () => getAllFlashSales({
       current: 1,
       pageSize: 1000,
       qs: ''
     }),
-    select: (response) => response.data,
-    refetchInterval: 60000 // Tự động refetch mỗi phút
+    select: (response) => response.data
   })
 
-  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: deleteFlashSale,
     onSuccess: () => {
@@ -92,14 +82,16 @@ const FlashSalePage = () => {
     setSelectedFlashSaleId(null)
   }
 
-  // Lọc dữ liệu theo searchText
+  const setSearchTextDebounced = useCallback(
+    debounce((value: string) => {
+      setSearchText(value)
+    }, 400),
+    []
+  )
+
   const filteredData = flashSalesData?.results?.filter((item: IFlashSale) =>
     item.name.toLowerCase().includes(searchText.toLowerCase())
   )
-
-
-
-  // Thêm mutation để kích hoạt/hủy kích hoạt flash sale
   const activateFlashSaleMutation = useMutation({
     mutationFn: activateFlashSale,
     onSuccess: () => {
@@ -122,7 +114,6 @@ const FlashSalePage = () => {
     }
   })
 
-  // Hàm xử lý kích hoạt/hủy kích hoạt flash sale
   const handleToggleActivation = (record: IFlashSale, activate: boolean) => {
     if (activate) {
       activateFlashSaleMutation.mutate(record._id)
@@ -131,8 +122,7 @@ const FlashSalePage = () => {
     }
   }
 
-  // Hàm tính thời gian còn lại
-  const getRemainingTime = (date: Date) => {
+  const getRemainingTime = (date: string | Date) => {
     const now = dayjs()
     const target = dayjs(date)
     const diff = target.diff(now, 'second')
@@ -149,6 +139,35 @@ const FlashSalePage = () => {
       return `${hours} giờ ${minutes} phút`
     } else {
       return `${minutes} phút`
+    }
+  }
+  
+  const getFlashSaleStatus = (record: IFlashSale) => {
+    const now = dayjs()
+    const start = dayjs(record.startDate)
+    const end = dayjs(record.endDate)
+    
+    if (now.isBefore(start)) {
+      return {
+        status: 'upcoming',
+        color: 'blue',
+        text: 'Sắp diễn ra',
+        tooltip: `Bắt đầu sau: ${getRemainingTime(record.startDate)}`
+      }
+    } else if (now.isAfter(end)) {
+      return {
+        status: 'ended',
+        color: 'red',
+        text: 'Đã kết thúc',
+        tooltip: ''
+      }
+    } else {
+      return {
+        status: 'active',
+        color: 'green',
+        text: 'Đang diễn ra',
+        tooltip: `Kết thúc sau: ${getRemainingTime(record.endDate)}`
+      }
     }
   }
 
@@ -183,28 +202,18 @@ const FlashSalePage = () => {
       title: 'Trạng thái',
       key: 'status',
       render: (_, record) => {
-        const now = dayjs()
-        const start = dayjs(record.startDate)
-        const end = dayjs(record.endDate)
+        const status = getFlashSaleStatus(record)
         
-        if (now.isBefore(start)) {
+        if (status.tooltip) {
           return (
-            <Tooltip title={`Bắt đầu sau: ${getRemainingTime(record.startDate)}`}>
-              <Tag color="blue" icon={<ClockCircleOutlined />}>
-                Sắp diễn ra
+            <Tooltip title={status.tooltip}>
+              <Tag color={status.color} icon={<ClockCircleOutlined />}>
+                {status.text}
               </Tag>
             </Tooltip>
           )
-        } else if (now.isAfter(end)) {
-          return <Tag color="red">Đã kết thúc</Tag>
         } else {
-          return (
-            <Tooltip title={`Kết thúc sau: ${getRemainingTime(record.endDate)}`}>
-              <Tag color="green" icon={<ClockCircleOutlined />}>
-                Đang diễn ra
-              </Tag>
-            </Tooltip>
-          )
+          return <Tag color={status.color}>{status.text}</Tag>
         }
       }
     },
@@ -212,11 +221,9 @@ const FlashSalePage = () => {
       title: 'Thao tác',
       key: 'action',
       render: (_, record) => {
-        const now = dayjs()
-        const start = dayjs(record.startDate)
-        const end = dayjs(record.endDate)
-        const isActive = now.isAfter(start) && now.isBefore(end)
-        const canActivate = now.isBefore(end) // Có thể kích hoạt nếu chưa kết thúc
+        const status = getFlashSaleStatus(record)
+        const isActive = status.status === 'active'
+        const canActivate = status.status !== 'ended' // Có thể kích hoạt nếu chưa kết thúc
         
         return (
           <Space size="middle">
@@ -269,9 +276,8 @@ const FlashSalePage = () => {
             <Input
               placeholder="Tìm kiếm theo tên"
               prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
               allowClear
+              onChange={(e) => setSearchTextDebounced(e.target.value)}
             />
           </Col>
           <Col span={16} style={{ textAlign: 'right' }}>
