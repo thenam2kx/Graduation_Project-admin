@@ -60,9 +60,10 @@ const DiscountsUpdate = () => {
       await instance.patch(`/api/v1/discounts/${id}`, payload);
       message.success("Sửa mã giảm giá thành công");
       nav("/discounts");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      message.error("Sửa mã giảm giá thất bại");
+    const errMessage = err.response?.data?.message || "Lỗi khi thêm mã giảm giá";
+    message.error(errMessage);
     }
   };
   const fetchProducts = async () => {
