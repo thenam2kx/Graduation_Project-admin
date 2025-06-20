@@ -57,6 +57,7 @@ const MediaModal = () => {
                 alt={media?.filename}
                 className='object-cover rounded cursor-pointer'
                 onClick={() => handleSelectImage(media?.filePath || '/placeholder.svg')}
+                crossOrigin="anonymous"
               />
             ))
           }

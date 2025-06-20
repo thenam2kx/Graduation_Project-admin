@@ -51,7 +51,7 @@ const items: MenuProps['items'] = [
       {
         key: '/products',
         icon: <ProductOutlined />,
-        label: <Link to={'/products'}>Danh sách</Link>,
+        label: <Link to={'/products'}>Sản phẩm</Link>,
       },
       {
         key: '/attributes',
@@ -68,43 +68,6 @@ const items: MenuProps['items'] = [
         icon: <IdcardOutlined />,
         label: <Link to={'/brand'}>Thương hiệu</Link>
       },
-      // {
-      //   key: '',
-      //   icon: <ProductOutlined />,
-      //   label: 'Sản phẩm',
-      //   children: [
-      //     {
-      //       key: '/products',
-      //       icon: <ProductOutlined />,
-      //       label: <Link to={'/products'}>Danh sách</Link>,
-      //     },
-      //     {
-      //       key: '/attributes',
-      //       icon: <ProductOutlined />,
-      //       label: <Link to={'/attributes'}>Thuộc tính</Link>
-      //     },
-      //     {
-      //       key: '/variants',
-      //       icon: <ProductOutlined />,
-      //       label: <Link to={'/variants'}>Biến thể</Link>
-      //     },
-      //     {
-      //       key: '/variantsat',
-      //       icon: <ProductOutlined />,
-      //       label: <Link to={'/variantsat'}>Biến thể thuộc tính</Link>
-      //     },
-      //     {
-      //       key: '/categories',
-      //       icon: <ProductOutlined />,
-      //       label: <Link to={'/categories'}>Danh mục</Link>
-      //     },
-      //     {
-      //       key: '/brand',
-      //       icon: <ProductOutlined />,
-      //       label: <Link to={'/brand'}>Thương hiệu</Link>
-      //     },
-      //   ]
-      // },
     ]
   },
   {

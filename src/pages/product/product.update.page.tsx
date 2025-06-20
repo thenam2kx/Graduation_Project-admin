@@ -1,15 +1,16 @@
 import { message } from "antd";
-import ProductForm from "./product.form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { fetchProductById, updateProductAPI } from "@/services/product-service/product.apis";
 import { PRODUCT_QUERY_KEYS } from "@/services/product-service/product.key";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { clearSelectedMedia } from "@/redux/slices/media.slice";
 import { useAppDispatch } from "@/redux/hooks";
+import ProductFormUpdate from "./product.form-update";
 
 const ProductUpdatePage = () => {
   const { id: productId } = useParams<{ id: string }>()
   const dispatch = useAppDispatch()
+  const navigate = useNavigate()
 
   const updateProductMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -20,10 +21,10 @@ const ProductUpdatePage = () => {
         throw new Error("Failed to update product");
       }
     },
-    onSuccess: (data) => {
-      console.log("Product update successfully:", data);
+    onSuccess: () => {
       message.success("Product updated successfully!");
       dispatch(clearSelectedMedia());
+      navigate(`/products`);
     },
     onError: (error) => {
       console.error("Error updating product:", error);
@@ -45,13 +46,12 @@ const ProductUpdatePage = () => {
   })
 
   const onSubmit = (data: any) => {
-    console.log('🚀 ~ onSubmit ~ data:', data)
     updateProductMutation.mutate(data);
   }
   return (
     <div>
       <div>
-        <ProductForm onSubmit={onSubmit} initialValues={fetchInfoProduct.data} />
+        <ProductFormUpdate onSubmit={onSubmit} productData={fetchInfoProduct.data} />
       </div>
     </div>
   )

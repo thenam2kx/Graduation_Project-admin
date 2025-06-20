@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import {
   Form,
   Input,
@@ -6,7 +6,6 @@ import {
   Select,
   Switch,
   Button,
-  Upload,
   Card,
   Row,
   Col,
@@ -14,7 +13,7 @@ import {
   Divider,
   Image,
 } from "antd"
-import { PlusOutlined, DeleteOutlined, UploadOutlined } from "@ant-design/icons"
+import { PlusOutlined, DeleteOutlined } from "@ant-design/icons"
 import { convertSlugUrl } from "@/utils/utils"
 import { useQuery } from "@tanstack/react-query"
 import { fetchAllCategories } from "@/services/category-service/category.apis"
@@ -30,12 +29,11 @@ const { TextArea } = Input
 const { Option } = Select
 
 interface IProps {
-  onSubmit?: (data: any) => void,
-  initialValues?: IProductInitialData
+  onSubmit?: (data: any) => void
 }
 
 const ProductForm = (props: IProps) => {
-  const { onSubmit, initialValues } = props
+  const { onSubmit } = props
   const [form] = Form.useForm()
   const [hasVariants, setHasVariants] = useState<boolean>(false)
   const [variants, setVariants] = useState<IVariants[]>([])
@@ -144,39 +142,6 @@ const ProductForm = (props: IProps) => {
     )
   }
 
-  useEffect(() => {
-    if (initialValues) {
-      form.setFieldsValue({
-        name: initialValues.name,
-        category: initialValues.categoryId?._id,
-        brand: initialValues.brandId?._id,
-        price: initialValues.price,
-        stock: initialValues.stock,
-        // status: initialValues?.status || "Active",
-        description: initialValues.description,
-      });
-      setHasVariants(!!initialValues.variants);
-      if (initialValues.variants) {
-        setVariants(initialValues.variants?.map((variant: any) => {
-          console.log('🚀 ~ setVariants ~ variant:', variant)
-          return {
-            _id: variant._id || Date.now().toString(),
-            sku: variant.sku || `SKU-${Date.now()}`,
-            stock: variant.stock || 0,
-            price: variant.price || 0,
-            image: variant.image ? variant.image[0] : "",
-            attributes: variant.variant_attributes?.map((attr: any) => ({
-              _id: attr.attributeId || Date.now().toString(),
-              name: attr.attributeId.name,
-              slug: convertSlugUrl(attr.value || attr.name),
-              value: attr.value,
-            })),
-          }
-        }));
-      }
-    }
-  }, [initialValues])
-
   const onFinish = (values: any) => {
     const slug = convertSlugUrl(values.name);
     const images = selectedMedia ? [`http://localhost:8080${selectedMedia}`] : [];
@@ -208,22 +173,6 @@ const ProductForm = (props: IProps) => {
     console.log("Product Data:", productData)
   }
 
-
-  const variantUploadProps = {
-    name: "file",
-    listType: "picture-card" as const,
-    maxCount: 1,
-    action: "/api/upload",
-    onChange(info: any) {
-      const { status } = info.file
-      if (status === "done") {
-        message.success(`Image uploaded successfully.`)
-      } else if (status === "error") {
-        message.error(`Image upload failed.`)
-      }
-    },
-  }
-
   return (
     <Form
       form={form}
@@ -233,11 +182,19 @@ const ProductForm = (props: IProps) => {
     >
       {
         selectedMedia && (
-          <div className="flex justify-center mb-6">
+          <div className="flex flex-col items-center justify-center mb-6">
             <Image
-              width={100}
+              width={200}
               src={selectedMedia.startsWith("http") ? selectedMedia : `http://localhost:8080${selectedMedia}`}
+              crossOrigin="anonymous"
             />
+            <Button
+              type="primary"
+              style={{ marginTop: 4 }}
+              onClick={() => dispatch(setIsOpenModalUpload(true))}
+            >
+              {selectedMedia ? 'Sửa ảnh' : 'Chọn ảnh'}
+            </Button>
           </div>
         )
       }
@@ -328,17 +285,6 @@ const ProductForm = (props: IProps) => {
         <Form.Item name="description" label="Mô tả">
           <TextArea rows={4} placeholder="Nhập mô tả sản phẩm" />
         </Form.Item>
-
-        {/* <Form.Item name="images" label="Hình ảnh sản phẩm">
-          <Input type="text" placeholder="Nhập URL hình ảnh" />
-        </Form.Item> */}
-        <Button
-          type="primary"
-          style={{ marginTop: 4 }}
-          onClick={() => dispatch(setIsOpenModalUpload(true))}
-        >
-          Thêm ảnh
-        </Button>
       </Card>
 
       {
@@ -394,13 +340,14 @@ const ProductForm = (props: IProps) => {
                         </div>
                       </Col>
                       <Col span={6}>
-                        <div className="mb-3">
-                          <label className="block text-sm font-medium mb-1">Hình ảnh</label>
-                          <Upload {...variantUploadProps}>
-                            <Button icon={<UploadOutlined />} size="small">
-                              Tải lên
-                            </Button>
-                          </Upload>
+                        <div className="flex flex-col items-center justify-center h-full">
+                          <Button
+                            type="primary"
+                            style={{ marginTop: 4 }}
+                            onClick={() => dispatch(setIsOpenModalUpload(true))}
+                          >
+                            {selectedMedia ? 'Sửa ảnh' : 'Chọn ảnh'}
+                          </Button>
                         </div>
                       </Col>
                     </Row>
@@ -466,7 +413,7 @@ const ProductForm = (props: IProps) => {
           Đặt lại
         </Button>
         <Button type="primary" htmlType="submit" size="large" className="px-8">
-          { initialValues ? 'Cập nhật sản phẩm' : 'Tạo sản phẩm' }
+          'Tạo sản phẩm'
         </Button>
       </div>
     </Form>
