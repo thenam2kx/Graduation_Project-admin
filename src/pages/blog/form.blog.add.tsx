@@ -32,7 +32,6 @@ interface IBlog {
   category?: string
 }
 
-// Hàm chuyển title thành slug
 function toSlug(str: string) {
   return str
     .toLowerCase()
@@ -54,10 +53,8 @@ const FormBlogAdd = () => {
   const dispatch = useAppDispatch()
   const mediaUrl = useAppSelector((state) => state.media.selectedMedia)
 
-  // Theo dõi giá trị title
   const titleValue = Form.useWatch('title', form)
 
-  // Call API lấy danh mục
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -70,14 +67,12 @@ const FormBlogAdd = () => {
     fetchCategories()
   }, [])
 
-  // Auto cập nhật slug khi title thay đổi, nếu slug chưa bị sửa thủ công
   useEffect(() => {
     if (!isSlugTouched) {
       form.setFieldsValue({ slug: toSlug(titleValue || '') })
     }
   }, [titleValue, isSlugTouched, form])
 
-  // Khi mediaUrl thay đổi, tự động set vào form
   useEffect(() => {
     console.log('mediaUrl effect:', mediaUrl)
     if (mediaUrl) {
@@ -104,7 +99,6 @@ const FormBlogAdd = () => {
     if (!content || content === '<p><br></p>') {
       return
     }
-    // Kiểm tra slug đã tồn tại chưa
     try {
       const res = await axios.get('/api/v1/blogs')
       const blogs = res.data?.results || []

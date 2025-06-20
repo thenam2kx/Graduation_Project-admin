@@ -14,7 +14,6 @@ const BlogPage = () => {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 5, total: 0 })
   const [detailModal, setDetailModal] = useState<{ visible: boolean; data?: any }>({ visible: false })
 
-  // Lấy danh mục
   useEffect(() => {
     const fetchCategories = async () => {
       const res = await axios.get('/api/v1/cateblog')
@@ -23,11 +22,10 @@ const BlogPage = () => {
     fetchCategories()
   }, [])
 
-  // Debounce searchText thay đổi
   useEffect(() => {
     const handler = debounce((value) => {
       setDebouncedSearch(value)
-    }, 500) // 500ms
+    }, 500)
 
     handler(searchText)
     return () => {
@@ -41,7 +39,6 @@ const BlogPage = () => {
       url += `&qs=${encodeURIComponent(search)}`
     }
     const res = await axios.get(url)
-    // API trả về { meta, results }
     setPagination(prev => ({
       ...prev,
       total: res.data?.meta?.total || 0,
@@ -53,8 +50,7 @@ const BlogPage = () => {
 
   const { data, isLoading } = useQuery({
     queryKey: ['blogs', pagination.current, pagination.pageSize, debouncedSearch],
-    queryFn: () => fetchList({ page: pagination.current, pageSize: pagination.pageSize, search: debouncedSearch }),
-    keepPreviousData: true
+    queryFn: () => fetchList({ page: pagination.current, pageSize: pagination.pageSize, search: debouncedSearch })
   })
 
   const statusMutation = useMutation({
@@ -90,7 +86,6 @@ const BlogPage = () => {
     })
   }
 
-  // Hàm lấy chi tiết bài viết
   const fetchDetail = async (id: string) => {
     const res = await axios.get(`/api/v1/blogs/${id}`)
     setDetailModal({ visible: true, data: res.data })
@@ -115,7 +110,7 @@ const BlogPage = () => {
         text: cat.name,
         value: cat._id
       })),
-      onFilter: (value, record) => record.categoryBlogId === value,
+      onFilter: (value : any, record : any) => record.categoryBlogId === value,
       render: (categoryBlogId: string) => {
         const cat = categories.find((c) => c._id === categoryBlogId)
         return cat ? cat.name : 'Bài viết không có danh mục'
