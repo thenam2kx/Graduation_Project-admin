@@ -199,10 +199,11 @@ const FormBlogAdd = () => {
             <Input placeholder="Đường dẫn ảnh sẽ tự động điền sau khi tải lên" disabled value={form.getFieldValue('image') || ''} />
             {form.getFieldValue('image') && (
               <div style={{ marginTop: '10px' }}>
-                <img 
-                  src={form.getFieldValue('image')} 
-                  alt="Hình ảnh bài viết" 
-                  style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', border: '1px solid #f0f0f0', padding: '5px' }} 
+                <img
+                  src={form.getFieldValue('image')}
+                  alt="Hình ảnh bài viết"
+                  style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', border: '1px solid #f0f0f0', padding: '5px' }}
+                  crossOrigin="anonymous"
                 />
               </div>
             )}

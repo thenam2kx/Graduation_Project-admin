@@ -154,6 +154,7 @@ const MediaPage = () => {
                       alt={media?.filename}
                       className='w-full h-full object-cover rounded'
                       onClick={() => handleMediaClick(media)}
+                      crossOrigin="anonymous"
                     />
                     <div className="absolute top-2 right-2 flex flex-col gap-2">
                       <Tooltip title={isCopy ? 'Đã sao chép' : 'Sao chép link'} placement='right'>
@@ -198,9 +199,10 @@ const MediaPage = () => {
           <div className='p-2'>
             <div className='mb-6 relative h-[500px] w-full'>
               <img
-                src={selectedMedia.filePath || '/placeholder.svg'}
+                src={`http://localhost:8080${selectedMedia.filePath}` || '/placeholder.svg'}
                 alt={selectedMedia.filename}
                 className='object-cover rounded h-full w-full'
+                crossOrigin='anonymous'
               />
               {selectedMedia.fileType === 'video' && (
                 <div className='absolute inset-0 flex items-center justify-center'>
