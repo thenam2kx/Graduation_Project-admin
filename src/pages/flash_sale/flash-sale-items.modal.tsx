@@ -24,7 +24,7 @@ interface FlashSaleItemsModalProps {
 const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModalProps) => {
   const [form] = Form.useForm()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [_, setSelectedVariant] = useState<string | null>(null)
   const [editingItem, setEditingItem] = useState<IFlashSaleItem | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -111,23 +111,24 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
           ? editingItem.variantId._id
           : editingItem.variantId
 
-        setSelectedProduct(productId)
+        setSelectedProducts([productId])
         setSelectedVariant(variantId || null)
         
         setApplyType(variantId ? 'variant' : 'product')
         
         form.setFieldsValue({
-          productId,
+          productId: productId,
           variantId: variantId || undefined,
           discountPercent: editingItem.discountPercent,
           applyType: variantId ? 'variant' : 'product'
         })
       } else {
         form.resetFields()
-        setSelectedProduct(null)
+        setSelectedProducts([])
         setSelectedVariant(null)
         setApplyType('product')
         form.setFieldValue('applyType', 'product')
+        form.setFieldValue('productIds', [])
       }
     }
   }, [isAddModalOpen, editingItem, form])
@@ -147,20 +148,23 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     deleteMutation.mutate(id)
   }
 
-  const handleProductChange = (value: string) => {
-    setSelectedProduct(value)
+  const handleProductChange = (values: string[] | string) => {
+    // Xử lý cả single select và multi-select
+    const productArray = Array.isArray(values) ? values : [values]
+    setSelectedProducts(productArray)
     setSelectedVariant(null)
     form.setFieldValue('variantId', undefined)
     
-    // Kiểm tra nếu sản phẩm đã có flash sale cho tất cả biến thể
-    if (value && applyType === 'product' && checkProductFlashSaleExists()) {
-      message.warning('Sản phẩm này đã có Flash Sale cho tất cả biến thể. Vui lòng chọn một biến thể cụ thể hoặc chọn sản phẩm khác.')
-    }
-    
-    // Kiểm tra nếu đang chọn áp dụng cho toàn bộ sản phẩm nhưng đã có biến thể có flash sale
-    if (value && applyType === 'product' && checkAnyVariantHasFlashSale()) {
-      message.warning('Một số biến thể của sản phẩm này đã có Flash Sale. Không thể áp dụng Flash Sale cho toàn bộ sản phẩm.')
-    }
+    // Kiểm tra từng sản phẩm được chọn
+    productArray.forEach(productId => {
+      if (applyType === 'product' && checkProductFlashSaleExists(productId)) {
+        message.warning(`Sản phẩm ${getProductName(productId)} đã có Flash Sale cho tất cả biến thể.`)
+      }
+      
+      if (applyType === 'product' && checkAnyVariantHasFlashSale(productId)) {
+        message.warning(`Một số biến thể của sản phẩm ${getProductName(productId)} đã có Flash Sale.`)
+      }
+    })
   }
   
   const handleApplyTypeChange = (e: any) => {
@@ -172,19 +176,24 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
       setSelectedVariant(null);
       form.setFieldValue('variantId', undefined);
       
-      if (selectedProduct) {
-        // Kiểm tra nếu sản phẩm đã có flash sale
-        if (checkProductFlashSaleExists()) {
-          message.warning('Sản phẩm này đã có Flash Sale cho tất cả biến thể. Vui lòng chọn một biến thể cụ thể hoặc chọn sản phẩm khác.')
+      selectedProducts.forEach(productId => {
+        if (checkProductFlashSaleExists(productId)) {
+          message.warning(`Sản phẩm ${getProductName(productId)} đã có Flash Sale cho tất cả biến thể.`)
         }
         
-        // Kiểm tra nếu có biến thể đã có flash sale
-        if (checkAnyVariantHasFlashSale()) {
-          message.warning('Một số biến thể của sản phẩm này đã có Flash Sale. Không thể áp dụng Flash Sale cho toàn bộ sản phẩm.')
-          // Tự động chuyển lại sang chế độ biến thể
+        if (checkAnyVariantHasFlashSale(productId)) {
+          message.warning(`Một số biến thể của sản phẩm ${getProductName(productId)} đã có Flash Sale.`)
           setApplyType('variant');
           form.setFieldValue('applyType', 'variant');
         }
+      })
+    } else if (value === 'variant') {
+      // Nếu chuyển sang variant, chỉ giữ lại 1 sản phẩm
+      if (selectedProducts.length > 1) {
+        const firstProduct = selectedProducts[0]
+        setSelectedProducts([firstProduct])
+        form.setFieldValue('productIds', [firstProduct])
+        message.info('Chế độ biến thể cụ thể chỉ cho phép chọn 1 sản phẩm')
       }
     }
   }
@@ -200,30 +209,52 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
         })
       } else {
         // Kiểm tra trùng lặp trước khi tạo
-        if (values.applyType === 'product') {
-          if (checkProductFlashSaleExists()) {
-            message.error('Sản phẩm này đã có Flash Sale cho tất cả biến thể. Vui lòng chọn một biến thể cụ thể hoặc chọn sản phẩm khác.')
-            return
+        const productIds = Array.isArray(values.productIds) ? values.productIds : [values.productIds]
+        for (const productId of productIds) {
+          if (values.applyType === 'product') {
+            if (checkProductFlashSaleExists(productId)) {
+              message.error(`Sản phẩm ${getProductName(productId)} đã có Flash Sale cho tất cả biến thể.`)
+              return
+            }
+            
+            if (checkAnyVariantHasFlashSale(productId)) {
+              message.error(`Một số biến thể của sản phẩm ${getProductName(productId)} đã có Flash Sale.`)
+              return
+            }
           }
           
-          if (checkAnyVariantHasFlashSale()) {
-            message.error('Một số biến thể của sản phẩm này đã có Flash Sale. Không thể áp dụng Flash Sale cho toàn bộ sản phẩm.')
+          if (values.applyType === 'variant' && values.variantId && checkVariantFlashSaleExists(values.variantId)) {
+            message.error('Biến thể này đã có trong Flash Sale. Vui lòng chọn biến thể khác.')
             return
           }
         }
         
-        if (values.applyType === 'variant' && values.variantId && checkVariantFlashSaleExists(values.variantId)) {
-          message.error('Biến thể này đã có trong Flash Sale. Vui lòng chọn biến thể khác.')
-          return
+        // Tạo flash sale items cho từng sản phẩm
+        let successCount = 0
+        for (const productId of productIds) {
+          try {
+            const data = {
+              flashSaleId,
+              productId,
+              ...(values.applyType === 'variant' && values.variantId ? { variantId: values.variantId } : {}),
+              discountPercent: values.discountPercent
+            }
+            
+            await createFlashSaleItem(data)
+            successCount++
+          } catch (error) {
+            console.error(`Lỗi khi tạo flash sale cho sản phẩm ${getProductName(productId)}:`, error)
+            message.error(`Không thể thêm sản phẩm ${getProductName(productId)} vào flash sale`)
+          }
         }
         
-        const data = {
-          flashSaleId,
-          productId: values.productId,
-          ...(values.applyType === 'variant' && values.variantId ? { variantId: values.variantId } : {}),
-          discountPercent: values.discountPercent
+        if (successCount > 0) {
+          message.success(`Đã thêm ${successCount}/${productIds.length} sản phẩm vào flash sale thành công`)
+          queryClient.invalidateQueries({ 
+            queryKey: [FLASH_SALE_ITEM_QUERY_KEYS.FETCH_BY_FLASH_SALE, { flashSaleId }] 
+          })
+          handleCloseAddModal()
         }
-        createMutation.mutate(data)
       }
     } catch (error) {
       console.error('Validation failed:', error)
@@ -318,9 +349,9 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
   ]
 
   const getVariantsForProduct = () => {
-    if (!selectedProduct || !productsData?.results) return []
+    if (selectedProducts.length !== 1 || !productsData?.results) return []
     
-    const product = productsData.results.find((p: any) => p._id === selectedProduct)
+    const product = productsData.results.find((p: any) => p._id === selectedProducts[0])
     if (!product || !product.variants) {
       console.log('No variants found for product:', product)
       return []
@@ -329,12 +360,13 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     return product.variants
   }
   
-  const checkProductFlashSaleExists = () => {
-    if (!selectedProduct || !itemsData?.results) return false
+  const checkProductFlashSaleExists = (productId?: string) => {
+    const targetProductId = productId || (selectedProducts.length === 1 ? selectedProducts[0] : null)
+    if (!targetProductId || !itemsData?.results) return false
     
     return itemsData.results.some((item: IFlashSaleItem) => {
-      const productId = typeof item.productId === 'object' ? item.productId._id : item.productId
-      return productId === selectedProduct && !item.variantId
+      const itemProductId = typeof item.productId === 'object' ? item.productId._id : item.productId
+      return itemProductId === targetProductId && !item.variantId
     })
   }
   
@@ -347,13 +379,20 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     })
   }
   
-  const checkAnyVariantHasFlashSale = () => {
-    if (!selectedProduct || !itemsData?.results) return false
+  const checkAnyVariantHasFlashSale = (productId?: string) => {
+    const targetProductId = productId || (selectedProducts.length === 1 ? selectedProducts[0] : null)
+    if (!targetProductId || !itemsData?.results) return false
     
     return itemsData.results.some((item: IFlashSaleItem) => {
-      const productId = typeof item.productId === 'object' ? item.productId._id : item.productId
-      return productId === selectedProduct && item.variantId
+      const itemProductId = typeof item.productId === 'object' ? item.productId._id : item.productId
+      return itemProductId === targetProductId && item.variantId
     })
+  }
+  
+  const getProductName = (productId: string) => {
+    if (!productsData?.results) return 'N/A'
+    const product = productsData.results.find((p: any) => p._id === productId)
+    return product?.name || 'N/A'
   }
 
   return (
@@ -426,8 +465,9 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
               message="Hướng dẫn thêm sản phẩm vào Flash Sale"
               description={
                 <ul className="list-disc pl-5">
+                  <li>Có thể chọn nhiều sản phẩm cùng lúc để thêm vào Flash Sale</li>
                   <li>Chọn "Toàn bộ sản phẩm" để áp dụng Flash Sale cho tất cả biến thể của sản phẩm</li>
-                  <li>Chọn "Biến thể cụ thể" để áp dụng Flash Sale cho một biến thể nhất định</li>
+                  <li>Chọn "Biến thể cụ thể" để áp dụng Flash Sale cho một biến thể nhất định (chỉ chọn được 1 sản phẩm)</li>
                   <li>Không thể áp dụng Flash Sale cho toàn bộ sản phẩm nếu đã có biến thể có Flash Sale</li>
                   <li>Không thể áp dụng Flash Sale cho biến thể đã có trong Flash Sale khác</li>
                 </ul>
@@ -450,35 +490,42 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
               </Radio.Group>
             </Form.Item>
             
-            {selectedProduct && checkProductFlashSaleExists() && applyType === 'product' && (
-              <Alert
-                message="Cảnh báo: Sản phẩm đã có Flash Sale"
-                description="Sản phẩm này đã có Flash Sale cho tất cả biến thể. Vui lòng chọn một biến thể cụ thể hoặc chọn sản phẩm khác."
-                type="warning"
-                showIcon
-                className="mb-4"
-              />
+            {selectedProducts.length > 0 && applyType === 'product' && (
+              selectedProducts.some(productId => checkProductFlashSaleExists(productId)) && (
+                <Alert
+                  message="Cảnh báo: Một số sản phẩm đã có Flash Sale"
+                  description="Một số sản phẩm đã chọn đã có Flash Sale cho tất cả biến thể. Vui lòng bỏ chọn những sản phẩm này hoặc chọn biến thể cụ thể."
+                  type="warning"
+                  showIcon
+                  className="mb-4"
+                />
+              )
             )}
             
-            {selectedProduct && checkAnyVariantHasFlashSale() && applyType === 'product' && (
-              <Alert
-                message="Cảnh báo: Biến thể đã có Flash Sale"
-                description="Một số biến thể của sản phẩm này đã có Flash Sale. Không thể áp dụng Flash Sale cho toàn bộ sản phẩm. Vui lòng chọn 'Biến thể cụ thể' và chọn biến thể chưa có Flash Sale."
-                type="warning"
-                showIcon
-                className="mb-4"
-              />
+            {selectedProducts.length > 0 && applyType === 'product' && (
+              selectedProducts.some(productId => checkAnyVariantHasFlashSale(productId)) && (
+                <Alert
+                  message="Cảnh báo: Một số biến thể đã có Flash Sale"
+                  description="Một số biến thể của các sản phẩm đã chọn đã có Flash Sale. Không thể áp dụng Flash Sale cho toàn bộ sản phẩm. Vui lòng chọn 'Biến thể cụ thể'."
+                  type="warning"
+                  showIcon
+                  className="mb-4"
+                />
+              )
             )}
             
             <Form.Item
-              name="productId"
+              name={editingItem ? "productId" : "productIds"}
               label="Sản phẩm"
-              rules={[{ required: true, message: 'Vui lòng chọn sản phẩm' }]}
+              rules={[{ required: true, message: 'Vui lòng chọn ít nhất một sản phẩm' }]}
+              help={editingItem ? undefined : (applyType === 'variant' ? "Chỉ có thể chọn 1 sản phẩm khi chọn biến thể cụ thể" : "Có thể chọn nhiều sản phẩm cùng lúc")}
             >
               <Select
-                placeholder="Chọn sản phẩm"
+                mode={editingItem ? undefined : (applyType === 'variant' ? undefined : "multiple")}
+                placeholder={editingItem ? "Chọn sản phẩm" : (applyType === 'variant' ? "Chọn sản phẩm" : "Chọn một hoặc nhiều sản phẩm")}
                 onChange={handleProductChange}
                 disabled={!!editingItem}
+                maxTagCount="responsive"
               >
                 {productsData?.results?.map((product: any) => (
                   <Select.Option key={product._id} value={product._id}>
@@ -497,7 +544,7 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
               >
                 <Select
                   placeholder="Chọn biến thể"
-                  disabled={!selectedProduct || !!editingItem}
+                  disabled={selectedProducts.length !== 1 || !!editingItem}
                 >
                   {getVariantsForProduct().map((variant: any) => (
                     <Select.Option key={variant._id} value={variant._id}>
