@@ -22,10 +22,9 @@ import { BRAND_QUERY_KEYS } from "@/services/brand-service/brand.keys";
 import { ATTRIBUTE_QUERY_KEYS } from "@/services/product-service/product.key";
 import { fetchAllAttributes } from "@/services/product-service/attributes.apis";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { setIsOpenModalUpload, setSelectedMedia } from "@/redux/slices/media.slice";
-import { useNavigate } from "react-router";
+import { setIsOpenModalUpload } from "@/redux/slices/media.slice";
+import Editor from "@/components/editor";
 
-const { TextArea } = Input;
 const { Option } = Select;
 
 interface IVariants {
@@ -47,6 +46,7 @@ const ProductFormUpdate = (props: IProps) => {
   const [form] = Form.useForm();
   const [hasVariants, setHasVariants] = useState<boolean>(false);
   const [variants, setVariants] = useState<IVariants[]>([]);
+  const [description, setDescription] = useState<string>("")
   const dispatch = useAppDispatch();
   const selectedMedia = useAppSelector((state) => state.media.selectedMedia);
 
@@ -94,6 +94,7 @@ const ProductFormUpdate = (props: IProps) => {
         description: productData.description,
         status: productData.status || "active",
       });
+      setDescription(productData.description || "");
 
       const hasExistingVariants = productData.variants && productData.variants.length > 0;
       setHasVariants(hasExistingVariants);
@@ -211,7 +212,7 @@ const ProductFormUpdate = (props: IProps) => {
     };
 
     onSubmit && onSubmit(productUpdateData);
-    console.log("Product Update Data:", productUpdateData);
+    console.log('🚀 ~ onFinish ~ productUpdateData:', productUpdateData)
   };
 
   return (
@@ -221,27 +222,26 @@ const ProductFormUpdate = (props: IProps) => {
       onFinish={onFinish}
       className="space-y-6"
     >
-      {selectedMedia || productData?.image?.[0] ? (
-        <div className="flex flex-col items-center justify-center mb-6">
-          <Image
-            width={200}
-            src={
-              selectedMedia?.startsWith("http")
-                ? selectedMedia
-                : productData?.image?.[0] || `http://localhost:8080${selectedMedia}`
-            }
-            crossOrigin="anonymous"
-          />
-          <Button
-            type="primary"
-            style={{ marginTop: 4 }}
-            onClick={() => dispatch(setIsOpenModalUpload(true))}
-          >
-            {selectedMedia || productData?.image?.[0] ? "Sửa ảnh" : "Chọn ảnh"}
-          </Button>
+      <div className="flex flex-col items-center justify-center mb-6">
+        {selectedMedia || productData?.image?.[0] ? (
+            <Image
+              width={200}
+              src={
+                selectedMedia?.startsWith("http")
+                  ? selectedMedia
+                  : productData?.image?.[0] || `http://localhost:8080${selectedMedia}`
+              }
+              crossOrigin="anonymous"
+            />
+        ) : null}
         </div>
-      ) : null}
-
+      <Button
+        type="primary"
+        style={{ marginTop: 4 }}
+        onClick={() => dispatch(setIsOpenModalUpload(true))}
+      >
+        {selectedMedia || productData?.image?.[0] ? "Sửa ảnh" : "Chọn ảnh"}
+      </Button>
       <Card
         type="inner"
         title="Thông tin cơ bản"
@@ -343,7 +343,7 @@ const ProductFormUpdate = (props: IProps) => {
         </Row>
 
         <Form.Item name="description" label="Mô tả">
-          <TextArea rows={4} placeholder="Nhập mô tả sản phẩm" />
+          <Editor onChange={setDescription} value={description} />
         </Form.Item>
       </Card>
 
