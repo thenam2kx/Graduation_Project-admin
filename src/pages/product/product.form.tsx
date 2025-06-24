@@ -24,8 +24,8 @@ import { ATTRIBUTE_QUERY_KEYS } from "@/services/product-service/product.key"
 import { fetchAllAttributes } from "@/services/product-service/attributes.apis"
 import { useAppDispatch, useAppSelector } from "@/redux/hooks"
 import { setIsOpenModalUpload } from "@/redux/slices/media.slice"
+import Editor from "@/components/editor"
 
-const { TextArea } = Input
 const { Option } = Select
 
 interface IProps {
@@ -37,6 +37,7 @@ const ProductForm = (props: IProps) => {
   const [form] = Form.useForm()
   const [hasVariants, setHasVariants] = useState<boolean>(false)
   const [variants, setVariants] = useState<IVariants[]>([])
+  const [description, setDescription] = useState<string>("")
   const dispatch = useAppDispatch()
   const selectedMedia = useAppSelector((state) => state.media.selectedMedia)
 
@@ -149,7 +150,7 @@ const ProductForm = (props: IProps) => {
     name: values.name,
     slug: slug,
     price: hasVariants ? undefined : values.price,
-    description: values.description,
+    description: description,
     categoryId: values.category,
     brandId: values.brand,
     image: images,
@@ -169,8 +170,6 @@ const ProductForm = (props: IProps) => {
       : undefined,
     };
     onSubmit && onSubmit(productData)
-
-    console.log("Product Data:", productData)
   }
 
   return (
@@ -180,24 +179,24 @@ const ProductForm = (props: IProps) => {
       onFinish={onFinish}
       className="space-y-6"
     >
+      <div className="flex flex-col items-center justify-center mb-6">
       {
         selectedMedia && (
-          <div className="flex flex-col items-center justify-center mb-6">
-            <Image
-              width={200}
-              src={selectedMedia.startsWith("http") ? selectedMedia : `http://localhost:8080${selectedMedia}`}
-              crossOrigin="anonymous"
-            />
-            <Button
-              type="primary"
-              style={{ marginTop: 4 }}
-              onClick={() => dispatch(setIsOpenModalUpload(true))}
-            >
-              {selectedMedia ? 'Sửa ảnh' : 'Chọn ảnh'}
-            </Button>
-          </div>
+          <Image
+            width={200}
+            src={selectedMedia.startsWith("http") ? selectedMedia : `http://localhost:8080${selectedMedia}`}
+            crossOrigin="anonymous"
+          />
         )
       }
+        <Button
+          type="primary"
+          style={{ marginTop: 4 }}
+          onClick={() => dispatch(setIsOpenModalUpload(true))}
+        >
+          {selectedMedia ? 'Sửa ảnh' : 'Chọn ảnh'}
+        </Button>
+      </div>
       <Card type="inner" title="Thông tin cơ bản" className="mb-6" extra={
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-600">Biến thể</span>
@@ -283,7 +282,7 @@ const ProductForm = (props: IProps) => {
         </Row>
 
         <Form.Item name="description" label="Mô tả">
-          <TextArea rows={4} placeholder="Nhập mô tả sản phẩm" />
+          <Editor onChange={setDescription} value={description} />
         </Form.Item>
       </Card>
 
