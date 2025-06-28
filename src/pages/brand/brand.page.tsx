@@ -73,7 +73,7 @@ const Brand = () => {
   const handleFinish = async (values: IBrand) => {
   try {
     if (modalMode === "add") {
-      const res = await instance.post("/api/v1/brand/", values);
+      await instance.post("/api/v1/brand/", values);
       message.success("Thêm thương hiệu thành công");
     } else if (modalMode === "edit" && editingID) {
       await instance.patch(`/api/v1/brand/${editingID}`, values);

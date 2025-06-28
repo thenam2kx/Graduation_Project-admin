@@ -26,8 +26,7 @@ import { useAppSelector } from '@/redux/hooks'
 import NotificationList from '@/pages/notification/notification.page'
 import NotificationAdd from '@/pages/notification/form.notification.add'
 import ContactAddPage from '@/pages/contact/contact.form.add'
-import OrderPage from '@/pages/orders/orders_items.page'
-import OrderItemAddPage from '@/pages/orders/orders_items.page.add'
+import OrderPage from '@/pages/orders/order.pages'
 import ProductVariantsPage from '@/pages/productVariant/productVariant.page'
 import AttributePage from '@/pages/attribute/attribute.page'
 import VariantAttributePage from '@/pages/variantsat/variantAttribute.page'
@@ -36,6 +35,7 @@ import ProductAddPage from '@/pages/product/product.add.page'
 import ProductUpdatePage from '@/pages/product/product.update.page'
 import FlashSalePage from '@/pages/flash_sale/flash-sale.page'
 import FlashSaleCronService from '@/pages/flash_sale/flash-sale-cron.service'
+import OrderDetailPage from '@/pages/orders/order.detail.pages'
 
 
 const Routers = () => {
@@ -75,8 +75,8 @@ const Routers = () => {
           <Route path='/contact' element={<AdminContactPage />} />
           <Route path='/contact/add' element={<ContactAddPage />} />
 
-          <Route path='/orderitems' element={<OrderPage />} />
-          <Route path='/orderitems/add' element={<OrderItemAddPage />} />
+          <Route path='/orders' element={<OrderPage />} />
+          <Route path='/ordersDetails/:orderId' element={<OrderDetailPage />} />
 
 
           <Route path='/media' element={<MediaPage />} />

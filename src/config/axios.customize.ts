@@ -43,6 +43,7 @@ instance.interceptors.request.use(
   function (config: InternalAxiosRequestConfig) {
     // Do something before request is sent
     const access_token = store.getState().auth.access_token
+    // console.log('🧪 Token gửi lên:', access_token)
     if (access_token) {
       config.headers.Authorization = `Bearer ${access_token}`
     }

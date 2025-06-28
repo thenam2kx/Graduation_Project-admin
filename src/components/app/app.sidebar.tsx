@@ -113,9 +113,9 @@ const items: MenuProps['items'] = [
     label: 'Bán hàng',
     children: [
       {
-        key: '/orderitems',
+        key: '/orders',
         icon: <OrderedListOutlined />,
-        label: <Link to={'/orderitems'}>Đơn hàng</Link>
+        label: <Link to={'/orders'}>Đơn hàng</Link>
       },
       {
         key: '/discounts',
@@ -181,11 +181,7 @@ const items: MenuProps['items'] = [
         icon: <FileImageOutlined />,
         label: <Link to={'/media'}>Media</Link>
       },
-      {
-        key: '/orderitems',
-        icon: <OrderedListOutlined />,
-        label: <Link to={'/orderitems'}>Đơn hàng</Link>
-      }
+      
     ]
   }
 ]

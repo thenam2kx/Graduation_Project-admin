@@ -58,7 +58,10 @@ const ProductPage = () => {
         <img
           src={url}
           alt="Ảnh sản phẩm"
-          style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}
+          style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 
+          }}
+          crossOrigin="anonymous"
+
         />
       )
     },

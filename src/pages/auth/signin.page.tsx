@@ -23,6 +23,8 @@ const SigninPage = () => {
       dispatch(setStateSignin({ user: data.user, access_token: data.access_token }))
       dispatch(setAccessToken({ access_token: data.access_token }))
       message.success('Đăng nhập thành công!')
+      localStorage.setItem('accessToken', data.access_token)
+
       // navigate('/')
     },
     onError: (error) => {
