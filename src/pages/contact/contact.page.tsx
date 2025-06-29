@@ -5,20 +5,41 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { Link } from 'react-router-dom'
-import { useState } from 'react'
-import { IContact } from '@/types/contact'
+import { useEffect, useState } from 'react'
+import { IContact, IContactResponse } from '@/types/contact'
 
 export default function AdminContactPage() {
   const queryClient = useQueryClient()
   const [selectedContact, setSelectedContact] = useState<IContact | null>(null)
 
-  const { data: contacts, isLoading } = useQuery({
-    queryKey: ['contacts'],
-    queryFn: async () => {
-      const res = await axios.get('/api/v1/contacts')
-      return res.data?.results || []
-    }
-  })
+  const [pagination, setPagination] = useState({
+  current: 1,
+  pageSize: 10,
+  total: 14
+})
+
+const { data, isLoading } = useQuery<IContactResponse>({
+  queryKey: ['contacts', pagination.current, pagination.pageSize],
+  queryFn: async () => {
+    const res = await axios.get('/api/v1/contacts', {
+      params: {
+        page: pagination.current,
+        limit: pagination.pageSize
+      }
+    })
+    return res.data
+  },
+  placeholderData:(prevData) => prevData,
+  
+})
+useEffect(() => {
+  if (data) {
+    setPagination((prev) => ({
+      ...prev,
+      total: data.meta.total
+    }))
+  }
+}, [data])
 
   const deleteMutation = useMutation({
     mutationFn: async (_id: string) => {
@@ -110,12 +131,24 @@ export default function AdminContactPage() {
         <Button type='primary' style={{ marginBottom: 20 }}>Thêm mới liên hệ</Button>
       </Link>
       <Table
-        columns={columns}
-        dataSource={contacts?.filter((c: any) => !c.deleted)}
-        rowKey='_id'
-        bordered
-        loading={isLoading}
-      />
+      columns={columns}
+      dataSource={data?.results || []}
+      rowKey="_id"
+      bordered
+      loading={isLoading}
+      pagination={{
+        current: pagination.current,
+        pageSize: pagination.pageSize,
+        total: pagination.total,
+        showSizeChanger: true,
+        pageSizeOptions: ['5', '10', '20', '50'],
+        onChange: (page, pageSize) => {
+          setPagination({ current: page, pageSize, total: pagination.total })
+        }
+      }}
+/>
+
+
 
       <Modal
         open={!!selectedContact}

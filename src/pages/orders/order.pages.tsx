@@ -1,6 +1,6 @@
 import { Table, message, Tooltip, Button, Space, Dropdown } from "antd";
 import { EditOutlined, EyeOutlined } from "@ant-design/icons";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import instance from "@/config/axios.customize";
 import { IOrder, IOrderResponse } from "@/types/orders";
 import { useNavigate } from "react-router";
@@ -103,7 +103,7 @@ const handleChangeStatus = (record: IOrder, statusKey: string, label: string) =>
           if (record.status === "refunded" && isCancelled) return false;
           if (isRefunded && !["delivered"].includes(record.status)) return false;
 
-          return newIndex >= currentIndex || (isCancelled && canCancel);
+          return newIndex > currentIndex || (isCancelled && canCancel);
         }).map((status) => ({
           key: status.key,
           label: status.label,

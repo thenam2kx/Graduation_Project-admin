@@ -11,3 +11,13 @@ export interface IContact {
 }
 
 export type Contactvalues = Omit<IContact, '_id' | 'createdAt' | 'updatedAt' | 'deleted'>
+
+export interface IContactResponse {
+  meta: {
+    current: number
+    pageSize: number
+    total: number
+    pages: number
+  }
+  results: IContact[]
+}
