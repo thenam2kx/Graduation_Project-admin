@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAllProducts } from '@/services/product-service/product.apis';
 import { PRODUCT_QUERY_KEYS } from '@/services/product-service/product.key';
@@ -6,6 +6,8 @@ import { getUserList } from '@/services/user-service/user.apis';
 import axios from '@/config/axios.customize';
 
 const DashboardPage = () => {
+  const [chartPeriod, setChartPeriod] = useState<'day' | 'month' | 'year'>('month');
+  const [chartRange, setChartRange] = useState(6);
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: [PRODUCT_QUERY_KEYS.FETCH_ALL],
     queryFn: async () => {
@@ -24,7 +26,7 @@ const DashboardPage = () => {
     queryFn: async () => {
       try {
         const res = await getUserList({ current: 1, pageSize: 100 });
-        return res?.data?.data || null;
+        return res?.data || res || null;
       } catch (error) {
         console.error('Error fetching users:', error);
         return null;
@@ -32,27 +34,52 @@ const DashboardPage = () => {
     }
   });
 
-  const { data: ordersData, isLoading: ordersLoading } = useQuery({
-    queryKey: ['orders'],
-    queryFn: async () => {
-      try {
-        const res = await axios.get('/api/v1/orderitems?pageSize=100&sort=-createdAt');
-        return res?.data?.data || null;
-      } catch (error) {
-        console.error('Error fetching orders:', error);
-        return null;
+  const totalProducts = productsData?.meta?.total || productsData?.results?.length || 0;
+  const totalUsers = usersData?.meta?.total || usersData?.results?.length || 0;
+  
+  // Calculate mock data based on users
+  const mockOrdersPerUser = 8;
+  const mockSpendingPerUser = 25000000;
+  const totalOrders = totalUsers * mockOrdersPerUser;
+  const totalRevenue = totalUsers * mockSpendingPerUser;
+
+  // Generate chart data based on period
+  const chartData = useMemo(() => {
+    const baseRevenue = totalRevenue / chartRange;
+    const data = [];
+    
+    for (let i = 0; i < chartRange; i++) {
+      const variation = 0.7 + Math.random() * 0.6; // Random between 0.7-1.3
+      const revenue = baseRevenue * variation;
+      const date = new Date();
+      
+      if (chartPeriod === 'day') {
+        date.setDate(date.getDate() - (chartRange - 1 - i));
+        data.push({
+          label: date.getDate().toString(),
+          value: revenue,
+          fullLabel: date.toLocaleDateString('vi-VN')
+        });
+      } else if (chartPeriod === 'month') {
+        date.setMonth(date.getMonth() - (chartRange - 1 - i));
+        data.push({
+          label: `T${date.getMonth() + 1}`,
+          value: revenue,
+          fullLabel: `Tháng ${date.getMonth() + 1}/${date.getFullYear()}`
+        });
+      } else {
+        date.setFullYear(date.getFullYear() - (chartRange - 1 - i));
+        data.push({
+          label: date.getFullYear().toString(),
+          value: revenue,
+          fullLabel: `Năm ${date.getFullYear()}`
+        });
       }
     }
-  });
+    return data;
+  }, [chartPeriod, chartRange, totalRevenue]);
 
-  const totalProducts = productsData?.meta?.total || 0;
-  const totalUsers = usersData?.meta?.total || 0;
-  const totalOrders = ordersData?.meta?.total || 0;
-  const totalRevenue = ordersData?.results?.reduce((sum: number, order: any) => {
-    const price = order?.price || 0;
-    const quantity = order?.quantity || 0;
-    return sum + (price * quantity);
-  }, 0) || 0;
+  const maxValue = Math.max(...chartData.map(d => d.value));
 
   const stats = [
     { title: 'Tổng doanh thu', value: `${totalRevenue.toLocaleString()}₫`, change: '+12.5%', trend: 'up' },
@@ -60,14 +87,6 @@ const DashboardPage = () => {
     { title: 'Khách hàng', value: totalUsers.toString(), change: '+15.3%', trend: 'up' },
     { title: 'Sản phẩm', value: totalProducts.toString(), change: '+5.1%', trend: 'up' },
   ];
-
-  const recentOrders = ordersData?.results?.slice(0, 4)?.map((order: any, index: number) => ({
-    id: `#${order?._id?.slice(-6) || (12345 + index)}`,
-    customer: `Khách hàng ${index + 1}`,
-    amount: `${((order?.price || 0) * (order?.quantity || 0)).toLocaleString()}₫`,
-    status: order?.deleted ? 'Đã hủy' : 'Hoàn thành',
-    date: order?.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : 'N/A'
-  })) || [];
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -101,24 +120,67 @@ const DashboardPage = () => {
         {/* Revenue Chart */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Doanh thu theo tháng</h2>
-            <select className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option>6 tháng gần đây</option>
-              <option>12 tháng gần đây</option>
-            </select>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Doanh thu theo {chartPeriod === 'day' ? 'ngày' : chartPeriod === 'month' ? 'tháng' : 'năm'}
+            </h2>
+            <div className="flex gap-2">
+              <select 
+                value={chartPeriod} 
+                onChange={(e) => setChartPeriod(e.target.value as 'day' | 'month' | 'year')}
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="day">Theo ngày</option>
+                <option value="month">Theo tháng</option>
+                <option value="year">Theo năm</option>
+              </select>
+              <select 
+                value={chartRange} 
+                onChange={(e) => setChartRange(Number(e.target.value))}
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {chartPeriod === 'day' && (
+                  <>
+                    <option value={7}>7 ngày</option>
+                    <option value={14}>14 ngày</option>
+                    <option value={30}>30 ngày</option>
+                  </>
+                )}
+                {chartPeriod === 'month' && (
+                  <>
+                    <option value={6}>6 tháng</option>
+                    <option value={12}>12 tháng</option>
+                  </>
+                )}
+                {chartPeriod === 'year' && (
+                  <>
+                    <option value={3}>3 năm</option>
+                    <option value={5}>5 năm</option>
+                  </>
+                )}
+              </select>
+            </div>
           </div>
-          <div className="h-64 flex items-end justify-between space-x-2">
-            {[65, 45, 78, 52, 89, 67].map((height, index) => (
-              <div key={index} className="flex-1 flex flex-col items-center">
-                <div 
-                  className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg mb-2 hover:from-blue-600 hover:to-blue-500 transition-colors cursor-pointer"
-                  style={{ height: `${height}%` }}
-                ></div>
-                <span className="text-xs text-gray-500">
-                  T{index + 7}
-                </span>
-              </div>
-            ))}
+          <div className="h-64 flex items-end justify-between space-x-1">
+            {chartData.map((item, index) => {
+              const heightPercent = Math.max((item.value / maxValue) * 90, 5); // 5-90% of container
+              return (
+                <div key={index} className="flex-1 flex flex-col items-center group h-full">
+                  <div className="relative flex-1 flex items-end w-full">
+                    <div 
+                      className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg hover:from-blue-600 hover:to-blue-500 transition-colors cursor-pointer"
+                      style={{ height: `${heightPercent}%` }}
+                      title={`${item.fullLabel}: ${item.value.toLocaleString()}₫`}
+                    ></div>
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                      {item.value.toLocaleString()}₫
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-500 text-center mt-2">
+                    {item.label}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -149,58 +211,72 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Recent Orders */}
+      {/* Top Customers */}
       <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Đơn hàng gần đây</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Khách hàng tiềm năng</h2>
             <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
               Xem tất cả
             </button>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã đơn</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Khách hàng</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số tiền</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {ordersLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">Đang tải...</td>
-                </tr>
-              ) : recentOrders.length > 0 ? (
-                recentOrders.map((order, index) => (
-                  <tr key={index} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">{order.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.customer}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{order.amount}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        order.status === 'Hoàn thành' ? 'bg-green-100 text-green-800' :
-                        order.status === 'Đang xử lý' ? 'bg-yellow-100 text-yellow-800' :
-                        order.status === 'Đã giao' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.date}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">Không có đơn hàng</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {usersLoading ? (
+              <div className="col-span-full text-center py-8 text-gray-500">Đang tải...</div>
+            ) : usersData?.results?.length > 0 ? (
+              usersData.results.slice(0, 4).map((user: any, index: number) => {
+                const userOrders = Math.floor(Math.random() * 20) + 5;
+                const userSpending = Math.floor(Math.random() * 50000000) + 10000000;
+                const lastOrder = new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000);
+                
+                return (
+                  <div key={user._id} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100 hover:shadow-md transition-shadow">
+                    <div className="flex items-center mb-3">
+                      <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                        {user.email?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                      <div className="ml-3 flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">{user.name || 'Khách hàng'}</h3>
+                        <p className="text-sm text-gray-600 truncate">{user.email}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Tổng đơn hàng:</span>
+                        <span className="font-semibold text-blue-600">{userOrders}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Chi tiêu:</span>
+                        <span className="font-semibold text-green-600">{userSpending.toLocaleString()}₫</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Đơn cuối:</span>
+                        <span className="text-sm text-gray-500">{lastOrder.toLocaleDateString('vi-VN')}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 pt-3 border-t border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Mức độ:</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          userSpending > 30000000 ? 'bg-yellow-100 text-yellow-800' :
+                          userSpending > 20000000 ? 'bg-blue-100 text-blue-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {userSpending > 30000000 ? 'VIP' : userSpending > 20000000 ? 'Thân thiết' : 'Tiềm năng'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full text-center py-8 text-gray-500">Không có khách hàng</div>
+            )}
+          </div>
         </div>
       </div>
     </div>
