@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
-import { Table, Button, Modal, Form, InputNumber, DatePicker, message, Space, Tooltip, Select } from 'antd'
+import { Table, Button, Modal, Form, InputNumber, DatePicker, message, Space, Tooltip, Select, Tag } from 'antd'
 import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons'
 import moment from 'moment'
 import { IOrderItem } from '@/types/orders'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
 import { Link } from 'react-router'
+import { fetchAllOrdersAPI, updateOrderStatusAPI, cancelOrderAPI } from '@/services/order-service/order.apis'
+import { ORDER_KEYS } from '@/services/order-service/order.keys'
+import axios from 'axios'
 
 const OrderPage = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
@@ -29,144 +31,225 @@ const OrderPage = () => {
   description: string;
 }
 
-  const { data  = [], isLoading } = useQuery({
-    queryKey: ['orderItems'],
+  const { data  = [], isLoading, refetch } = useQuery({
+    queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS],
     queryFn: async () => {
-      const res = await axios.get(`http://localhost:8080/api/v1/orderitems`)
-      return res.data.data.results;
-    }
+      try {
+        console.log('Fetching orders from API...')
+        const res = await fetchAllOrdersAPI()
+        console.log('Orders API response:', res)
+        
+        if (res?.data?.results && Array.isArray(res.data.results)) {
+          console.log('Found orders:', res.data.results.length)
+          return res.data.results;
+        } else {
+          console.warn('No orders found or invalid response format')
+          return [];
+        }
+      } catch (error) {
+        console.error('Error fetching orders:', error)
+        messageApi.error('Không thể lấy danh sách đơn hàng')
+        return []
+      }
+    },
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0,
+    refetchInterval: 5000 // Tự động làm mới mỗi 5 giây
   })
 
-  // Lấy danh sách products
-  const { data: productsData, isLoading: isProductsLoading } = useQuery<IProduct[]>({
-    queryKey: ['products'],
-    queryFn: async () => {
-      const res = await axios.get('/api/v1/products');
-      return res.data.data?.results || res.data.results || [];
-    }
-  });
+  // Lấy danh sách products - tạm thời bỏ qua vì không cần thiết
+  // const { data: productsData, isLoading: isProductsLoading } = useQuery<IProduct[]>({
+  //   queryKey: ['products'],
+  //   queryFn: async () => {
+  //     const res = await axios.get('/api/v1/products');
+  //     return res.data.data?.results || res.data.results || [];
+  //   }
+  // });
 
-  const mutation = useMutation({
-    mutationFn: async (item: IOrderItem) => {
-      const updatedItem = item.deleted
-        ? { ...item, deleted: false, deletedAt: null }
-        : { ...item, deleted: true, deletedAt: new Date().toISOString() }
-
-      return axios.put(`http://localhost:8080/api/v1/orderitems/${item._id}`, updatedItem)
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ orderId, status }: { orderId: string, status: string }) => {
+      return updateOrderStatusAPI(orderId, status)
     },
     onSuccess: () => {
-      messageApi.success('Cập nhật trạng thái thành công')
-      queryClient.invalidateQueries({ queryKey: ['orderItems']})
+      messageApi.success('Cập nhật trạng thái đơn hàng thành công')
+      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS]})
+    },
+    onError: (error) => {
+      messageApi.error('Có lỗi xảy ra khi cập nhật trạng thái đơn hàng')
+      console.error('Error updating order status:', error)
     }
   })
+  
+  const cancelOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      return cancelOrderAPI(orderId)
+    },
+    onSuccess: () => {
+      messageApi.success('Hủy đơn hàng thành công')
+      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS]})
+    },
+    onError: (error) => {
+      messageApi.error('Có lỗi xảy ra khi hủy đơn hàng')
+      console.error('Error cancelling order:', error)
+    }
+  })
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'orange';
+      case 'confirmed': return 'blue';
+      case 'processing': return 'cyan';
+      case 'shipped': return 'geekblue';
+      case 'delivered': return 'purple';
+      case 'completed': return 'green';
+      case 'cancelled': return 'red';
+      case 'refunded': return 'volcano';
+      default: return 'default';
+    }
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid': return 'green';
+      case 'pending': return 'orange';
+      case 'failed': return 'red';
+      case 'refunded': return 'volcano';
+      case 'unpaid': return 'gray';
+      default: return 'default';
+    }
+  };
 
   const columns = [
     {
-      title: 'Đơn hàng',
-      dataIndex: 'orderId',
-      key: 'orderId'
+      title: 'Mã đơn hàng',
+      dataIndex: '_id',
+      key: '_id',
+      render: (id: string) => <span className="font-medium">{id.slice(-8).toUpperCase()}</span>
     },
     {
-      title: 'Sản phẩm',
-      dataIndex: 'productId',
-      key: 'productId'
+      title: 'Khách hàng',
+      dataIndex: 'userId',
+      key: 'userId',
+      render: (user: any) => {
+        if (!user) return 'N/A';
+        const name = user.name || 'Không có tên';
+        const email = user.email ? `(${user.email})` : '';
+        return `${name} ${email}`;
+      }
     },
     {
-      title: 'Loại',
-      dataIndex: 'variantId',
-      key: 'variantId'
-    },
-    {
-      title: 'Số lượng',
-      dataIndex: 'quantity',
-      key: 'quantity'
-    },
-    {
-      title: 'Giá (đơn vị)',
-      dataIndex: 'price',
-      key: 'price',
+      title: 'Tổng tiền',
+      dataIndex: 'totalPrice',
+      key: 'totalPrice',
       render: (price: number) => price ? `${price.toLocaleString()} đ` : '-'
+    },
+    {
+      title: 'Phương thức thanh toán',
+      dataIndex: 'paymentMethod',
+      key: 'paymentMethod',
+      render: (method: string) => {
+        switch (method) {
+          case 'vnpay': return 'VNPay';
+          case 'momo': return 'MoMo';
+          case 'cash': return 'Tiền mặt';
+          case 'credit_card': return 'Thẻ tín dụng';
+          default: return method || 'N/A';
+        }
+      }
+    },
+    {
+      title: 'Trạng thái thanh toán',
+      dataIndex: 'paymentStatus',
+      key: 'paymentStatus',
+      render: (status: string) => {
+        const displayText = {
+          'paid': 'Đã thanh toán',
+          'pending': 'Đang xử lý',
+          'failed': 'Thất bại',
+          'refunded': 'Đã hoàn tiền',
+          'unpaid': 'Chưa thanh toán'
+        }[status] || status;
+        
+        return <Tag color={getPaymentStatusColor(status)}>{displayText}</Tag>;
+      }
+    },
+    {
+      title: 'Trạng thái đơn hàng',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        const displayText = {
+          'pending': 'Chờ xác nhận',
+          'confirmed': 'Đã xác nhận',
+          'processing': 'Đang xử lý',
+          'shipped': 'Đang giao hàng',
+          'delivered': 'Đã giao hàng',
+          'completed': 'Hoàn thành',
+          'cancelled': 'Đã hủy',
+          'refunded': 'Đã hoàn tiền'
+        }[status] || status;
+        
+        return <Tag color={getStatusColor(status)}>{displayText}</Tag>;
+      }
     },
     {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      defaultSortOrder: 'descend',
       render: (value: string) => new Date(value).toLocaleString()
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'deleted',
-      key: 'deleted',
-      render: (deleted: boolean | undefined) =>
-        deleted ? <span style={{ color: 'red' }}>Đã xóa</span> : <span style={{ color: 'green' }}>Hoạt động</span>
     },
     {
       title: 'Hành động',
       key: 'action',
-      render: (_: any, record: IOrderItem) => (
+      render: (_: any, record: any) => (
         <Space size="middle">
-          <Tooltip title="Chỉnh sửa">
-            <Button icon={<EditOutlined />} onClick={() => showEditModal(record)} />
+          <Tooltip title="Chi tiết">
+            <Button icon={<EditOutlined />} onClick={() => showOrderDetails(record)} />
           </Tooltip>
-          <Tooltip title={record.deleted ? 'Phục hồi' : 'Xóa'}>
-            <Button
-              icon={<DeleteOutlined />}
-              danger={!record.deleted}
-              type={record.deleted ? 'default' : 'primary'}
-              onClick={() => showDeleteConfirm(record)}
-            >
-              {record.deleted ? 'Phục hồi' : 'Xóa'}
-            </Button>
-          </Tooltip>
+          {record.status !== 'cancelled' && record.status !== 'completed' && (
+            <Tooltip title="Hủy đơn hàng">
+              <Button
+                icon={<DeleteOutlined />}
+                danger
+                onClick={() => showCancelConfirm(record._id)}
+              >
+                Hủy
+              </Button>
+            </Tooltip>
+          )}
         </Space>
       )
     }
   ]
 
-  const showEditModal = (item: IOrderItem) => {
-    setCurrentItem(item)
-    form.setFieldsValue({
-      ...item,
-      createdAt: moment(item.createdAt)
-    })
+  const showOrderDetails = (order: any) => {
+    // Hiển thị modal chi tiết đơn hàng
+    setCurrentItem(order)
     setIsModalVisible(true)
   }
 
-  const showDeleteConfirm = (item: IOrderItem) => {
+  const showCancelConfirm = (orderId: string) => {
     confirm({
-      title: item.deleted ? 'Bạn có muốn phục hồi đơn hàng này?' : 'Bạn có chắc chắn muốn xóa đơn hàng này?',
+      title: 'Bạn có chắc chắn muốn hủy đơn hàng này?',
       icon: <ExclamationCircleOutlined />,
-      okText: item.deleted ? 'Phục hồi' : 'Xóa',
-      okType: item.deleted ? 'default' : 'danger',
-      cancelText: 'Hủy',
+      okText: 'Hủy đơn hàng',
+      okType: 'danger',
+      cancelText: 'Không',
       onOk() {
-        mutation.mutate(item)
+        cancelOrderMutation.mutate(orderId)
       }
     })
   }
 
-  const handleFormSubmit = async () => {
+  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     try {
-      const values = await form.validateFields()
-      const newItem: IOrderItem = {
-        ...values,
-        _id: currentItem ? currentItem._id : Date.now().toString(),
-        createdAt: values.createdAt.format('YYYY-MM-DD'),
-        deleted: values.deleted || false
-      }
-
-      if (currentItem) {
-        await axios.put(`http://localhost:8080/api/v1/orderitems/${currentItem._id}`, newItem)
-        messageApi.success('Cập nhật đơn hàng thành công')
-      } else {
-        await axios.post(`http://localhost:8080/api/v1/orderitems`, newItem)
-        messageApi.success('Thêm đơn hàng thành công')
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['orderItems']})
+      updateStatusMutation.mutate({ orderId, status: newStatus })
       setIsModalVisible(false)
     } catch (error) {
-      messageApi.error('Có lỗi xảy ra khi gửi form')
+      messageApi.error('Có lỗi xảy ra khi cập nhật trạng thái')
     }
   }
 
@@ -175,11 +258,19 @@ const OrderPage = () => {
       {contextHolder}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Quản lý đơn hàng</h1>
-        <Link to={`/orderitems/add`}>
-        <Button type="primary" icon={<PlusOutlined />}>
-          Thêm đơn hàng
-        </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => refetch()} 
+            icon={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>}
+          >
+            Làm mới
+          </Button>
+          <Link to={`/orderitems/add`}>
+            <Button type="primary" icon={<PlusOutlined />}>
+              Thêm đơn hàng
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Table
@@ -187,59 +278,170 @@ const OrderPage = () => {
         dataSource={data}
         rowKey="_id"
         loading={isLoading}
-        pagination={{ pageSize: 5 }}
+        pagination={{ pageSize: 10 }}
+        defaultSortOrder="descend"
+        sortDirections={['descend', 'ascend']}
+        expandable={{
+          expandedRowRender: (record) => (
+            <div>
+              <h4 className="font-medium mb-2">Sản phẩm trong đơn hàng:</h4>
+              <ul className="pl-5">
+                {record.items?.map((item: any, index: number) => (
+                  <li key={index} className="mb-1">
+                    {item.productId?.name || 'Sản phẩm'} - {item.variantId?.sku || 'Phiên bản'} x {item.quantity} = {(item.price * item.quantity).toLocaleString()} đ
+                  </li>
+                )) || <li>Không có sản phẩm</li>}
+              </ul>
+              {record.addressId && (
+                <div className="mt-3">
+                  <h4 className="font-medium mb-1">Địa chỉ giao hàng:</h4>
+                  <p>{record.addressId.province}, {record.addressId.district}, {record.addressId.ward}, {record.addressId.address}</p>
+                </div>
+              )}
+            </div>
+          ),
+        }}
       />
 
       <Modal
-        title={currentItem ? 'Chỉnh sửa đơn hàng' : 'Thêm đơn hàng mới'}
+        title="Chi tiết đơn hàng"
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
-        onOk={handleFormSubmit}
-        okText={currentItem ? 'Cập nhật' : 'Thêm'}
-        cancelText="Hủy"
-        width={600}
+        footer={[
+          <Button key="close" onClick={() => setIsModalVisible(false)}>
+            Đóng
+          </Button>,
+          currentItem && currentItem.status !== 'cancelled' && currentItem.status !== 'completed' && currentItem.status !== 'refunded' && (
+            <Select
+              key="status"
+              style={{ width: 200, marginRight: 8 }}
+              placeholder="Cập nhật trạng thái"
+              onChange={(value) => handleUpdateStatus(currentItem._id, value)}
+              defaultValue={currentItem?.status}
+            >
+              {/* Hiển thị tất cả các trạng thái nhưng disable các trạng thái không hợp lệ */}
+              <Select.Option value="pending" disabled={currentItem.status !== 'pending'}>Chờ xác nhận</Select.Option>
+              <Select.Option value="confirmed" disabled={currentItem.status !== 'pending' && currentItem.status !== 'confirmed'}>Đã xác nhận</Select.Option>
+              <Select.Option value="processing" disabled={currentItem.status !== 'confirmed' && currentItem.status !== 'processing'}>Đang xử lý</Select.Option>
+              <Select.Option value="shipped" disabled={currentItem.status !== 'processing' && currentItem.status !== 'shipped'}>Đang giao hàng</Select.Option>
+              <Select.Option value="delivered" disabled={currentItem.status !== 'shipped' && currentItem.status !== 'delivered'}>Đã giao hàng</Select.Option>
+              <Select.Option value="completed" disabled={currentItem.status !== 'delivered' && currentItem.status !== 'completed'}>Hoàn thành</Select.Option>
+              <Select.Option value="cancelled" disabled={!['pending', 'confirmed', 'processing', 'shipped'].includes(currentItem.status)}>Hủy đơn hàng</Select.Option>
+              <Select.Option value="refunded" disabled={!['delivered', 'completed'].includes(currentItem.status)}>Hoàn tiền</Select.Option>
+            </Select>
+          )
+        ]}
+        width={700}
       >
-        <Form form={form} layout="vertical" initialValues={{ deleted: false }}>
-          <Form.Item
-            name="productId"
-            label="Product ID"
-            rules={[{ required: true, message: 'Product ID không được để trống' }]}
-          >
-            <Select style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item
-            name="variantId"
-            label="Variant ID"
-            rules={[{ required: true, message: 'Variant ID không được để trống' }]}
-          >
-            <Select style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item
-            name="quantity"
-            label="Số lượng"
-            rules={[{ required: true, type: 'number', min: 1, message: 'Số lượng phải lớn hơn 0' }]}
-          >
-            <InputNumber min={1} style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item
-            name="price"
-            label="Giá (đơn vị)"
-            rules={[{ required: true, type: 'number', min: 0, message: 'Giá phải lớn hơn hoặc bằng 0' }]}
-          >
-            <InputNumber min={0} style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item
-            name="createdAt"
-            label="Ngày tạo"
-            rules={[{ required: true, message: 'Ngày tạo không được để trống' }]}
-          >
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
-        </Form>
+        {currentItem && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-gray-500">Mã đơn hàng:</p>
+                <p className="font-medium">{currentItem._id}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Ngày tạo:</p>
+                <p>{new Date(currentItem.createdAt).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Khách hàng:</p>
+                <p className="font-medium">{currentItem.userId?.name || 'Không có tên'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Email:</p>
+                <p>{currentItem.userId?.email || 'Không có email'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Số điện thoại:</p>
+                <p>{currentItem.userId?.phone || 'Không có số điện thoại'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Tổng tiền:</p>
+                <p className="font-medium">{currentItem.totalPrice?.toLocaleString()} đ</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Phí vận chuyển:</p>
+                <p>{currentItem.shippingPrice?.toLocaleString()} đ</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Phương thức thanh toán:</p>
+                <p>{{
+                  'vnpay': 'VNPay',
+                  'momo': 'MoMo',
+                  'cash': 'Tiền mặt',
+                  'credit_card': 'Thẻ tín dụng'
+                }[currentItem.paymentMethod] || currentItem.paymentMethod}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Trạng thái thanh toán:</p>
+                <Tag color={getPaymentStatusColor(currentItem.paymentStatus)}>{
+                  {
+                    'paid': 'Đã thanh toán',
+                    'pending': 'Đang xử lý',
+                    'failed': 'Thất bại',
+                    'refunded': 'Đã hoàn tiền',
+                    'unpaid': 'Chưa thanh toán'
+                  }[currentItem.paymentStatus] || currentItem.paymentStatus
+                }</Tag>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-medium mb-2">Sản phẩm:</h4>
+              <Table
+                dataSource={currentItem.items || []}
+                rowKey="_id"
+                pagination={false}
+                size="small"
+                columns={[
+                  {
+                    title: 'Sản phẩm',
+                    dataIndex: 'productId',
+                    key: 'product',
+                    render: (product) => product?.name || 'N/A'
+                  },
+                  {
+                    title: 'Phiên bản',
+                    dataIndex: 'variantId',
+                    key: 'variant',
+                    render: (variant) => variant?.sku || 'N/A'
+                  },
+                  {
+                    title: 'Số lượng',
+                    dataIndex: 'quantity',
+                    key: 'quantity'
+                  },
+                  {
+                    title: 'Đơn giá',
+                    dataIndex: 'price',
+                    key: 'price',
+                    render: (price) => `${price?.toLocaleString()} đ`
+                  },
+                  {
+                    title: 'Thành tiền',
+                    key: 'total',
+                    render: (_, record) => `${(record.price * record.quantity).toLocaleString()} đ`
+                  }
+                ]}
+              />
+            </div>
+            
+            {currentItem.addressId && (
+              <div>
+                <h4 className="font-medium mb-1">Địa chỉ giao hàng:</h4>
+                <p>{currentItem.addressId.province}, {currentItem.addressId.district}, {currentItem.addressId.ward}, {currentItem.addressId.address}</p>
+              </div>
+            )}
+            
+            {currentItem.note && (
+              <div>
+                <h4 className="font-medium mb-1">Ghi chú:</h4>
+                <p>{currentItem.note}</p>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   )

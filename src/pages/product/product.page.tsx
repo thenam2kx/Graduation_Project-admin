@@ -24,6 +24,7 @@ const ProductPage = () => {
       }
     }
   })
+  console.log('🚀 ~ ProductPage ~ listProducts:', listProducts)
 
   const deleteProductMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -59,6 +60,7 @@ const ProductPage = () => {
           src={url}
           alt="Ảnh sản phẩm"
           style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}
+          crossOrigin="anonymous"
         />
       )
     },
@@ -71,6 +73,9 @@ const ProductPage = () => {
       title: 'Giá',
       dataIndex: 'price',
       key: 'price',
+      render: (price: number, product: IProduct) => {
+        return <span>{product?.variants && product.variants.length > 0 ? product.variants[0].price : price}</span>
+      }
     },
     {
       title: 'Tồn kho',
