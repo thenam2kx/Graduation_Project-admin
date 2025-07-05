@@ -374,6 +374,10 @@ const OrderPage = () => {
                 }[currentItem.paymentMethod] || currentItem.paymentMethod}</p>
               </div>
               <div>
+                <p className="text-gray-500">Lí do hủy/hoàn tiền:</p>
+                <p>{currentItem.reason}</p>
+              </div>
+              <div>
                 <p className="text-gray-500">Trạng thái thanh toán:</p>
                 <Tag color={getPaymentStatusColor(currentItem.paymentStatus)}>{
                   {
@@ -401,6 +405,51 @@ const OrderPage = () => {
                     key: 'product',
                     render: (product) => product?.name || 'N/A'
                   },
+                  {
+                    title: 'Dung tích',
+                    key: 'capacity',
+                    render: (_, record) => {
+                      // Kiểm tra và log dữ liệu để debug
+                      console.log('Product data:', record.productId);
+                      console.log('Variant data:', record.variantId);
+                      
+                      // Lấy dung tích từ sản phẩm chính
+                      const productCapacity = record.productId?.capacity;
+                      
+                      // Kiểm tra variant_attributes
+                      const attrs = record.variantId?.variant_attributes || [];
+                      console.log('Variant attributes:', attrs);
+                      
+                      // Tìm thuộc tính dung tích trong variant_attributes
+                      let variantCapacity = null;
+                      for (const attr of attrs) {
+                        console.log('Checking attribute:', attr);
+                        if (attr?.attributeId) {
+                          const slug = attr.attributeId.slug?.toLowerCase();
+                          const name = attr.attributeId.name?.toLowerCase();
+                          console.log('Attribute slug:', slug, 'name:', name);
+                          
+                          if (slug === 'dung-tich' || name === 'dung tích' || name === 'dung tich' || 
+                              slug === 'capacity' || name === 'capacity') {
+                            variantCapacity = attr.value;
+                            console.log('Found capacity in variant:', variantCapacity);
+                            break;
+                          }
+                        }
+                      }
+                      
+                      // Hiển thị dung tích từ variant hoặc sản phẩm chính
+                      if (variantCapacity) {
+                        return `${variantCapacity}ml`;
+                      } else if (productCapacity) {
+                        return `${productCapacity}ml`;
+                      } else {
+                        return '100ml'; // Giá trị mặc định nếu không tìm thấy
+                      }
+                    }
+                  },
+
+
                   {
                     title: 'Phiên bản',
                     dataIndex: 'variantId',
