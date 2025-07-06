@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Table, Button, Modal, Form, InputNumber, DatePicker, message, Space, Tooltip, Select, Tag } from 'antd'
 import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons'
 import moment from 'moment'
@@ -55,17 +55,8 @@ const OrderPage = () => {
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0,
-    refetchInterval: 5000 // Tự động làm mới mỗi 5 giây
+    refetchInterval: 5000
   })
-
-  // Lấy danh sách products - tạm thời bỏ qua vì không cần thiết
-  // const { data: productsData, isLoading: isProductsLoading } = useQuery<IProduct[]>({
-  //   queryKey: ['products'],
-  //   queryFn: async () => {
-  //     const res = await axios.get('/api/v1/products');
-  //     return res.data.data?.results || res.data.results || [];
-  //   }
-  // });
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string, status: string }) => {
@@ -133,9 +124,10 @@ const OrderPage = () => {
       key: 'userId',
       render: (user: any) => {
         if (!user) return 'N/A';
-        const name = user.name || 'Không có tên';
+        console.log('User data:', user);
+        const fullName = user.fullName || user.name || 'Không có tên';
         const email = user.email ? `(${user.email})` : '';
-        return `${name} ${email}`;
+        return `${fullName} ${email}`;
       }
     },
     {
@@ -292,10 +284,18 @@ const OrderPage = () => {
                   </li>
                 )) || <li>Không có sản phẩm</li>}
               </ul>
-              {record.addressId && (
+
+              {record.addressFree && (
                 <div className="mt-3">
                   <h4 className="font-medium mb-1">Địa chỉ giao hàng:</h4>
-                  <p>{record.addressId.province}, {record.addressId.district}, {record.addressId.ward}, {record.addressId.address}</p>
+                  {record.addressFree.receiverName && <p><strong>Người nhận:</strong> {record.addressFree.receiverName}</p>}
+                  {record.addressFree.receiverPhone && <p><strong>SĐT:</strong> {record.addressFree.receiverPhone}</p>}
+                  <p>
+                    {record.addressFree.province ? record.addressFree.province : ''}
+                    {record.addressFree.district ? `, ${record.addressFree.district}` : ''}
+                    {record.addressFree.ward ? `, ${record.addressFree.ward}` : ''}
+                    {record.addressFree.address ? `, ${record.addressFree.address}` : ''}
+                  </p>
                 </div>
               )}
             </div>
@@ -311,6 +311,10 @@ const OrderPage = () => {
           <Button key="close" onClick={() => setIsModalVisible(false)}>
             Đóng
           </Button>,
+          currentItem && currentItem.status === 'delivered' && (
+            <div key="info" style={{ marginRight: 8, color: '#1890ff' }}>
+            </div>
+          ),
           currentItem && currentItem.status !== 'cancelled' && currentItem.status !== 'completed' && currentItem.status !== 'refunded' && (
             <Select
               key="status"
@@ -325,7 +329,7 @@ const OrderPage = () => {
               <Select.Option value="processing" disabled={currentItem.status !== 'confirmed' && currentItem.status !== 'processing'}>Đang xử lý</Select.Option>
               <Select.Option value="shipped" disabled={currentItem.status !== 'processing' && currentItem.status !== 'shipped'}>Đang giao hàng</Select.Option>
               <Select.Option value="delivered" disabled={currentItem.status !== 'shipped' && currentItem.status !== 'delivered'}>Đã giao hàng</Select.Option>
-              <Select.Option value="completed" disabled={currentItem.status !== 'delivered' && currentItem.status !== 'completed'}>Hoàn thành</Select.Option>
+              <Select.Option value="completed" disabled={true}>Hoàn thành</Select.Option>
               <Select.Option value="cancelled" disabled={!['pending', 'confirmed', 'processing', 'shipped'].includes(currentItem.status)}>Hủy đơn hàng</Select.Option>
               <Select.Option value="refunded" disabled={!['delivered', 'completed'].includes(currentItem.status)}>Hoàn tiền</Select.Option>
             </Select>
@@ -346,7 +350,7 @@ const OrderPage = () => {
               </div>
               <div>
                 <p className="text-gray-500">Khách hàng:</p>
-                <p className="font-medium">{currentItem.userId?.name || 'Không có tên'}</p>
+                <p className="font-medium">{currentItem.userId?.fullName || currentItem.userId?.name || 'Không có tên'}</p>
               </div>
               <div>
                 <p className="text-gray-500">Email:</p>
@@ -354,7 +358,7 @@ const OrderPage = () => {
               </div>
               <div>
                 <p className="text-gray-500">Số điện thoại:</p>
-                <p>{currentItem.userId?.phone || 'Không có số điện thoại'}</p>
+                <p>{currentItem.userId?.phone || currentItem.addressFree?.receiverPhone || 'Không có số điện thoại'}</p>
               </div>
               <div>
                 <p className="text-gray-500">Tổng tiền:</p>
@@ -476,10 +480,23 @@ const OrderPage = () => {
               />
             </div>
             
-            {currentItem.addressId && (
+
+            
+            {currentItem.addressFree && (
               <div>
                 <h4 className="font-medium mb-1">Địa chỉ giao hàng:</h4>
-                <p>{currentItem.addressId.province}, {currentItem.addressId.district}, {currentItem.addressId.ward}, {currentItem.addressId.address}</p>
+                {currentItem.addressFree.receiverName && (
+                  <p><strong>Người nhận:</strong> {currentItem.addressFree.receiverName}</p>
+                )}
+                {currentItem.addressFree.receiverPhone && (
+                  <p><strong>Số điện thoại:</strong> {currentItem.addressFree.receiverPhone}</p>
+                )}
+                <p>
+                  {currentItem.addressFree.province ? currentItem.addressFree.province : ''}
+                  {currentItem.addressFree.district ? `, ${currentItem.addressFree.district}` : ''}
+                  {currentItem.addressFree.ward ? `, ${currentItem.addressFree.ward}` : ''}
+                  {currentItem.addressFree.address ? `, ${currentItem.addressFree.address}` : ''}
+                </p>
               </div>
             )}
             
