@@ -8,6 +8,13 @@ declare global {
     data?: T
   }
 
+  interface IMeta {
+    current: number
+    pageSize: number
+    total: number
+    pages?: number
+  }
+
   interface IResponseList<T>{
     results: T[]
     meta: IMeta

@@ -42,8 +42,8 @@ const { Option } = Select
 
 export default function AdminUserManagement() {
   const [searchText, setSearchText] = useState('')
-  const [selectedRole, setSelectedRole] = useState<string>('all')
-  const [selectedStatus, setSelectedStatus] = useState<string>('all')
+  const [selectedRole, setSelectedRole] = useState<string>('')
+  const [selectedStatus, setSelectedStatus] = useState<string>('')
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null)
@@ -53,9 +53,13 @@ export default function AdminUserManagement() {
   const queryClient = useQueryClient()
 
   const { data: listUser, isLoading } = useQuery({
-    queryKey: [USER_QUERY_KEYS.FETCH_ALL, pagination, searchText],
+    queryKey: [USER_QUERY_KEYS.FETCH_ALL, pagination, searchText, selectedRole, selectedStatus],
     queryFn: async () => {
-      const res = await getUserList({ current: pagination.current, pageSize: pagination.pageSize })
+      const res = await getUserList({
+        current: pagination.current,
+        pageSize: pagination.pageSize,
+        params: `keyword=${searchText}${selectedRole ? `&role=${selectedRole}` : ''}${selectedStatus ? `&status=${selectedStatus}` : ''}`
+      })
       if (res.data) {
         setPagination({
           current: res.data.meta.current,
@@ -190,7 +194,7 @@ export default function AdminUserManagement() {
         <div className='flex items-center space-x-3'>
           <Avatar src={record.avatar} icon={<UserOutlined />} />
           <div className='ml-2'>
-            <div className='font-medium text-gray-900'>{text}</div>
+            <div className='font-medium text-gray-900 cursor-pointer' onClick={() => handleViewDetails(record)}>{text}</div>
             <div className='text-sm text-gray-500'>{record.email}</div>
           </div>
         </div>
@@ -323,7 +327,7 @@ export default function AdminUserManagement() {
               prefix={<SearchOutlined />}
             />
             <Select value={selectedRole} onChange={setSelectedRole} className='w-full sm:w-40' placeholder='Vai trò'>
-              <Option value='all'>Tất cả vai trò</Option>
+              <Option value=''>Tất cả vai trò</Option>
               <Option value='admin'>Quản trị viên</Option>
               <Option value='moderator'>Điều hành viên</Option>
               <Option value='user'>Người dùng</Option>
@@ -334,7 +338,7 @@ export default function AdminUserManagement() {
               className='w-full sm:w-40'
               placeholder='Trạng thái'
             >
-              <Option value='all'>Tất cả trạng thái</Option>
+              <Option value=''>Tất cả trạng thái</Option>
               <Option value='active'>Hoạt động</Option>
               <Option value='inactive'>Không hoạt động</Option>
               <Option value='banned'>Bị cấm</Option>
