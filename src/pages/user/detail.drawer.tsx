@@ -30,6 +30,8 @@ import {
 import type { MenuProps } from 'antd'
 import { convertTimeVietnam } from '@/utils/utils'
 import { ColumnsType } from 'antd/es/table'
+import { fetchOrderByUser } from '@/services/user-service/user.apis'
+import { useEffect, useState } from 'react'
 
 // Mock user data
 const userData = {
@@ -105,6 +107,20 @@ interface IProps {
 const DetailDrawer = (props: IProps) => {
   const { isDrawerOpen, setIsDrawerOpen, selectedUser } = props
   const [messageApi, contextHolder] = message.useMessage()
+  const [listOrderByUser, setListOrderByUser] = useState<any>(null)
+
+  useEffect(() => {
+    (async () => {
+      if (selectedUser?._id) {
+        try {
+          const res = await fetchOrderByUser(selectedUser._id)
+          setListOrderByUser(res.data)
+        } catch (error) {
+          messageApi.error('Không thể lấy danh sách đơn hàng của người dùng')
+        }
+      }
+    })()
+  }, [selectedUser?._id])
 
   const handleEdit = () => {
     messageApi.info('Edit user functionality would be implemented here')
@@ -238,7 +254,7 @@ const DetailDrawer = (props: IProps) => {
                 <Card title='Thống kê người dùng' className='w-full'>
                   <Row gutter={16}>
                     <Col xs={12} sm={8}>
-                      <Statistic title='Tổng đơn hàng' value={userData.totalOrders} className='text-center' />
+                      <Statistic title='Tổng đơn hàng' value={listOrderByUser && listOrderByUser?.meta.total} className='text-center' />
                     </Col>
                     <Col xs={12} sm={8}>
                       <Statistic
@@ -249,31 +265,28 @@ const DetailDrawer = (props: IProps) => {
                         className='text-center'
                       />
                     </Col>
-                    <Col xs={12} sm={8}>
-                      <Statistic title='Điểm thưởng' value={userData.loyaltyPoints} className='text-center' />
-                    </Col>
                   </Row>
                 </Card>
 
                 {/* User Details */}
                 <Card title='Thông tin người dùng' className='w-full'>
                   <Descriptions column={{ xs: 1, sm: 2 }} bordered>
-                    <Descriptions.Item label='ID'>{userData.id}</Descriptions.Item>
-                    <Descriptions.Item label='Họ tên'>{userData.name}</Descriptions.Item>
-                    <Descriptions.Item label='Email'>{userData.email}</Descriptions.Item>
-                    <Descriptions.Item label='Điện thoại'>{userData.phone}</Descriptions.Item>
-                    <Descriptions.Item label='Địa điểm'>{userData.location}</Descriptions.Item>
+                    <Descriptions.Item label='ID'>{selectedUser?._id}</Descriptions.Item>
+                    <Descriptions.Item label='Họ tên'>{selectedUser?.fullName}</Descriptions.Item>
+                    <Descriptions.Item label='Email'>{selectedUser?.email}</Descriptions.Item>
+                    <Descriptions.Item label='Điện thoại'>{selectedUser?.phone}</Descriptions.Item>
+                    <Descriptions.Item label='Địa điểm'>{selectedUser?.address}</Descriptions.Item>
                     <Descriptions.Item label='Trạng thái tài khoản'>
-                      <Tag color={userData.status === 'active' ? 'green' : 'red'}>{userData.status.toUpperCase()}</Tag>
+                      <Tag color={selectedUser?.status === 'active' ? 'green' : 'red'}>{selectedUser?.status && selectedUser?.status.toUpperCase()}</Tag>
                     </Descriptions.Item>
                     <Descriptions.Item label='Email Verified'>
-                      <Tag color={userData.verified ? 'green' : 'orange'}>
-                        {userData.verified ? 'VERIFIED' : 'PENDING'}
+                      <Tag color={selectedUser?.isVerified ? 'green' : 'orange'}>
+                        {selectedUser?.isVerified ? 'VERIFIED' : 'PENDING'}
                       </Tag>
                     </Descriptions.Item>
-                    <Descriptions.Item label='Vai trò'>{userData.role}</Descriptions.Item>
-                    <Descriptions.Item label='Ngày tạo'>{userData.joinDate}</Descriptions.Item>
-                    <Descriptions.Item label='Đăng nhập cuối'>{userData.lastLogin}</Descriptions.Item>
+                    <Descriptions.Item label='Vai trò'>{selectedUser?.role}</Descriptions.Item>
+                    <Descriptions.Item label='Ngày tạo'>{selectedUser?.createdAt}</Descriptions.Item>
+                    <Descriptions.Item label='Đăng nhập cuối'>{selectedUser?.updatedAt}</Descriptions.Item>
                   </Descriptions>
                 </Card>
 

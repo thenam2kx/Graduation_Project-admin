@@ -1,4 +1,5 @@
 import axios from '@/config/axios.customize'
+import { IOrderItem } from '@/types/orders';
 // Write functions to call APIs here
 
 export const getBrandList = (
@@ -33,4 +34,10 @@ export const deleteUser = (id: string) => {
 export const fetchAccountAPI = async () => {
   const url = '/api/v1/auth/account'
   return axios.get<IBackendResponse<IUserAuth>>(url)
+}
+
+
+export const fetchOrderByUser = async (userId: string) => {
+  const url = `/api/v1/orders/by-user/${userId}`
+  return axios.get<IBackendResponse<IResponseList<IOrderItem>>>(url)
 }
