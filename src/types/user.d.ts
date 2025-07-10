@@ -26,7 +26,8 @@ declare global {
       _id: string
       email: string
     }
-    createdAt?: Date
+    createdAt?: string
+    updatedAt?: string
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
