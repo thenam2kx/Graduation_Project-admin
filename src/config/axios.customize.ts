@@ -83,7 +83,7 @@ instance.interceptors.response.use(
       store.dispatch(setRefreshToken({ status: true, message: message }))
     }
 
-    return error?.response?.data ?? Promise.reject(error)
+    return Promise.reject(error)
   }
 )
 
