@@ -12,6 +12,7 @@ import {
   message,
   Divider,
   Image,
+  Carousel,
 } from "antd"
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons"
 import { convertSlugUrl } from "@/utils/utils"
@@ -23,7 +24,7 @@ import { BRAND_QUERY_KEYS } from "@/services/brand-service/brand.keys"
 import { ATTRIBUTE_QUERY_KEYS } from "@/services/product-service/product.key"
 import { fetchAllAttributes } from "@/services/product-service/attributes.apis"
 import { useAppDispatch, useAppSelector } from "@/redux/hooks"
-import { setIsOpenModalUpload } from "@/redux/slices/media.slice"
+import { setIsOpenModalUpload, setArrSelectedMedia, setIsMultiSelect } from "@/redux/slices/media.slice"
 import Editor from "@/components/editor"
 
 const { Option } = Select
@@ -40,6 +41,7 @@ const ProductForm = (props: IProps) => {
   const [description, setDescription] = useState<string>("")
   const dispatch = useAppDispatch()
   const selectedMedia = useAppSelector((state) => state.media.selectedMedia)
+  const arrSelectedMedia = useAppSelector((state) => state.media.arrSelectedMedia)
 
   const { data: listCategories } = useQuery({
     queryKey: [CATEGORY_QUERY_KEYS.FETCH_ALL],
@@ -145,7 +147,11 @@ const ProductForm = (props: IProps) => {
 
   const onFinish = (values: any) => {
     const slug = convertSlugUrl(values.name);
-    const images = selectedMedia ? [`http://localhost:8080${selectedMedia}`] : [];
+    // Sử dụng album ảnh nếu có, nếu không thì sử dụng ảnh đơn
+    const images = arrSelectedMedia && arrSelectedMedia.length > 0 
+      ? arrSelectedMedia.map(img => `http://localhost:8080${img}`) 
+      : selectedMedia ? [`http://localhost:8080${selectedMedia}`] : [];
+    
     const productData = {
     name: values.name,
     slug: slug,
@@ -180,22 +186,59 @@ const ProductForm = (props: IProps) => {
       className="space-y-6"
     >
       <div className="flex flex-col items-center justify-center mb-6">
-      {
-        selectedMedia && (
+        {arrSelectedMedia && arrSelectedMedia.length > 0 ? (
+          <div className="w-full max-w-md">
+            <Carousel autoplay>
+              {arrSelectedMedia.map((media, index) => (
+                <div key={index} className="h-64 flex justify-center items-center bg-gray-100">
+                  <Image
+                    height={250}
+                    src={`http://localhost:8080${media}`}
+                    crossOrigin="anonymous"
+                    className="object-contain"
+                  />
+                  {index === 0 && (
+                    <div className="absolute top-0 left-0 bg-blue-500 text-white px-2 py-1 text-xs">
+                      Ảnh chính
+                    </div>
+                  )}
+                </div>
+              ))}
+            </Carousel>
+            <div className="mt-2 flex justify-center">
+              <span className="text-sm text-gray-500">
+                {arrSelectedMedia.length} ảnh trong album (ảnh đầu tiên là ảnh chính)
+              </span>
+            </div>
+          </div>
+        ) : selectedMedia ? (
           <Image
             width={200}
             src={selectedMedia.startsWith("http") ? selectedMedia : `http://localhost:8080${selectedMedia}`}
             crossOrigin="anonymous"
           />
-        )
-      }
-        <Button
-          type="primary"
-          style={{ marginTop: 4 }}
-          onClick={() => dispatch(setIsOpenModalUpload(true))}
-        >
-          {selectedMedia ? 'Sửa ảnh' : 'Chọn ảnh'}
-        </Button>
+        ) : null}
+        
+        <div className="mt-4 flex space-x-2">
+          <Button
+            type="primary"
+            onClick={() => {
+              dispatch(setArrSelectedMedia(null));
+              dispatch(setIsMultiSelect(false));
+              dispatch(setIsOpenModalUpload(true));
+            }}
+          >
+            Chọn 1 ảnh
+          </Button>
+          <Button
+            onClick={() => {
+              dispatch(setIsMultiSelect(true));
+              dispatch(setIsOpenModalUpload(true));
+            }}
+          >
+            Tạo album ảnh
+          </Button>
+        </div>
       </div>
       <Card type="inner" title="Thông tin cơ bản" className="mb-6" extra={
         <div className="flex items-center space-x-2">

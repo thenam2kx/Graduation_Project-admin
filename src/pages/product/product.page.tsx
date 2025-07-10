@@ -55,14 +55,32 @@ const ProductPage = () => {
       title: 'Ảnh',
       dataIndex: 'image',
       key: 'image',
-      render: (url: string) => (
-        <img
-          src={url}
-          alt="Ảnh sản phẩm"
-          style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}
-          crossOrigin="anonymous"
-        />
-      )
+      render: (images: string | string[], record: any) => {
+        // Kiểm tra nếu images là mảng (album ảnh)
+        if (Array.isArray(images) && images.length > 0) {
+          // Hiển thị ảnh đầu tiên trong album (ảnh chính)
+          return (
+            <img
+              src={images[0]}
+              alt="Ảnh sản phẩm"
+              style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}
+              crossOrigin="anonymous"
+            />
+          )
+        } else if (typeof images === 'string') {
+          // Nếu chỉ có một ảnh
+          return (
+            <img
+              src={images}
+              alt="Ảnh sản phẩm"
+              style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}
+              crossOrigin="anonymous"
+            />
+          )
+        }
+        // Trường hợp không có ảnh
+        return <span>Không có ảnh</span>
+      }
     },
     {
       title: 'Tên sản phẩm',
@@ -80,7 +98,14 @@ const ProductPage = () => {
     {
       title: 'Tồn kho',
       dataIndex: 'stock',
-      key: 'stock'
+      key: 'stock',
+      render: (stock: number, product: IProduct) => {
+        if (product?.variants && product.variants.length > 0) {
+          const totalStock = product.variants.reduce((sum, variant) => sum + (variant.stock || 0), 0)
+          return <span>{totalStock}</span>
+        }
+        return <span>{stock || 0}</span>
+      }
     },
     {
       title: 'Thương hiệu',
