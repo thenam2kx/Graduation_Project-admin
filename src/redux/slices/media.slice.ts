@@ -4,12 +4,14 @@ interface IState {
   selectedMedia: string | null
   isOpenModalUpload: boolean
   arrSelectedMedia?: string[] | null
+  isMultiSelect: boolean
 }
 
 const initialState: IState = {
   selectedMedia: null,
   isOpenModalUpload: false,
-  arrSelectedMedia: null
+  arrSelectedMedia: null,
+  isMultiSelect: false
 }
 
 const mediaSlice = createSlice({
@@ -30,6 +32,9 @@ const mediaSlice = createSlice({
     },
     clearArrSelectedMedia: (state) => {
       state.arrSelectedMedia = null
+    },
+    setIsMultiSelect: (state, action: PayloadAction<boolean>) => {
+      state.isMultiSelect = action.payload
     }
   }
 })
@@ -39,7 +44,8 @@ export const {
   clearSelectedMedia,
   setIsOpenModalUpload,
   setArrSelectedMedia,
-  clearArrSelectedMedia
+  clearArrSelectedMedia,
+  setIsMultiSelect
 } = mediaSlice.actions
 
 export default mediaSlice.reducer

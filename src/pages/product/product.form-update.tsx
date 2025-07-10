@@ -11,6 +11,7 @@ import {
   Col,
   Divider,
   Image,
+  Carousel,
 } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import { convertSlugUrl } from "@/utils/utils";
@@ -22,7 +23,7 @@ import { BRAND_QUERY_KEYS } from "@/services/brand-service/brand.keys";
 import { ATTRIBUTE_QUERY_KEYS } from "@/services/product-service/product.key";
 import { fetchAllAttributes } from "@/services/product-service/attributes.apis";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { setIsOpenModalUpload } from "@/redux/slices/media.slice";
+import { setIsOpenModalUpload, setArrSelectedMedia, setIsMultiSelect, setSelectedMedia } from "@/redux/slices/media.slice";
 import Editor from "@/components/editor";
 
 const { Option } = Select;
@@ -49,6 +50,7 @@ const ProductFormUpdate = (props: IProps) => {
   const [description, setDescription] = useState<string>("")
   const dispatch = useAppDispatch();
   const selectedMedia = useAppSelector((state) => state.media.selectedMedia);
+  const arrSelectedMedia = useAppSelector((state) => state.media.arrSelectedMedia);
 
   // Fetch danh sách danh mục, thương hiệu và thuộc tính
   const { data: listCategories } = useQuery({
@@ -101,9 +103,26 @@ const ProductFormUpdate = (props: IProps) => {
       if (hasExistingVariants) {
         setVariants(mapVariants(productData.variants));
       }
-      // dispatch(setSelectedMedia(productData.image?.[0] || ""));
+      
+      // Xử lý ảnh sản phẩm
+      if (productData.image && productData.image.length > 0) {
+        // Nếu có nhiều ảnh, đặt vào album
+        if (productData.image.length > 1) {
+          // Chuyển đổi URL đầy đủ thành đường dẫn tương đối
+          const relativePaths = productData.image.map((img: string) => {
+            // Lấy phần đường dẫn sau domain
+            return img.replace('http://localhost:8080', '');
+          });
+          dispatch(setArrSelectedMedia(relativePaths));
+          dispatch(setSelectedMedia(relativePaths[0])); // Ảnh đầu tiên là ảnh chính
+        } else {
+          // Nếu chỉ có 1 ảnh, đặt vào selectedMedia
+          const relativePath = productData.image[0].replace('http://localhost:8080', '');
+          dispatch(setSelectedMedia(relativePath));
+        }
+      }
     }
-  }, [productData, form]);
+  }, [productData, form, dispatch]);
 
   // Hàm ánh xạ variants từ dữ liệu đầu vào
   const mapVariants = (variants: any[]) => {
@@ -183,9 +202,12 @@ const ProductFormUpdate = (props: IProps) => {
 
   const onFinish = (values: any) => {
     const slug = convertSlugUrl(values.name);
-    const images = selectedMedia
-      ? [`http://localhost:8080${selectedMedia}`]
-      : productData?.image || [];
+    // Sử dụng album ảnh nếu có, nếu không thì sử dụng ảnh đơn hoặc giữ nguyên ảnh cũ
+    const images = arrSelectedMedia && arrSelectedMedia.length > 0 
+      ? arrSelectedMedia.map(img => `http://localhost:8080${img}`) 
+      : selectedMedia 
+        ? [`http://localhost:8080${selectedMedia}`] 
+        : productData?.image || [];
 
     const productUpdateData = {
       name: values.name,
@@ -223,25 +245,66 @@ const ProductFormUpdate = (props: IProps) => {
       className="space-y-6"
     >
       <div className="flex flex-col items-center justify-center mb-6">
-        {selectedMedia || productData?.image?.[0] ? (
-            <Image
-              width={200}
-              src={
-                selectedMedia?.startsWith("http")
-                  ? selectedMedia
-                  : productData?.image?.[0] || `http://localhost:8080${selectedMedia}`
-              }
-              crossOrigin="anonymous"
-            />
+        {arrSelectedMedia && arrSelectedMedia.length > 0 ? (
+          <div className="w-full max-w-md">
+            <Carousel autoplay>
+              {arrSelectedMedia.map((media, index) => (
+                <div key={index} className="h-64 flex justify-center items-center bg-gray-100">
+                  <Image
+                    height={250}
+                    src={`http://localhost:8080${media}`}
+                    crossOrigin="anonymous"
+                    className="object-contain"
+                  />
+                  {index === 0 && (
+                    <div className="absolute top-0 left-0 bg-blue-500 text-white px-2 py-1 text-xs">
+                      Ảnh chính
+                    </div>
+                  )}
+                </div>
+              ))}
+            </Carousel>
+            <div className="mt-2 flex justify-center">
+              <span className="text-sm text-gray-500">
+                {arrSelectedMedia.length} ảnh trong album (ảnh đầu tiên là ảnh chính)
+              </span>
+            </div>
+          </div>
+        ) : selectedMedia ? (
+          <Image
+            width={200}
+            src={selectedMedia.startsWith("http") ? selectedMedia : `http://localhost:8080${selectedMedia}`}
+            crossOrigin="anonymous"
+          />
+        ) : productData?.image?.[0] ? (
+          <Image
+            width={200}
+            src={productData.image[0]}
+            crossOrigin="anonymous"
+          />
         ) : null}
+        
+        <div className="mt-4 flex space-x-2">
+          <Button
+            type="primary"
+            onClick={() => {
+              dispatch(setArrSelectedMedia(null));
+              dispatch(setIsMultiSelect(false));
+              dispatch(setIsOpenModalUpload(true));
+            }}
+          >
+            Chọn 1 ảnh
+          </Button>
+          <Button
+            onClick={() => {
+              dispatch(setIsMultiSelect(true));
+              dispatch(setIsOpenModalUpload(true));
+            }}
+          >
+            Tạo album ảnh
+          </Button>
         </div>
-      <Button
-        type="primary"
-        style={{ marginTop: 4 }}
-        onClick={() => dispatch(setIsOpenModalUpload(true))}
-      >
-        {selectedMedia || productData?.image?.[0] ? "Sửa ảnh" : "Chọn ảnh"}
-      </Button>
+      </div>
       <Card
         type="inner"
         title="Thông tin cơ bản"
