@@ -80,7 +80,14 @@ const ProductPage = () => {
     {
       title: 'Tồn kho',
       dataIndex: 'stock',
-      key: 'stock'
+      key: 'stock',
+      render: (stock: number, product: IProduct) => {
+        if (product?.variants && product.variants.length > 0) {
+          const totalStock = product.variants.reduce((sum, variant) => sum + (variant.stock || 0), 0)
+          return <span>{totalStock}</span>
+        }
+        return <span>{stock || 0}</span>
+      }
     },
     {
       title: 'Thương hiệu',
