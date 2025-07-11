@@ -346,17 +346,18 @@ const DashboardPage = () => {
               const userStats = new Map<string, any>();
               
               allOrders.forEach((order: any) => {
-                const userId = order.userId || order.user?._id || order.customerId || order.user || order.customer;
-                console.log('Order user mapping:', {
+                // Extract user ID from order - userId is an object with _id
+                const userId = order.userId?._id || order.userId || order.user?._id || order.customerId;
+                
+                console.log('Processing order:', {
                   orderId: order._id,
-                  userId: order.userId,
-                  user: order.user,
-                  customerId: order.customerId,
-                  finalUserId: userId
+                  userId: userId,
+                  userIdObject: order.userId,
+                  totalPrice: order.totalPrice
                 });
                 
                 if (userId) {
-                  const amount = order.totalAmount || order.total || order.amount || 0;
+                  const amount = order.totalPrice || order.totalAmount || order.total || order.amount || 0;
                   
                   if (!userStats.has(userId)) {
                     userStats.set(userId, {
@@ -375,8 +376,6 @@ const DashboardPage = () => {
                 }
               });
               
-              console.log('User stats map:', Array.from(userStats.entries()));
-              
               // Get users from correct data structure
               let allUsers: any[] = [];
               if (usersData?.data?.results) {
@@ -385,6 +384,9 @@ const DashboardPage = () => {
                 allUsers = usersData.results;
               }
               
+              console.log('Final user stats:', Array.from(userStats.entries()));
+              console.log('User IDs in orders:', [...new Set(allOrders.map(o => o.userId?._id))]);
+              console.log('User IDs in users:', allUsers.map(u => u._id));
               console.log('All users:', allUsers);
               
               // Filter out admin users and show only regular users

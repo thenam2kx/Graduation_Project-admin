@@ -23,7 +23,7 @@ import { signoutAPI } from '@/services/auth-service/auth.apis'
 import { useMutation } from '@tanstack/react-query'
 import { message, Popconfirm, PopconfirmProps } from 'antd'
 import Sider from 'antd/es/layout/Sider'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router'
 
 const items: MenuProps['items'] = [
   {
