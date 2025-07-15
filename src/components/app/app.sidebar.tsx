@@ -1,5 +1,6 @@
 import {
   ApartmentOutlined,
+  CarOutlined,
   CodeOutlined,
   CommentOutlined,
   ContactsOutlined,
@@ -89,6 +90,11 @@ const items: MenuProps['items'] = [
         key: '/flash-sales',
         icon: <ThunderboltOutlined />,
         label: <Link to={'/flash-sales'}>Flash Sale</Link>
+      },
+      {
+        key: '/shipping',
+        icon: <CarOutlined />,
+        label: <Link to={'/shipping'}>Vận chuyển</Link>
       },
     ]
   },

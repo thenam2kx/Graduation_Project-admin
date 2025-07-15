@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Table, Button, Modal, Form, InputNumber, DatePicker, message, Space, Tooltip, Select, Tag } from 'antd'
-import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons'
+import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined, PlusOutlined, CarOutlined, EyeOutlined } from '@ant-design/icons'
 import moment from 'moment'
 import { IOrderItem } from '@/types/orders'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { fetchAllOrdersAPI, updateOrderStatusAPI, cancelOrderAPI } from '@/services/order-service/order.apis'
+import { createShippingOrderAPI } from '@/services/shipping-service/shipping.apis'
 import { ORDER_KEYS } from '@/services/order-service/order.keys'
 import axios from 'axios'
 
@@ -83,6 +84,22 @@ const OrderPage = () => {
     onError: (error) => {
       messageApi.error('Có lỗi xảy ra khi hủy đơn hàng')
       console.error('Error cancelling order:', error)
+    }
+  })
+  
+  // Mutation để tạo vận đơn GHN
+  const createShippingMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      return createShippingOrderAPI(orderId)
+    },
+    onSuccess: () => {
+      messageApi.success('Tạo vận đơn GHN thành công')
+      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS]})
+      setIsModalVisible(false)
+    },
+    onError: (error) => {
+      messageApi.error('Có lỗi xảy ra khi tạo vận đơn GHN')
+      console.error('Error creating shipping order:', error)
     }
   })
 
@@ -316,23 +333,56 @@ const OrderPage = () => {
             </div>
           ),
           currentItem && currentItem.status !== 'cancelled' && currentItem.status !== 'completed' && currentItem.status !== 'refunded' && (
-            <Select
-              key="status"
-              style={{ width: 200, marginRight: 8 }}
-              placeholder="Cập nhật trạng thái"
-              onChange={(value) => handleUpdateStatus(currentItem._id, value)}
-              defaultValue={currentItem?.status}
-            >
-              {/* Hiển thị tất cả các trạng thái nhưng disable các trạng thái không hợp lệ */}
-              <Select.Option value="pending" disabled={currentItem.status !== 'pending'}>Chờ xác nhận</Select.Option>
-              <Select.Option value="confirmed" disabled={currentItem.status !== 'pending' && currentItem.status !== 'confirmed'}>Đã xác nhận</Select.Option>
-              <Select.Option value="processing" disabled={currentItem.status !== 'confirmed' && currentItem.status !== 'processing'}>Đang xử lý</Select.Option>
-              <Select.Option value="shipped" disabled={currentItem.status !== 'processing' && currentItem.status !== 'shipped'}>Đang giao hàng</Select.Option>
-              <Select.Option value="delivered" disabled={currentItem.status !== 'shipped' && currentItem.status !== 'delivered'}>Đã giao hàng</Select.Option>
-              <Select.Option value="completed" disabled={true}>Hoàn thành</Select.Option>
-              <Select.Option value="cancelled" disabled={!['pending', 'confirmed', 'processing', 'shipped'].includes(currentItem.status)}>Hủy đơn hàng</Select.Option>
-              <Select.Option value="refunded" disabled={!['delivered', 'completed'].includes(currentItem.status)}>Hoàn tiền</Select.Option>
-            </Select>
+            <>
+              {/* Chỉ hiển thị các trạng thái mà admin có quyền thay đổi */}
+              {!currentItem.shipping?.orderCode ? (
+                <Select
+                  key="status"
+                  style={{ width: 200, marginRight: 8 }}
+                  placeholder="Cập nhật trạng thái"
+                  onChange={(value) => handleUpdateStatus(currentItem._id, value)}
+                  defaultValue={currentItem?.status}
+                >
+                  {/* Trước khi tạo vận đơn, admin có thể thay đổi trạng thái */}
+                  <Select.Option value="pending" disabled={currentItem.status !== 'pending'}>Chờ xác nhận</Select.Option>
+                  <Select.Option value="confirmed" disabled={currentItem.status !== 'pending' && currentItem.status !== 'confirmed'}>Đã xác nhận</Select.Option>
+                  <Select.Option value="cancelled" disabled={!['pending', 'confirmed'].includes(currentItem.status)}>Hủy đơn hàng</Select.Option>
+                </Select>
+              ) : (
+                <div style={{ marginRight: 8 }}>
+                  <Tag color="blue">Đơn hàng đang được xử lý bởi GHN</Tag>
+                  <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                    Trạng thái đơn hàng được cập nhật tự động từ GHN
+                  </div>
+                </div>
+              )}
+              
+              {/* Nút tạo vận đơn GHN */}
+              {(currentItem.status === 'confirmed') && !currentItem.shipping?.orderCode && (
+                <Button 
+                  key="create-shipping"
+                  type="primary"
+                  icon={<CarOutlined />}
+                  onClick={() => createShippingMutation.mutate(currentItem._id)}
+                  loading={createShippingMutation.isPending}
+                  style={{ marginRight: 8 }}
+                >
+                  Tạo vận đơn GHN
+                </Button>
+              )}
+              
+              {/* Nút xem trạng thái vận chuyển */}
+              {currentItem.shipping?.orderCode && (
+                <Button
+                  key="view-shipping"
+                  type="default"
+                  icon={<EyeOutlined />}
+                  onClick={() => window.open(`/shipping`, '_blank')}
+                >
+                  Xem vận chuyển
+                </Button>
+              )}
+            </>
           )
         ]}
         width={700}
@@ -371,11 +421,11 @@ const OrderPage = () => {
               <div>
                 <p className="text-gray-500">Phương thức thanh toán:</p>
                 <p>{{
-                  'vnpay': 'VNPay',
-                  'momo': 'MoMo',
-                  'cash': 'Tiền mặt',
-                  'credit_card': 'Thẻ tín dụng'
-                }[currentItem.paymentMethod] || currentItem.paymentMethod}</p>
+                    'vnpay': 'VNPay',
+                    'momo': 'MoMo',
+                    'cash': 'Tiền mặt',
+                    'credit_card': 'Thẻ tín dụng'
+                  }[currentItem.paymentMethod] || currentItem.paymentMethod}</p>
               </div>
               <div>
                 <p className="text-gray-500">Lí do hủy/hoàn tiền:</p>
