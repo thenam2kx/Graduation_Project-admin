@@ -95,7 +95,7 @@ const DashboardPage = () => {
     if (!filteredOrders.length) return 0;
     
     // Only count completed and delivered orders (đã thanh toán và đã giao hàng)
-    const paidStatuses = ['completed', 'delivered'];
+    const paidStatuses = ['completed', 'delivered', 'paid', 'success'];
     
     return filteredOrders
       .filter((order: any) => paidStatuses.includes(order.status?.toLowerCase()))
@@ -288,25 +288,68 @@ const DashboardPage = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Sản phẩm bán chạy</h2>
           <div className="space-y-4">
-            {productsLoading ? (
+            {productsLoading || ordersLoading ? (
               <div className="text-center py-4 text-gray-500">Đang tải...</div>
-            ) : productsData?.results?.length > 0 ? (
-              productsData.results.slice(0, 4).map((product: any) => (
-                <div key={product._id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div>
-                    <div className="font-medium text-gray-900">{product.name || 'Không có tên'}</div>
-                    <div className="text-sm text-gray-500">
-                      {product.categoryId?.name || 'Chưa phân loại'} • Tồn kho: {product.stock || 0}
+            ) : (() => {
+              // Tính số lượng đã bán cho từng sản phẩm từ đơn hàng
+              const productSales = new Map<string, number>();
+              
+              // Lấy tất cả đơn hàng
+              let allOrders: any[] = [];
+              if (ordersData?.results) {
+                allOrders = ordersData.results;
+              } else if (ordersData?.data?.results) {
+                allOrders = ordersData.data.results;
+              } else if (Array.isArray(ordersData)) {
+                allOrders = ordersData;
+              } else if (Array.isArray(ordersData?.data)) {
+                allOrders = ordersData.data;
+              }
+              
+              // Tính tổng số lượng đã bán cho mỗi sản phẩm từ các đơn hàng đã hoàn thành
+              const completedStatuses = ['completed', 'delivered', 'paid', 'success'];
+              allOrders
+                .filter((order: any) => completedStatuses.includes(order.status?.toLowerCase()))
+                .forEach((order: any) => {
+                  if (order.items && Array.isArray(order.items)) {
+                    order.items.forEach((item: any) => {
+                      const productId = item.productId?._id || item.productId;
+                      if (productId) {
+                        const currentSold = productSales.get(productId) || 0;
+                        productSales.set(productId, currentSold + (item.quantity || 0));
+                      }
+                    });
+                  }
+                });
+              
+              // Sắp xếp sản phẩm theo số lượng đã bán
+              const topProducts = productsData?.results
+                ?.map((product: any) => ({
+                  ...product,
+                  soldQuantity: productSales.get(product._id) || 0
+                }))
+                .sort((a: any, b: any) => b.soldQuantity - a.soldQuantity)
+                .slice(0, 4);
+              
+              return topProducts?.length > 0 ? (
+                topProducts.map((product: any) => (
+                  <div key={product._id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div>
+                      <div className="font-medium text-gray-900">{product.name || 'Không có tên'}</div>
+                      <div className="text-sm text-gray-500">
+                        {product.categoryId?.name || 'Chưa phân loại'} • Đã bán: {product.soldQuantity}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-gray-900">{(product.price || 0).toLocaleString()}₫</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-gray-900">{(product.price || 0).toLocaleString()}₫</div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-4 text-gray-500">Không có sản phẩm</div>
-            )}
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500">Không có sản phẩm</div>
+              );
+            })()
+            }
           </div>
         </div>
       </div>
