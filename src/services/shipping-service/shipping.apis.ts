@@ -17,3 +17,9 @@ export const cancelShippingOrderAPI = async (orderId: string, reason: string) =>
   const response = await axios.post(`/api/v1/ghn/cancel-order/${orderId}`, { reason })
   return response.data
 }
+
+// Cập nhật trạng thái vận chuyển
+export const updateShippingStatusAPI = async (orderId: string, statusCode: string) => {
+  const response = await axios.patch(`/api/v1/shipping/status/${orderId}`, { statusCode })
+  return response.data
+}

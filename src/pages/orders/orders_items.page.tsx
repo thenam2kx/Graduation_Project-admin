@@ -124,6 +124,7 @@ const OrderPage = () => {
       case 'failed': return 'red';
       case 'refunded': return 'volcano';
       case 'unpaid': return 'gray';
+      case 'cancelled': return 'red';
       default: return 'default';
     }
   };
@@ -177,7 +178,8 @@ const OrderPage = () => {
           'pending': 'Đang xử lý',
           'failed': 'Thất bại',
           'refunded': 'Đã hoàn tiền',
-          'unpaid': 'Chưa thanh toán'
+          'unpaid': 'Chưa thanh toán',
+          'cancelled': 'Đã hủy'
         }[status] || status;
         
         return <Tag color={getPaymentStatusColor(status)}>{displayText}</Tag>;
@@ -203,6 +205,51 @@ const OrderPage = () => {
       }
     },
     {
+      title: 'Trạng thái vận chuyển',
+      dataIndex: ['shipping', 'statusCode'],
+      key: 'shippingStatus',
+      render: (statusCode: string, record: any) => {
+        if (!record.shipping?.orderCode) {
+          return <span>Chưa có vận đơn</span>;
+        }
+        
+        // Mapping trạng thái vận chuyển sang màu sắc
+        const statusColors: Record<string, string> = {
+          'ready_to_pick': 'blue',
+          'picking': 'cyan',
+          'picked': 'geekblue',
+          'delivering': 'purple',
+          'delivered': 'green',
+          'delivery_fail': 'orange',
+          'waiting_to_return': 'gold',
+          'return': 'volcano',
+          'returned': 'red',
+          'cancel': 'magenta',
+          'exception': 'error',
+        };
+        
+        // Mapping trạng thái vận chuyển sang tên tiếng Việt
+        const statusNames: Record<string, string> = {
+          'ready_to_pick': 'Chờ lấy hàng',
+          'picking': 'Đang lấy hàng',
+          'picked': 'Đã lấy hàng',
+          'delivering': 'Đang giao hàng',
+          'delivered': 'Đã giao hàng',
+          'delivery_fail': 'Giao hàng thất bại',
+          'waiting_to_return': 'Chờ trả hàng',
+          'return': 'Đang trả hàng',
+          'returned': 'Đã trả hàng',
+          'cancel': 'Đã hủy',
+          'exception': 'Ngoại lệ',
+        };
+        
+        const color = statusColors[statusCode] || 'default';
+        const statusText = record.shipping?.statusName || statusNames[statusCode] || 'Không xác định';
+        
+        return <Tag color={color}>{statusText}</Tag>;
+      }
+    },
+    {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
@@ -218,7 +265,7 @@ const OrderPage = () => {
           <Tooltip title="Chi tiết">
             <Button icon={<EditOutlined />} onClick={() => showOrderDetails(record)} />
           </Tooltip>
-          {record.status !== 'cancelled' && record.status !== 'completed' && (
+          {record.status === 'pending' && (
             <Tooltip title="Hủy đơn hàng">
               <Button
                 icon={<DeleteOutlined />}
@@ -315,6 +362,59 @@ const OrderPage = () => {
                   </p>
                 </div>
               )}
+              
+              {record.shipping?.orderCode && (
+                <div className="mt-3">
+                  <h4 className="font-medium mb-1">Thông tin vận chuyển:</h4>
+                  <p><strong>Mã vận đơn:</strong> {record.shipping.orderCode}</p>
+                  <p>
+                    <strong>Trạng thái vận chuyển:</strong> {' '}
+                    {(() => {
+                      // Mapping trạng thái vận chuyển sang màu sắc
+                      const statusColors: Record<string, string> = {
+                        'ready_to_pick': 'blue',
+                        'picking': 'cyan',
+                        'picked': 'geekblue',
+                        'delivering': 'purple',
+                        'delivered': 'green',
+                        'delivery_fail': 'orange',
+                        'waiting_to_return': 'gold',
+                        'return': 'volcano',
+                        'returned': 'red',
+                        'cancel': 'magenta',
+                        'exception': 'error',
+                      };
+                      
+                      // Mapping trạng thái vận chuyển sang tên tiếng Việt
+                      const statusNames: Record<string, string> = {
+                        'ready_to_pick': 'Chờ lấy hàng',
+                        'picking': 'Đang lấy hàng',
+                        'picked': 'Đã lấy hàng',
+                        'delivering': 'Đang giao hàng',
+                        'delivered': 'Đã giao hàng',
+                        'delivery_fail': 'Giao hàng thất bại',
+                        'waiting_to_return': 'Chờ trả hàng',
+                        'return': 'Đang trả hàng',
+                        'returned': 'Đã trả hàng',
+                        'cancel': 'Đã hủy',
+                        'exception': 'Ngoại lệ',
+                      };
+                      
+                      const statusCode = record.shipping?.statusCode;
+                      const color = statusColors[statusCode] || 'default';
+                      const statusText = record.shipping?.statusName || statusNames[statusCode] || 'Không xác định';
+                      
+                      return <Tag color={color}>{statusText}</Tag>;
+                    })()}
+                  </p>
+                  {record.shipping.expectedDeliveryTime && (
+                    <p><strong>Thời gian dự kiến:</strong> {record.shipping.expectedDeliveryTime}</p>
+                  )}
+                  {record.shipping.fee && (
+                    <p><strong>Phí vận chuyển:</strong> {record.shipping.fee.toLocaleString('vi-VN')}đ</p>
+                  )}
+                </div>
+              )}
             </div>
           ),
         }}
@@ -344,9 +444,14 @@ const OrderPage = () => {
                   defaultValue={currentItem?.status}
                 >
                   {/* Trước khi tạo vận đơn, admin có thể thay đổi trạng thái */}
+                  {/* Chỉ hiển thị trạng thái hiện tại và trạng thái tiếp theo, disable các trạng thái cũ */}
                   <Select.Option value="pending" disabled={currentItem.status !== 'pending'}>Chờ xác nhận</Select.Option>
                   <Select.Option value="confirmed" disabled={currentItem.status !== 'pending' && currentItem.status !== 'confirmed'}>Đã xác nhận</Select.Option>
-                  <Select.Option value="cancelled" disabled={!['pending', 'confirmed'].includes(currentItem.status)}>Hủy đơn hàng</Select.Option>
+                  <Select.Option value="processing" disabled={currentItem.status !== 'confirmed' && currentItem.status !== 'processing'}>Đang xử lý</Select.Option>
+                  <Select.Option value="shipped" disabled={currentItem.status !== 'processing' && currentItem.status !== 'shipped'}>Đang giao hàng</Select.Option>
+                  <Select.Option value="delivered" disabled={currentItem.status !== 'shipped' && currentItem.status !== 'delivered'}>Đã giao hàng</Select.Option>
+                  <Select.Option value="completed" disabled={currentItem.status !== 'delivered' && currentItem.status !== 'completed'}>Hoàn thành</Select.Option>
+                  <Select.Option value="cancelled" disabled={currentItem.status !== 'pending'}>Hủy đơn hàng</Select.Option>
                 </Select>
               ) : (
                 <div style={{ marginRight: 8 }}>
@@ -439,10 +544,58 @@ const OrderPage = () => {
                     'pending': 'Đang xử lý',
                     'failed': 'Thất bại',
                     'refunded': 'Đã hoàn tiền',
-                    'unpaid': 'Chưa thanh toán'
+                    'unpaid': 'Chưa thanh toán',
+                    'cancelled': 'Đã hủy'
                   }[currentItem.paymentStatus] || currentItem.paymentStatus
                 }</Tag>
               </div>
+              {currentItem.shipping?.orderCode && (
+                <div>
+                  <p className="text-gray-500">Trạng thái vận chuyển:</p>
+                  <div>
+                    {(() => {
+                      // Mapping trạng thái vận chuyển sang màu sắc
+                      const statusColors: Record<string, string> = {
+                        'ready_to_pick': 'blue',
+                        'picking': 'cyan',
+                        'picked': 'geekblue',
+                        'delivering': 'purple',
+                        'delivered': 'green',
+                        'delivery_fail': 'orange',
+                        'waiting_to_return': 'gold',
+                        'return': 'volcano',
+                        'returned': 'red',
+                        'cancel': 'magenta',
+                        'exception': 'error',
+                      };
+                      
+                      // Mapping trạng thái vận chuyển sang tên tiếng Việt
+                      const statusNames: Record<string, string> = {
+                        'ready_to_pick': 'Chờ lấy hàng',
+                        'picking': 'Đang lấy hàng',
+                        'picked': 'Đã lấy hàng',
+                        'delivering': 'Đang giao hàng',
+                        'delivered': 'Đã giao hàng',
+                        'delivery_fail': 'Giao hàng thất bại',
+                        'waiting_to_return': 'Chờ trả hàng',
+                        'return': 'Đang trả hàng',
+                        'returned': 'Đã trả hàng',
+                        'cancel': 'Đã hủy',
+                        'exception': 'Ngoại lệ',
+                      };
+                      
+                      const statusCode = currentItem.shipping?.statusCode;
+                      const color = statusColors[statusCode] || 'default';
+                      const statusText = currentItem.shipping?.statusName || statusNames[statusCode] || 'Không xác định';
+                      
+                      return <Tag color={color}>{statusText}</Tag>;
+                    })()} 
+                    <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                      Mã vận đơn: {currentItem.shipping?.orderCode}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div>
