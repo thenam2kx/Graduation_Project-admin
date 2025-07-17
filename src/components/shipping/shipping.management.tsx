@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Table, Button, Tag, Space, Modal, message, Tooltip, Card, Typography, Descriptions } from 'antd';
-import { ReloadOutlined, SearchOutlined, EyeOutlined, CarOutlined, StopOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Space, Modal, message, Tooltip, Card, Typography, Descriptions, Select } from 'antd';
+import { ReloadOutlined, SearchOutlined, EyeOutlined, CarOutlined, StopOutlined, EditOutlined } from '@ant-design/icons';
 import axios from '../../config/axios.customize';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { createShippingOrderAPI, getShippingStatusAPI, cancelShippingOrderAPI, updateShippingStatusAPI } from '@/services/shipping-service/shipping.apis';
 
 const { Title, Text } = Typography;
 
@@ -41,31 +42,40 @@ const ShippingManagement: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [updateStatusModalVisible, setUpdateStatusModalVisible] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('');
   const queryClient = useQueryClient();
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefreshTime, setLastRefreshTime] = useState<string>('');
 
   // Fetch orders with shipping information
-  const { data: orders, isLoading, refetch } = useQuery({
+  const { data: orders, isLoading, refetch, error } = useQuery({
     queryKey: ['orders-with-shipping'],
     queryFn: async () => {
-      const response = await axios.get('/api/v1/orders');
-      console.log('Orders response:', response.data);
-      
-      // Kiểm tra cấu trúc dữ liệu thực tế
-      const results = response.data?.results || [];
-      console.log('Orders array:', results);
-      
-      // Filter orders that have shipping information
-      const filteredOrders = results.filter((order: any) => {
-        console.log('Order:', order._id, 'has shipping:', !!order.shipping?.orderCode);
-        return order.shipping?.orderCode;
-      });
-      
-      console.log('Filtered orders with shipping:', filteredOrders.length);
-      return filteredOrders;
+      try {
+        const response = await axios.get('/api/v1/orders');
+        console.log('Orders response:', response.data);
+        
+        // Kiểm tra cấu trúc dữ liệu thực tế
+        const results = response.data?.results || [];
+        console.log('Orders array:', results);
+        
+        // Filter orders that have shipping information
+        const filteredOrders = results.filter((order: any) => {
+          console.log('Order:', order._id, 'has shipping:', !!order.shipping?.orderCode);
+          return order.shipping?.orderCode;
+        });
+        
+        console.log('Filtered orders with shipping:', filteredOrders.length);
+        return filteredOrders;
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách đơn hàng:', error);
+        message.error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+        return [];
+      }
     },
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    retry: 1
   });
 
   // Hàm cập nhật trạng thái tất cả đơn hàng có vận đơn
@@ -74,34 +84,73 @@ const ShippingManagement: React.FC = () => {
     
     try {
       // Lấy tất cả đơn hàng có mã vận đơn
-      const ordersWithShipping = orders.filter(order => order.shipping?.orderCode);
+      // Chỉ lấy các đơn hàng chưa hoàn thành hoặc chưa hủy
+      const ordersWithShipping = orders.filter(order => 
+        order.shipping?.orderCode && 
+        order.shipping?.statusCode !== 'delivered' && 
+        order.shipping?.statusCode !== 'cancel' &&
+        order.shipping?.statusCode !== 'returned'
+      );
+      
       console.log(`Đang cập nhật trạng thái cho ${ordersWithShipping.length} đơn hàng`);
+      
+      // Nếu không có đơn hàng nào cần cập nhật, thoát sớm
+      if (ordersWithShipping.length === 0) {
+        setLastRefreshTime(new Date().toLocaleTimeString());
+        return;
+      }
       
       // Cập nhật từng đơn hàng
       for (const order of ordersWithShipping) {
         try {
-          const response = await axios.get(`/api/v1/ghn/order-status/${order._id}`);
+          const response = await getShippingStatusAPI(order._id).catch(error => {
+            console.error(`Lỗi kết nối API khi cập nhật đơn hàng ${order._id}:`, error);
+            return { data: { order } }; // Trả về dữ liệu hiện tại nếu không thể kết nối
+          });
+          
           console.log(`Đã cập nhật trạng thái đơn hàng ${order._id}`);
           
-          // Đồng bộ trạng thái đơn hàng với trạng thái vận chuyển
-          const updatedOrder = response.data.data.order;
-          if (updatedOrder?.shipping?.statusCode === 'cancel') {
+          // Kiểm tra cấu trúc dữ liệu trả về
+          const updatedOrder = response?.data?.order || response?.data || order;
+          const shippingStatus = updatedOrder?.shipping?.statusCode;
+          
+          // Cập nhật trạng thái đơn hàng dựa trên trạng thái vận chuyển
+          if (shippingStatus === 'cancel') {
             // Nếu GHN đã hủy đơn, cập nhật trạng thái đơn hàng thành 'cancelled'
             await axios.patch(`/api/v1/orders/${order._id}/status`, {
               status: 'cancelled',
               reason: 'Hủy bởi GHN'
             });
             console.log(`Đã cập nhật đơn hàng ${order._id} thành trạng thái hủy`);
-          } else if (updatedOrder?.shipping?.statusCode === 'delivered') {
+          } else if (shippingStatus === 'ready_to_pick') {
+            // Đơn hàng đang chờ lấy hàng
+            await axios.patch(`/api/v1/orders/${order._id}/status`, {
+              status: 'processing'
+            });
+            console.log(`Đã cập nhật đơn hàng ${order._id} thành trạng thái đang xử lý`);
+          } else if (['picking', 'picked', 'delivering'].includes(shippingStatus)) {
+            // Đơn hàng đang được vận chuyển
+            await axios.patch(`/api/v1/orders/${order._id}/status`, {
+              status: 'shipped'
+            });
+            console.log(`Đã cập nhật đơn hàng ${order._id} thành trạng thái đang giao hàng`);
+          } else if (shippingStatus === 'delivered') {
             // Nếu GHN đã giao hàng, cập nhật trạng thái đơn hàng thành 'delivered'
             await axios.patch(`/api/v1/orders/${order._id}/status`, {
               status: 'delivered'
             });
             console.log(`Đã cập nhật đơn hàng ${order._id} thành trạng thái đã giao hàng`);
+          } else if (['delivery_fail', 'waiting_to_return', 'return', 'returned'].includes(shippingStatus)) {
+            // Đơn hàng giao thất bại hoặc đang/đã trả hàng
+            await axios.patch(`/api/v1/orders/${order._id}/status`, {
+              status: 'cancelled',
+              reason: 'Giao hàng thất bại hoặc đã trả hàng'
+            });
+            console.log(`Đã cập nhật đơn hàng ${order._id} thành trạng thái hủy do giao hàng thất bại`);
           }
           
-          // Đợi 500ms giữa các request để tránh quá tải API
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Đợi 1000ms giữa các request để tránh quá tải API
+          await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (error) {
           console.error(`Lỗi cập nhật đơn hàng ${order._id}:`, error);
         }
@@ -111,22 +160,24 @@ const ShippingManagement: React.FC = () => {
       setLastRefreshTime(new Date().toLocaleTimeString());
       // Làm mới dữ liệu
       queryClient.invalidateQueries({ queryKey: ['orders-with-shipping'] });
+      // Làm mới dữ liệu đơn hàng
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     } catch (error) {
       console.error('Lỗi khi cập nhật trạng thái đơn hàng:', error);
     }
   }, [orders, queryClient]);
   
-  // Cập nhật tự động mỗi 5 phút
+  // Cập nhật tự động mỗi 15 phút
   useEffect(() => {
     if (!autoRefresh || !orders) return;
     
-    // Cập nhật ngay khi component được tải và có dữ liệu
-    updateAllOrdersStatus();
+    // KHÔNG cập nhật ngay khi component được tải để tránh quá tải server
+    // Chỉ cập nhật khi người dùng nhấn nút cập nhật
     
     // Thiết lập interval để cập nhật định kỳ
     const intervalId = setInterval(() => {
       updateAllOrdersStatus();
-    }, 5 * 60 * 1000); // 5 phút
+    }, 15 * 60 * 1000); // 15 phút
     
     return () => clearInterval(intervalId);
   }, [autoRefresh, updateAllOrdersStatus, orders]);
@@ -134,7 +185,7 @@ const ShippingManagement: React.FC = () => {
   // Create shipping order mutation
   const createShippingMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      return await axios.post(`/api/v1/ghn/create-order/${orderId}`);
+      return await createShippingOrderAPI(orderId);
     },
     onSuccess: () => {
       message.success('Đã tạo đơn vận chuyển thành công');
@@ -148,31 +199,63 @@ const ShippingManagement: React.FC = () => {
   // Get shipping status mutation
   const getStatusMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      return await axios.get(`/api/v1/ghn/order-status/${orderId}`);
+      try {
+        return await getShippingStatusAPI(orderId);
+      } catch (error) {
+        console.error(`Lỗi kết nối API khi lấy trạng thái đơn hàng ${orderId}:`, error);
+        message.error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+        throw error;
+      }
     },
     onSuccess: async (data) => {
       message.success('Đã cập nhật trạng thái vận chuyển');
       
       // Đồng bộ trạng thái đơn hàng với trạng thái vận chuyển
-      const updatedOrder = data.data.data.order;
-      if (updatedOrder?.shipping?.statusCode === 'cancel') {
+      console.log('Get status response:', data);
+      const updatedOrder = data?.data?.order || data?.data || data;
+      const shippingStatus = updatedOrder?.shipping?.statusCode;
+      
+      // Cập nhật trạng thái đơn hàng dựa trên trạng thái vận chuyển
+      if (shippingStatus === 'cancel') {
         // Nếu GHN đã hủy đơn, cập nhật trạng thái đơn hàng thành 'cancelled'
         await axios.patch(`/api/v1/orders/${updatedOrder._id}/status`, {
           status: 'cancelled',
           reason: 'Hủy bởi GHN'
         });
         message.warning('Đơn hàng đã bị hủy bởi GHN');
-      } else if (updatedOrder?.shipping?.statusCode === 'delivered') {
+      } else if (shippingStatus === 'ready_to_pick') {
+        // Đơn hàng đang chờ lấy hàng
+        await axios.patch(`/api/v1/orders/${updatedOrder._id}/status`, {
+          status: 'processing'
+        });
+        message.info('Đơn hàng đang được xử lý');
+      } else if (['picking', 'picked', 'delivering'].includes(shippingStatus)) {
+        // Đơn hàng đang được vận chuyển
+        await axios.patch(`/api/v1/orders/${updatedOrder._id}/status`, {
+          status: 'shipped'
+        });
+        message.info('Đơn hàng đang được giao');
+      } else if (shippingStatus === 'delivered') {
         // Nếu GHN đã giao hàng, cập nhật trạng thái đơn hàng thành 'delivered'
         await axios.patch(`/api/v1/orders/${updatedOrder._id}/status`, {
           status: 'delivered'
         });
+        message.success('Đơn hàng đã được giao thành công');
+      } else if (['delivery_fail', 'waiting_to_return', 'return', 'returned'].includes(shippingStatus)) {
+        // Đơn hàng giao thất bại hoặc đang/đã trả hàng
+        await axios.patch(`/api/v1/orders/${updatedOrder._id}/status`, {
+          status: 'cancelled',
+          reason: 'Giao hàng thất bại hoặc đã trả hàng'
+        });
+        message.warning('Đơn hàng đã bị hủy do giao hàng thất bại');
       }
       
+      // Làm mới dữ liệu
       queryClient.invalidateQueries({ queryKey: ['orders-with-shipping'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
       
       // Show status details
-      setSelectedOrder(data.data.data.order);
+      setSelectedOrder(updatedOrder);
       setDetailModalVisible(true);
     },
     onError: (error: any) => {
@@ -183,7 +266,7 @@ const ShippingManagement: React.FC = () => {
   // Cancel shipping order mutation
   const cancelShippingMutation = useMutation({
     mutationFn: async ({ orderId, reason }: { orderId: string; reason: string }) => {
-      return await axios.post(`/api/v1/ghn/cancel-order/${orderId}`, { reason });
+      return await cancelShippingOrderAPI(orderId, reason);
     },
     onSuccess: () => {
       message.success('Đã hủy đơn vận chuyển thành công');
@@ -221,6 +304,92 @@ const ShippingManagement: React.FC = () => {
     setSelectedOrder(order);
     setDetailModalVisible(true);
   };
+  
+  // Show update status modal
+  const showUpdateStatusModal = (order: any) => {
+    setSelectedOrder(order);
+    setSelectedStatus(order.shipping?.statusCode || '');
+    setUpdateStatusModalVisible(true);
+  };
+  
+  // Hàm refresh dữ liệu
+  const refreshData = () => {
+    // Làm mới dữ liệu
+    queryClient.invalidateQueries({ queryKey: ['orders-with-shipping'] });
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
+    refetch();
+    setLastRefreshTime(new Date().toLocaleTimeString());
+  };
+  
+  // Update shipping status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
+      // Cập nhật trạng thái vận chuyển
+      return await updateShippingStatusAPI(orderId, status);
+    },
+    onSuccess: async (data) => {
+      message.success('Đã cập nhật trạng thái vận chuyển');
+      setUpdateStatusModalVisible(false);
+      
+      // Đồng bộ trạng thái đơn hàng với trạng thái vận chuyển
+      // Kiểm tra cấu trúc dữ liệu trả về
+      console.log('Update status response:', data);
+      
+      // Xử lý cấu trúc dữ liệu trả về từ API
+      const updatedOrder = data?.data || data;
+      const shippingStatus = updatedOrder?.shipping?.statusCode;
+      
+      try {
+        // Cập nhật trạng thái đơn hàng dựa trên trạng thái vận chuyển
+        if (shippingStatus === 'cancel') {
+          // Nếu đã hủy đơn, cập nhật trạng thái đơn hàng thành 'cancelled'
+          await axios.patch(`/api/v1/orders/${updatedOrder._id}/status`, {
+            status: 'cancelled',
+            reason: 'Hủy bởi quản trị viên'
+          });
+          message.warning('Đơn hàng đã bị hủy');
+        } else if (shippingStatus === 'ready_to_pick') {
+          // Đơn hàng đang chờ lấy hàng
+          await axios.patch(`/api/v1/orders/${updatedOrder._id}/status`, {
+            status: 'processing'
+          });
+          message.info('Đơn hàng đang được xử lý');
+        } else if (['picking', 'picked', 'delivering'].includes(shippingStatus)) {
+          // Đơn hàng đang được vận chuyển
+          await axios.patch(`/api/v1/orders/${updatedOrder._id}/status`, {
+            status: 'shipped'
+          });
+          message.info('Đơn hàng đang được giao');
+        } else if (shippingStatus === 'delivered') {
+          // Nếu đã giao hàng, cập nhật trạng thái đơn hàng thành 'delivered'
+          await axios.patch(`/api/v1/orders/${updatedOrder._id}/status`, {
+            status: 'delivered'
+          });
+          message.success('Đơn hàng đã được giao thành công');
+        } else if (['delivery_fail', 'waiting_to_return', 'return', 'returned'].includes(shippingStatus)) {
+          // Đơn hàng giao thất bại hoặc đang/đã trả hàng
+          await axios.patch(`/api/v1/orders/${updatedOrder._id}/status`, {
+            status: 'cancelled',
+            reason: 'Giao hàng thất bại hoặc đã trả hàng'
+          });
+          message.warning('Đơn hàng đã bị hủy do giao hàng thất bại');
+        }
+      } catch (error) {
+        console.error('Lỗi khi cập nhật trạng thái đơn hàng:', error);
+        message.error('Có lỗi xảy ra khi cập nhật trạng thái đơn hàng');
+      } finally {
+        // Làm mới dữ liệu
+        queryClient.invalidateQueries({ queryKey: ['orders-with-shipping'] });
+        queryClient.invalidateQueries({ queryKey: ['orders'] });
+        
+        // Làm mới dữ liệu bằng cách gọi refetch
+        refetch();
+      }
+    },
+    onError: (error: any) => {
+      message.error(`Lỗi khi cập nhật trạng thái vận chuyển: ${error.response?.data?.message || error.message}`);
+    }
+  });
 
   // Table columns
   const columns = [
@@ -252,8 +421,14 @@ const ShippingManagement: React.FC = () => {
           return <Tag color="red">Đã hủy</Tag>;
         }
         
+        // Nếu không có trạng thái
+        if (!status) {
+          return <span>Chưa có trạng thái</span>;
+        }
+        
         // Hiển thị trạng thái vận chuyển bình thường
         const color = statusColors[status] || 'default';
+        // Ưu tiên sử dụng statusName từ API, nếu không có thì dùng từ mapping
         const statusText = record.shipping?.statusName || statusNames[status] || 'Không xác định';
         return <Tag color={color}>{statusText}</Tag>;
       },
@@ -304,6 +479,20 @@ const ShippingManagement: React.FC = () => {
               />
             </Tooltip>
           )}
+          
+          {record.shipping?.orderCode && 
+           record.shipping?.statusCode !== 'cancel' && 
+           record.shipping?.statusCode !== 'delivered' && 
+           record.status !== 'cancelled' && 
+           record.status !== 'delivered' && (
+            <Tooltip title="Cập nhật trạng thái">
+              <Button 
+                icon={<EditOutlined />} 
+                onClick={() => showUpdateStatusModal(record)}
+                type="default"
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
@@ -331,20 +520,30 @@ const ShippingManagement: React.FC = () => {
             <Button 
               type="primary" 
               icon={<ReloadOutlined />} 
-              onClick={() => updateAllOrdersStatus()}
+              onClick={() => {
+                updateAllOrdersStatus();
+                refreshData();
+              }}
             >
               Cập nhật trạng thái
             </Button>
           </div>
         </div>
         
-        <Table 
-          columns={columns} 
-          dataSource={orders || []} 
-          rowKey="_id" 
-          loading={isLoading}
-          pagination={{ pageSize: 10 }}
-        />
+        {error ? (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <p>Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.</p>
+            <Button onClick={() => refetch()} icon={<ReloadOutlined />}>Thử lại</Button>
+          </div>
+        ) : (
+          <Table 
+            columns={columns} 
+            dataSource={orders || []} 
+            rowKey="_id" 
+            loading={isLoading}
+            pagination={{ pageSize: 10 }}
+          />
+        )}
       </Card>
 
       {/* Order Detail Modal */}
@@ -428,6 +627,64 @@ const ShippingManagement: React.FC = () => {
             onChange={(e) => setCancelReason(e.target.value)}
             placeholder="Nhập lý do hủy vận đơn"
           />
+        </div>
+      </Modal>
+      
+      {/* Update Status Modal */}
+      <Modal
+        title="Cập nhật trạng thái vận chuyển"
+        open={updateStatusModalVisible}
+        onCancel={() => setUpdateStatusModalVisible(false)}
+        onOk={() => {
+          if (selectedOrder?._id && selectedStatus) {
+            updateStatusMutation.mutate({
+              orderId: selectedOrder._id,
+              status: selectedStatus
+            }, {
+              onSuccess: () => {
+                // Làm mới dữ liệu ngay lập tức
+                refreshData();
+              }
+            });
+          } else {
+            message.warning('Vui lòng chọn trạng thái mới');
+          }
+        }}
+        okText="Cập nhật"
+        cancelText="Hủy"
+        confirmLoading={updateStatusMutation.isPending}
+      >
+        <p>Cập nhật trạng thái vận chuyển cho đơn hàng:</p>
+        <p>Mã đơn hàng: {selectedOrder?._id}</p>
+        <p>Mã vận đơn GHN: {selectedOrder?.shipping?.orderCode}</p>
+        
+        <div style={{ marginTop: 16 }}>
+          <Text strong>Trạng thái hiện tại:</Text>
+          <Tag color={statusColors[selectedOrder?.shipping?.statusCode] || 'default'} style={{ marginLeft: 8 }}>
+            {selectedOrder?.shipping?.statusName || statusNames[selectedOrder?.shipping?.statusCode] || 'Không xác định'}
+          </Tag>
+        </div>
+        
+        <div style={{ marginTop: 16 }}>
+          <Text strong>Trạng thái mới:</Text>
+          <Select
+            style={{ width: '100%', marginTop: 8 }}
+            value={selectedStatus}
+            onChange={(value) => setSelectedStatus(value)}
+            placeholder="Chọn trạng thái mới"
+          >
+            {/* Hiển thị các trạng thái theo thứ tự và vô hiệu hóa các trạng thái không hợp lệ */}
+            <Select.Option value="ready_to_pick" disabled={selectedOrder?.shipping?.statusCode !== undefined && selectedOrder?.shipping?.statusCode !== 'ready_to_pick'}>Chờ lấy hàng</Select.Option>
+            <Select.Option value="picking" disabled={selectedOrder?.shipping?.statusCode !== 'ready_to_pick' && selectedOrder?.shipping?.statusCode !== 'picking'}>Đang lấy hàng</Select.Option>
+            <Select.Option value="picked" disabled={selectedOrder?.shipping?.statusCode !== 'picking' && selectedOrder?.shipping?.statusCode !== 'picked'}>Đã lấy hàng</Select.Option>
+            <Select.Option value="delivering" disabled={selectedOrder?.shipping?.statusCode !== 'picked' && selectedOrder?.shipping?.statusCode !== 'delivering' && selectedOrder?.shipping?.statusCode !== 'delivery_fail'}>Đang giao hàng</Select.Option>
+            <Select.Option value="delivered" disabled={selectedOrder?.shipping?.statusCode !== 'delivering' && selectedOrder?.shipping?.statusCode !== 'delivered'}>Đã giao hàng</Select.Option>
+            <Select.Option value="delivery_fail" disabled={selectedOrder?.shipping?.statusCode !== 'delivering' && selectedOrder?.shipping?.statusCode !== 'delivery_fail'}>Giao hàng thất bại</Select.Option>
+            <Select.Option value="waiting_to_return" disabled={selectedOrder?.shipping?.statusCode !== 'delivery_fail' && selectedOrder?.shipping?.statusCode !== 'waiting_to_return'}>Chờ trả hàng</Select.Option>
+            <Select.Option value="return" disabled={selectedOrder?.shipping?.statusCode !== 'waiting_to_return' && selectedOrder?.shipping?.statusCode !== 'return'}>Đang trả hàng</Select.Option>
+            <Select.Option value="returned" disabled={selectedOrder?.shipping?.statusCode !== 'return' && selectedOrder?.shipping?.statusCode !== 'returned'}>Đã trả hàng</Select.Option>
+            <Select.Option value="cancel" disabled={['delivered', 'returned', 'cancel'].includes(selectedOrder?.shipping?.statusCode || '')}>Hủy đơn hàng</Select.Option>
+          </Select>
         </div>
       </Modal>
     </div>
