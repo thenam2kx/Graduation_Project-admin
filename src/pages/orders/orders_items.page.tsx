@@ -155,6 +155,42 @@ const OrderPage = () => {
       render: (price: number) => price ? `${price.toLocaleString()} đ` : '-'
     },
     {
+      title: 'Trạng thái đơn hàng',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        const displayText = {
+          'pending': 'Chờ xác nhận',
+          'confirmed': 'Đã xác nhận',
+          'processing': 'Đang xử lý',
+          'shipped': 'Đang giao hàng',
+          'delivered': 'Đã giao hàng',
+          'completed': 'Hoàn thành',
+          'cancelled': 'Đã hủy',
+          'refunded': 'Đã hoàn tiền'
+        }[status] || status;
+        
+        return <Tag color={getStatusColor(status)}>{displayText}</Tag>;
+      }
+    },
+    {
+      title: 'Phương thức vận chuyển',
+      dataIndex: 'shippingMethod',
+      key: 'shippingMethod',
+      render: (method: string, record: any) => {
+        // Kiểm tra xem có phải đơn hàng GHN không dựa vào ghi chú
+        if (record.note && record.note.startsWith('[GHN]')) {
+          return <Tag color="blue">Giao hàng nhanh (GHN)</Tag>;
+        }
+        
+        switch (method) {
+          case 'standard': return 'Giao hàng tiêu chuẩn';
+          case 'express': return 'Giao hàng hỏa tốc';
+          default: return method || 'N/A';
+        }
+      }
+    },
+    {
       title: 'Phương thức thanh toán',
       dataIndex: 'paymentMethod',
       key: 'paymentMethod',
@@ -183,25 +219,6 @@ const OrderPage = () => {
         }[status] || status;
         
         return <Tag color={getPaymentStatusColor(status)}>{displayText}</Tag>;
-      }
-    },
-    {
-      title: 'Trạng thái đơn hàng',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => {
-        const displayText = {
-          'pending': 'Chờ xác nhận',
-          'confirmed': 'Đã xác nhận',
-          'processing': 'Đang xử lý',
-          'shipped': 'Đang giao hàng',
-          'delivered': 'Đã giao hàng',
-          'completed': 'Hoàn thành',
-          'cancelled': 'Đã hủy',
-          'refunded': 'Đã hoàn tiền'
-        }[status] || status;
-        
-        return <Tag color={getStatusColor(status)}>{displayText}</Tag>;
       }
     },
     {
@@ -462,8 +479,9 @@ const OrderPage = () => {
                 </div>
               )}
               
-              {/* Nút tạo vận đơn GHN */}
-              {(currentItem.status === 'confirmed') && !currentItem.shipping?.orderCode && (
+              {/* Nút tạo vận đơn GHN - chỉ hiển thị khi đơn hàng cần tạo vận đơn GHN */}
+              {(currentItem.status === 'confirmed') && !currentItem.shipping?.orderCode && 
+               currentItem.note && currentItem.note.startsWith('[GHN]') && (
                 <Button 
                   key="create-shipping"
                   type="primary"
@@ -531,6 +549,22 @@ const OrderPage = () => {
                     'cash': 'Tiền mặt',
                     'credit_card': 'Thẻ tín dụng'
                   }[currentItem.paymentMethod] || currentItem.paymentMethod}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Phương thức vận chuyển:</p>
+                {currentItem.note && currentItem.note.startsWith('[GHN]') ? (
+                  <Tag color="blue">Giao hàng nhanh (GHN)</Tag>
+                ) : (
+                  <p>{{
+                    'standard': 'Giao hàng tiêu chuẩn',
+                    'express': 'Giao hàng hỏa tốc'
+                  }[currentItem.shippingMethod] || currentItem.shippingMethod}</p>
+                )}
+                {currentItem.note && currentItem.note.startsWith('[GHN]') && !currentItem.shipping?.orderCode && (
+                  <div style={{ fontSize: '12px', color: '#ff4d4f', marginTop: '4px' }}>
+                    Cần tạo vận đơn GHN
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-gray-500">Lí do hủy/hoàn tiền:</p>
@@ -706,7 +740,9 @@ const OrderPage = () => {
             {currentItem.note && (
               <div>
                 <h4 className="font-medium mb-1">Ghi chú:</h4>
-                <p>{currentItem.note}</p>
+                <p>{currentItem.note.startsWith('[GHN]') 
+                    ? currentItem.note.substring(5).trim() || 'Đơn hàng Giao Hàng Nhanh' 
+                    : currentItem.note}</p>
               </div>
             )}
           </div>
