@@ -28,12 +28,18 @@ const ProductPage = () => {
 
   const deleteProductMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await deleteProductAPI(id)
-      if (res && res.data) {
-        message.success('Xóa sản phẩm thành công!')
-        return res.data
-      } else {
-        message.error('Xóa sản phẩm thất bại!')
+      try {
+        const res = await deleteProductAPI(id)
+        if (res && res.data) {
+          return res.data
+        }
+        throw new Error('Xóa sản phẩm thất bại!')
+      } catch (error: any) {
+        // Lấy thông báo lỗi từ API nếu có
+        if (error.response?.data?.message) {
+          throw new Error(error.response.data.message)
+        }
+        throw new Error('Xóa sản phẩm thất bại!')
       }
     },
     onSuccess: () => {
@@ -41,8 +47,8 @@ const ProductPage = () => {
       // Refetch the product list after deletion
       queryClient.invalidateQueries({ queryKey: [PRODUCT_QUERY_KEYS.FETCH_ALL] })
     },
-    onError: () => {
-      message.error('Xóa sản phẩm thất bại!')
+    onError: (error: Error) => {
+      message.error(error.message || 'Xóa sản phẩm thất bại!')
     }
   })
 
