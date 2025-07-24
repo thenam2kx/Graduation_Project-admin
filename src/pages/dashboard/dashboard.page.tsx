@@ -4,8 +4,10 @@ import { fetchAllProducts } from '@/services/product-service/product.apis';
 import { PRODUCT_QUERY_KEYS } from '@/services/product-service/product.key';
 import { getUserList } from '@/services/user-service/user.apis';
 import { fetchAllOrdersAPI } from '@/services/order-service/order.apis';
-import { DatePicker } from 'antd';
+import { DatePicker, theme } from 'antd';
 import dayjs from 'dayjs';
+import { useAppSelector } from '@/redux/hooks';
+import '@/styles/dashboard.css';
 
 interface RevenueDataPoint {
   label: string;
@@ -14,6 +16,9 @@ interface RevenueDataPoint {
 }
 
 const DashboardPage = () => {
+  const { token } = theme.useToken();
+  const themeMode = useAppSelector(state => state.app.themeMode);
+  const isDark = themeMode === 'dark';
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([
     dayjs().subtract(6, 'month'), 
     dayjs()
@@ -178,19 +183,47 @@ const DashboardPage = () => {
   const revenueOrders = filteredOrders.filter((o: any) => ['completed', 'delivered'].includes(o.status?.toLowerCase()));
 
   const stats = [
-    { title: 'Tổng doanh thu', value: `${totalRevenue.toLocaleString()}₫`, change: '+20%', trend: 'up' },
-    { title: 'Đơn hàng', value: totalOrders.toString(), change: '+30%', trend: 'up' },
-    { title: 'Khách hàng', value: totalUsers.toString(), change: '+10%', trend: 'up' },
-    { title: 'Sản phẩm', value: totalProducts.toString(), change: '+10%', trend: 'up' },
+    { 
+      title: 'Tổng doanh thu', 
+      value: `${totalRevenue.toLocaleString()}₫`, 
+      change: '+20%', 
+      trend: 'up',
+      icon: '💰',
+      color: 'from-amber-500 to-orange-500'
+    },
+    { 
+      title: 'Đơn hàng', 
+      value: totalOrders.toString(), 
+      change: '+30%', 
+      trend: 'up',
+      icon: '📦',
+      color: 'from-blue-500 to-indigo-500'
+    },
+    { 
+      title: 'Khách hàng', 
+      value: totalUsers.toString(), 
+      change: '+10%', 
+      trend: 'up',
+      icon: '👥',
+      color: 'from-green-500 to-emerald-500'
+    },
+    { 
+      title: 'Sản phẩm', 
+      value: totalProducts.toString(), 
+      change: '+10%', 
+      trend: 'up',
+      icon: '🛍️',
+      color: 'from-purple-500 to-pink-500'
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className={`min-h-screen p-6 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Tổng quan hoạt động kinh doanh</p>
+          <h1 className={`text-3xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Dashboard</h1>
+          <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Tổng quan hoạt động kinh doanh</p>
         </div>
       </div>
 
@@ -198,40 +231,54 @@ const DashboardPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {ordersLoading ? (
           Array(4).fill(0).map((_, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-              <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+            <div key={index} className={`rounded-xl shadow-sm p-6 animate-pulse ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+              <div className={`h-4 rounded w-1/2 mb-4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+              <div className={`h-6 rounded w-3/4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
             </div>
           ))
         ) : ordersError ? (
           Array(4).fill(0).map((_, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div key={index} className={`rounded-xl shadow-sm p-6 ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-gray-500">{['Tổng doanh thu', 'Đơn hàng', 'Khách hàng', 'Sản phẩm'][index]}</h3>
+                <h3 className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{['Tổng doanh thu', 'Đơn hàng', 'Khách hàng', 'Sản phẩm'][index]}</h3>
                 <div className="text-sm font-medium text-red-600">Lỗi</div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">--</div>
+              <div className={`text-2xl font-bold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>--</div>
             </div>
           ))
         ) : stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+          <div 
+            key={index} 
+            className={`rounded-xl shadow-sm p-6 hover:shadow-lg transition-all ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}
+            style={{ 
+              animationName: 'fadeIn',
+              animationDuration: '0.5s',
+              animationFillMode: 'both',
+              animationDelay: `${index * 0.1}s`
+            }}
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-500">{stat.title}</h3>
-              <div className="flex items-center text-sm font-medium text-green-600">
-                <span className="mr-1">↗</span>
+              <div className="flex items-center">
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${stat.color} flex items-center justify-center text-white shadow-md mr-3 transform hover:scale-110 transition-transform`}>
+                  <span className="text-lg">{stat.icon}</span>
+                </div>
+                <h3 className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{stat.title}</h3>
+              </div>
+              <div className={`flex items-center text-sm font-medium ${stat.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                <span className="mr-1">{stat.trend === 'up' ? '↗' : '↘'}</span>
                 {stat.change}
               </div>
             </div>
-            <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+            <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} ml-14`}>{stat.value}</div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue Chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className={`lg:col-span-2 rounded-xl shadow-sm p-6 ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
               Biểu đồ doanh thu
             </h2>
             <div>
@@ -240,15 +287,18 @@ const DashboardPage = () => {
               onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
               format="DD/MM/YYYY"
               allowClear={false}
-              className="w-72"
+              className={`w-72 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
               placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
-              style={{ borderRadius: '8px' }}
+              style={{ 
+                borderRadius: '8px',
+                boxShadow: isDark ? '0 1px 2px rgba(255, 255, 255, 0.05)' : '0 1px 2px rgba(0, 0, 0, 0.05)'
+              }}
             />
         </div>
           </div>
           {ordersLoading ? (
             <div className="h-64 flex items-center justify-center">
-              <p className="text-gray-500">Đang tải dữ liệu...</p>
+              <p className={`${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Đang tải dữ liệu...</p>
             </div>
           ) : ordersError ? (
             <div className="h-64 flex items-center justify-center">
@@ -256,7 +306,7 @@ const DashboardPage = () => {
             </div>
           ) : chartData.length === 0 ? (
             <div className="h-64 flex items-center justify-center">
-              <p className="text-gray-500">Không có dữ liệu</p>
+              <p className={`${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Không có dữ liệu</p>
             </div>
           ) : (
             <div className="h-64 flex items-end justify-between space-x-1">
@@ -266,15 +316,19 @@ const DashboardPage = () => {
                   <div key={index} className="flex-1 flex flex-col items-center group h-full">
                     <div className="relative flex-1 flex items-end w-full">
                       <div 
-                        className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg hover:from-blue-600 hover:to-blue-500 transition-colors cursor-pointer"
-                        style={{ height: `${heightPercent}%` }}
+                        className={`w-full rounded-t-lg transition-all cursor-pointer shadow-md hover:shadow-lg animate-rise ${isDark ? 'bg-gradient-to-t from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600' : 'bg-gradient-to-t from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-500'}`}
+                        style={{ 
+                          height: `${heightPercent}%`,
+                          animationDelay: `${index * 0.1}s`,
+                          animationDuration: '0.5s'
+                        }}
                         title={`${item.fullLabel}: ${item.value.toLocaleString()}₫`}
                       ></div>
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                      <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 shadow-lg ${isDark ? 'bg-gray-700' : 'bg-gray-800'}`}>
                         {item.value.toLocaleString()}₫
                       </div>
                     </div>
-                    <span className="text-xs text-gray-500 text-center mt-2">
+                    <span className={`text-xs text-center mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                       {item.label}
                     </span>
                   </div>
@@ -285,11 +339,11 @@ const DashboardPage = () => {
         </div>
 
         {/* Top Products */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">Sản phẩm bán chạy</h2>
+        <div className={`rounded-xl shadow-sm p-6 ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+          <h2 className={`text-lg font-semibold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Sản phẩm bán chạy</h2>
           <div className="space-y-4">
             {productsLoading || ordersLoading ? (
-              <div className="text-center py-4 text-gray-500">Đang tải...</div>
+              <div className={`text-center py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Đang tải...</div>
             ) : (() => {
               // Tính số lượng đã bán cho từng sản phẩm từ đơn hàng
               const productSales = new Map<string, number>();
@@ -333,20 +387,20 @@ const DashboardPage = () => {
               
               return topProducts?.length > 0 ? (
                 topProducts.map((product: any) => (
-                  <div key={product._id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div key={product._id} className={`flex items-center justify-between p-3 rounded-lg transition-all ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} hover:shadow-md`}>
                     <div>
-                      <div className="font-medium text-gray-900">{product.name || 'Không có tên'}</div>
-                      <div className="text-sm text-gray-500">
+                      <div className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{product.name || 'Không có tên'}</div>
+                      <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         {product.categoryId?.name || 'Chưa phân loại'} • Đã bán: {product.soldQuantity}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-gray-900">{(product.price || 0).toLocaleString()}₫</div>
+                      <div className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{(product.price || 0).toLocaleString()}₫</div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-4 text-gray-500">Không có sản phẩm</div>
+                <div className={`text-center py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Không có sản phẩm</div>
               );
             })()
             }
@@ -355,11 +409,11 @@ const DashboardPage = () => {
       </div>
 
       {/* Top Customers */}
-      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className={`mt-8 rounded-xl shadow-sm ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+        <div className={`p-6 ${isDark ? 'border-b border-gray-700' : 'border-b border-gray-200'}`}>
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Khách hàng tiềm năng</h2>
-            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Khách hàng tiềm năng</h2>
+            <button className={`text-sm font-medium ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
               Xem tất cả
             </button>
           </div>
@@ -368,7 +422,7 @@ const DashboardPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {(() => {
               if (usersLoading || ordersLoading) {
-                return <div className="col-span-full text-center py-8 text-gray-500">Đang tải...</div>;
+                return <div className={`col-span-full text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Đang tải...</div>;
               }
               
               // Get all orders
@@ -449,39 +503,39 @@ const DashboardPage = () => {
                   const stats = userStats.get(user._id);
                   
                   return (
-                    <div key={user._id} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100 hover:shadow-md transition-shadow">
+                    <div key={user._id} className={`rounded-lg p-4 hover:shadow-lg transition-all ${isDark ? 'bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100'}`}>
                       <div className="flex items-center mb-3">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-md transform hover:scale-105 transition-transform">
                           {user.email?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <div className="ml-3 flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate">{user.fullName || user.name || 'Khách hàng'}</h3>
-                          <p className="text-sm text-gray-600 truncate">{user.email}</p>
+                          <h3 className={`font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{user.fullName || user.name || 'Khách hàng'}</h3>
+                          <p className={`text-sm truncate ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{user.email}</p>
                         </div>
                       </div>
                       
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Tổng đơn hàng:</span>
+                          <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Tổng đơn hàng:</span>
                           <span className="font-semibold text-blue-600">{stats?.orderCount || 0}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Chi tiêu:</span>
+                          <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Chi tiêu:</span>
                           <span className="font-semibold text-green-600">{(stats?.totalSpent || 0).toLocaleString()}₫</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">SĐT:</span>
-                          <span className="text-sm text-gray-500">{user.phone || 'N/A'}</span>
+                          <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>SĐT:</span>
+                          <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{user.phone || 'N/A'}</span>
                         </div>
                       </div>
                       
-                      <div className="mt-3 pt-3 border-t border-blue-200">
+                      <div className={`mt-3 pt-3 ${isDark ? 'border-t border-gray-600' : 'border-t border-blue-200'}`}>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">Mức độ:</span>
+                          <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Mức độ:</span>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            (stats?.totalSpent || 0) >= 5000000 ? 'bg-yellow-100 text-yellow-800' :
-                            (stats?.totalSpent || 0) >= 1000000 ? 'bg-blue-100 text-blue-800' :
-                            'bg-green-100 text-green-800'
+                            (stats?.totalSpent || 0) >= 5000000 ? `${isDark ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'}` :
+                            (stats?.totalSpent || 0) >= 1000000 ? `${isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'}` :
+                            `${isDark ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'}`
                           }`}>
                             {(stats?.totalSpent || 0) >= 5000000 ? 'VIP' : (stats?.totalSpent || 0) >= 1000000 ? 'Tiềm năng' : 'Khách hàng'}
                           </span>
@@ -491,7 +545,7 @@ const DashboardPage = () => {
                   );
                 })
               ) : (
-                <div className="col-span-full text-center py-8 text-gray-500">Chưa có khách hàng tiềm năng</div>
+                <div className={`col-span-full text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Chưa có khách hàng tiềm năng</div>
               );
             })()
             }
