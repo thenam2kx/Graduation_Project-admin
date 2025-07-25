@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchAllReviews, approveReview, rejectReview, deleteReview } from '@/services/review-service/review.apis';
+import { fetchAllReviews, approveReview, rejectReview, deleteReview, fetchReviewDetail } from '@/services/review-service/review.apis';
+import { testReviewConnection } from '@/services/review-service/review.test';
 import { REVIEW_QUERY_KEYS } from '@/services/review-service/review.keys';
 import { Review } from '@/services/review-service/review.types';
-import { Table, Button, Space, Modal, Input, Tag, Rate, Image, Tooltip, Select, DatePicker } from 'antd';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Modal, Input, Tag, Rate, Image, Tooltip, Select, DatePicker, Descriptions } from 'antd';
+import { ExclamationCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { theme } from 'antd';
@@ -25,6 +26,10 @@ const ReviewsPage = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [currentReviewId, setCurrentReviewId] = useState<string | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -81,9 +86,21 @@ const ReviewsPage = () => {
 
   // Delete review mutation
   const deleteMutation = useMutation({
-    mutationFn: deleteReview,
+    mutationFn: ({ reviewId, reason }: { reviewId: string; reason: string }) => 
+      deleteReview(reviewId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [REVIEW_QUERY_KEYS.FETCH_ALL] });
+      setDeleteModalVisible(false);
+      setDeleteReason('');
+    },
+  });
+
+  // Fetch review detail mutation
+  const reviewDetailMutation = useMutation({
+    mutationFn: fetchReviewDetail,
+    onSuccess: (data) => {
+      setSelectedReview(data.data);
+      setDetailModalVisible(true);
     },
   });
 
@@ -109,17 +126,13 @@ const ReviewsPage = () => {
 
   // Handle delete review
   const handleDelete = (reviewId: string) => {
-    confirm({
-      title: 'Bạn có chắc chắn muốn xóa đánh giá này?',
-      icon: <ExclamationCircleOutlined />,
-      content: 'Đánh giá sẽ bị xóa vĩnh viễn và không thể khôi phục.',
-      okText: 'Xóa',
-      okType: 'danger',
-      cancelText: 'Hủy',
-      onOk: () => {
-        deleteMutation.mutate(reviewId);
-      },
-    });
+    setCurrentReviewId(reviewId);
+    setDeleteModalVisible(true);
+  };
+
+  // Handle view review detail
+  const handleViewDetail = (reviewId: string) => {
+    reviewDetailMutation.mutate(reviewId);
   };
 
   // Submit reject reason
@@ -127,6 +140,19 @@ const ReviewsPage = () => {
     if (currentReviewId && rejectReason.trim()) {
       rejectMutation.mutate({ reviewId: currentReviewId, reason: rejectReason });
     }
+  };
+
+  // Submit delete reason
+  const submitDeleteReason = () => {
+    if (currentReviewId && deleteReason.trim()) {
+      deleteMutation.mutate({ reviewId: currentReviewId, reason: deleteReason });
+    }
+  };
+
+  // Test API connection
+  const handleTestConnection = async () => {
+    const result = await testReviewConnection();
+    console.log('Test result:', result);
   };
 
   // Table columns
@@ -249,6 +275,14 @@ const ReviewsPage = () => {
       key: 'action',
       render: (_, record) => (
         <Space size="small">
+          <Button 
+            type="default" 
+            size="small" 
+            icon={<EyeOutlined />}
+            onClick={() => handleViewDetail(record._id)}
+          >
+            Chi tiết
+          </Button>
           {record.status === 'pending' && (
             <>
               <Button 
@@ -259,8 +293,8 @@ const ReviewsPage = () => {
                 Duyệt
               </Button>
               <Button 
-                danger 
-                size="small" 
+                danger
+                size="small"
                 onClick={() => handleReject(record._id)}
               >
                 Từ chối
@@ -268,7 +302,6 @@ const ReviewsPage = () => {
             </>
           )}
           <Button 
-            type="default" 
             danger 
             size="small" 
             onClick={() => handleDelete(record._id)}
@@ -280,100 +313,146 @@ const ReviewsPage = () => {
     },
   ];
 
-  // Handle table change
-  const handleTableChange = (pagination: any) => {
-    setPagination({
-      current: pagination.current,
-      pageSize: pagination.pageSize,
-    });
-  };
-
   return (
-    <div className={`min-h-screen p-6 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="mb-8">
-        <h1 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Quản lý đánh giá sản phẩm
-        </h1>
-        <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-          Quản lý và kiểm duyệt đánh giá từ khách hàng
-        </p>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Quản lý đánh giá</h1>
+        <Button onClick={handleTestConnection} type="dashed">
+          Test API Connection
+        </Button>
       </div>
-
+      
       {/* Filters */}
-      <div className={`mb-6 p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input.Search
-            placeholder="Tìm kiếm theo tên sản phẩm hoặc người dùng"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onSearch={() => setPagination({ ...pagination, current: 1 })}
-            className={isDark ? 'bg-gray-700 border-gray-600' : ''}
-          />
-          
-          <Select
-            placeholder="Lọc theo trạng thái"
-            allowClear
-            style={{ width: '100%' }}
-            onChange={(value) => {
-              setStatusFilter(value);
-              setPagination({ ...pagination, current: 1 });
-            }}
-            options={[
-              { value: 'pending', label: 'Chờ duyệt' },
-              { value: 'approved', label: 'Đã duyệt' },
-              { value: 'rejected', label: 'Từ chối' },
-            ]}
-            className={isDark ? 'bg-gray-700 border-gray-600' : ''}
-          />
-          
-          <RangePicker
-            onChange={(dates) => {
-              setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null]);
-              setPagination({ ...pagination, current: 1 });
-            }}
-            format="DD/MM/YYYY"
-            placeholder={['Từ ngày', 'Đến ngày']}
-            className={`w-full ${isDark ? 'bg-gray-700 border-gray-600' : ''}`}
-          />
-        </div>
-      </div>
-
-      {/* Reviews Table */}
-      <div className={`rounded-lg shadow-sm ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-        <Table
-          columns={columns}
-          dataSource={reviewsData?.results || []}
-          rowKey="_id"
-          loading={isLoading}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: reviewsData?.meta?.total || 0,
-            showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50'],
-          }}
-          onChange={handleTableChange}
-          scroll={{ x: 'max-content' }}
+      <div className="mb-4 flex gap-4">
+        <Input.Search
+          placeholder="Tìm kiếm theo tên sản phẩm hoặc người dùng"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ width: 300 }}
+        />
+        <Select
+          placeholder="Lọc theo trạng thái"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          allowClear
+          style={{ width: 150 }}
+        >
+          <Select.Option value="pending">Chờ duyệt</Select.Option>
+          <Select.Option value="approved">Đã duyệt</Select.Option>
+          <Select.Option value="rejected">Từ chối</Select.Option>
+        </Select>
+        <RangePicker
+          value={dateRange}
+          onChange={setDateRange}
+          format="DD/MM/YYYY"
         />
       </div>
+
+      {/* Table */}
+      <Table
+        columns={columns}
+        dataSource={reviewsData?.data?.results || []}
+        loading={isLoading}
+        rowKey="_id"
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: reviewsData?.data?.meta?.total || 0,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} đánh giá`,
+          onChange: (page, pageSize) => {
+            setPagination({ current: page, pageSize: pageSize || 10 });
+          },
+        }}
+      />
 
       {/* Reject Modal */}
       <Modal
-        title="Lý do từ chối đánh giá"
+        title="Từ chối đánh giá"
         open={rejectModalVisible}
         onOk={submitRejectReason}
-        onCancel={() => setRejectModalVisible(false)}
-        okText="Xác nhận"
-        cancelText="Hủy"
-        okButtonProps={{ disabled: !rejectReason.trim() }}
+        onCancel={() => {
+          setRejectModalVisible(false);
+          setRejectReason('');
+        }}
+        confirmLoading={rejectMutation.isPending}
       >
-        <p>Vui lòng nhập lý do từ chối đánh giá này:</p>
         <TextArea
           rows={4}
+          placeholder="Nhập lý do từ chối..."
           value={rejectReason}
           onChange={(e) => setRejectReason(e.target.value)}
-          placeholder="Nhập lý do từ chối..."
         />
+      </Modal>
+
+      {/* Delete Modal */}
+      <Modal
+        title="Xóa đánh giá"
+        open={deleteModalVisible}
+        onOk={submitDeleteReason}
+        onCancel={() => {
+          setDeleteModalVisible(false);
+          setDeleteReason('');
+        }}
+        confirmLoading={deleteMutation.isPending}
+      >
+        <TextArea
+          rows={4}
+          placeholder="Nhập lý do xóa..."
+          value={deleteReason}
+          onChange={(e) => setDeleteReason(e.target.value)}
+        />
+      </Modal>
+
+      {/* Detail Modal */}
+      <Modal
+        title="Chi tiết đánh giá"
+        open={detailModalVisible}
+        onCancel={() => setDetailModalVisible(false)}
+        footer={null}
+        width={800}
+      >
+        {selectedReview && (
+          <Descriptions column={1} bordered>
+            <Descriptions.Item label="Sản phẩm">
+              {selectedReview.productId?.name || 'Không xác định'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Người dùng">
+              {selectedReview.userId?.fullName || 'Không xác định'} ({selectedReview.userId?.email})
+            </Descriptions.Item>
+            <Descriptions.Item label="Đánh giá">
+              <Rate disabled value={selectedReview.rating} />
+            </Descriptions.Item>
+            <Descriptions.Item label="Nội dung">
+              {selectedReview.comment}
+            </Descriptions.Item>
+            <Descriptions.Item label="Hình ảnh">
+              {selectedReview.images && selectedReview.images.length > 0 ? (
+                <div className="flex gap-2">
+                  {selectedReview.images.map((image, index) => (
+                    <Image key={index} src={image} width={100} height={100} />
+                  ))}
+                </div>
+              ) : (
+                'Không có'
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Trạng thái">
+              <Tag color={selectedReview.status === 'approved' ? 'green' : selectedReview.status === 'rejected' ? 'red' : 'gold'}>
+                {selectedReview.status === 'approved' ? 'Đã duyệt' : selectedReview.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
+              </Tag>
+            </Descriptions.Item>
+            {selectedReview.rejectReason && (
+              <Descriptions.Item label="Lý do từ chối">
+                {selectedReview.rejectReason}
+              </Descriptions.Item>
+            )}
+            <Descriptions.Item label="Ngày tạo">
+              {dayjs(selectedReview.createdAt).format('DD/MM/YYYY HH:mm')}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
       </Modal>
     </div>
   );
