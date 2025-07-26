@@ -2,14 +2,14 @@ export interface Review {
   _id: string;
   userId: {
     _id: string;
-    fullName?: string;
+    fullName: string;
     email: string;
-  } | string;
+  };
   productId: {
     _id: string;
     name: string;
     images?: string[];
-  } | string;
+  };
   orderId?: string;
   rating: number;
   comment: string;
@@ -20,35 +20,24 @@ export interface Review {
   updatedAt: string;
 }
 
-export interface ReviewResponse {
-  success: boolean;
-  data: Review;
-  message?: string;
-}
-
-export interface ReviewsListResponse {
-  success: boolean;
-  results: Review[];
-  meta?: {
-    total: number;
-    page: number;
-    limit: number;
+export interface ReviewsResponse {
+  statusCode: number;
+  data: {
+    results: Review[];
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
   };
-  message?: string;
-}
-
-export interface ReviewFormData {
-  userId: string;
-  productId: string;
-  orderId?: string;
-  rating: number;
-  comment: string;
-  images?: string[];
-}
-
-export interface ReviewCountResponse {
+  message: string;
   success: boolean;
-  count: number;
-  canReview: boolean;
-  message?: string;
+}
+
+export interface ReviewDetailResponse {
+  statusCode: number;
+  data: Review;
+  message: string;
+  success: boolean;
 }

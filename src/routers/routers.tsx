@@ -36,6 +36,7 @@ import ProductAddPage from '@/pages/product/product.add.page'
 import ProductUpdatePage from '@/pages/product/product.update.page'
 import FlashSalePage from '@/pages/flash_sale/flash-sale.page'
 import ShippingPage from '@/pages/shipping/shipping.page'
+import ReviewsPage from '@/pages/reviews/reviews.page'
 
 
 const Routers = () => {
@@ -74,6 +75,7 @@ const Routers = () => {
           <Route path='/permissions' element={<PermissionsPage />} />
           <Route path='/contact' element={<AdminContactPage />} />
           <Route path='/contact/add' element={<ContactAddPage />} />
+          <Route path='/reviews' element={<ReviewsPage />} />
 
           <Route path='/orderitems' element={<OrderPage />} />
           <Route path='/orderitems/add' element={<OrderItemAddPage />} />

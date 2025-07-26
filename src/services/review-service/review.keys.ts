@@ -1,6 +1,5 @@
 export const REVIEW_QUERY_KEYS = {
-  FETCH_ALL: 'fetchAllReviews',
-  FETCH_BY_PRODUCT: 'fetchReviewsByProduct',
-  FETCH_BY_USER: 'fetchReviewsByUser',
-  FETCH_DETAIL: 'fetchReviewDetail',
-}
+  FETCH_ALL: 'reviews',
+  FETCH_DETAIL: 'review-detail',
+  FETCH_STATS: 'review-stats',
+} as const;
