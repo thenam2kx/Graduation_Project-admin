@@ -29,7 +29,7 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
   const [editingItem, setEditingItem] = useState<IFlashSaleItem | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [applyType, setApplyType] = useState<'product' | 'variant'>('product')
+  const [applyType] = useState<'variant'>('variant')
   
   const queryClient = useQueryClient()
 
@@ -114,20 +114,15 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
         setSelectedProducts([productId])
         setSelectedVariant(variantId || null)
         
-        setApplyType(variantId ? 'variant' : 'product')
-        
         form.setFieldsValue({
           productId: productId,
           variantId: variantId || undefined,
-          discountPercent: editingItem.discountPercent,
-          applyType: variantId ? 'variant' : 'product'
+          discountPercent: editingItem.discountPercent
         })
       } else {
         form.resetFields()
         setSelectedProducts([])
         setSelectedVariant(null)
-        setApplyType('product')
-        form.setFieldValue('applyType', 'product')
         form.setFieldValue('productIds', [])
       }
     }
@@ -148,55 +143,13 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
     deleteMutation.mutate(id)
   }
 
-  const handleProductChange = (values: string[] | string) => {
-    // Xử lý cả single select và multi-select
-    const productArray = Array.isArray(values) ? values : [values]
-    setSelectedProducts(productArray)
+  const handleProductChange = (value: string) => {
+    setSelectedProducts([value])
     setSelectedVariant(null)
     form.setFieldValue('variantId', undefined)
-    
-    // Kiểm tra từng sản phẩm được chọn
-    productArray.forEach(productId => {
-      if (applyType === 'product' && checkProductFlashSaleExists(productId)) {
-        message.warning(`Sản phẩm ${getProductName(productId)} đã có Flash Sale cho tất cả biến thể.`)
-      }
-      
-      if (applyType === 'product' && checkAnyVariantHasFlashSale(productId)) {
-        message.warning(`Một số biến thể của sản phẩm ${getProductName(productId)} đã có Flash Sale.`)
-      }
-    })
   }
   
-  const handleApplyTypeChange = (e: any) => {
-    const value = e.target.value;
-    setApplyType(value);
-    
-    // Nếu chuyển từ variant sang product, xóa variantId
-    if (value === 'product') {
-      setSelectedVariant(null);
-      form.setFieldValue('variantId', undefined);
-      
-      selectedProducts.forEach(productId => {
-        if (checkProductFlashSaleExists(productId)) {
-          message.warning(`Sản phẩm ${getProductName(productId)} đã có Flash Sale cho tất cả biến thể.`)
-        }
-        
-        if (checkAnyVariantHasFlashSale(productId)) {
-          message.warning(`Một số biến thể của sản phẩm ${getProductName(productId)} đã có Flash Sale.`)
-          setApplyType('variant');
-          form.setFieldValue('applyType', 'variant');
-        }
-      })
-    } else if (value === 'variant') {
-      // Nếu chuyển sang variant, chỉ giữ lại 1 sản phẩm
-      if (selectedProducts.length > 1) {
-        const firstProduct = selectedProducts[0]
-        setSelectedProducts([firstProduct])
-        form.setFieldValue('productIds', [firstProduct])
-        message.info('Chế độ biến thể cụ thể chỉ cho phép chọn 1 sản phẩm')
-      }
-    }
-  }
+
 
   const handleSubmit = async () => {
     try {
@@ -208,53 +161,20 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
           data: { discountPercent: values.discountPercent } 
         })
       } else {
-        // Kiểm tra trùng lặp trước khi tạo
-        const productIds = Array.isArray(values.productIds) ? values.productIds : [values.productIds]
-        for (const productId of productIds) {
-          if (values.applyType === 'product') {
-            if (checkProductFlashSaleExists(productId)) {
-              message.error(`Sản phẩm ${getProductName(productId)} đã có Flash Sale cho tất cả biến thể.`)
-              return
-            }
-            
-            if (checkAnyVariantHasFlashSale(productId)) {
-              message.error(`Một số biến thể của sản phẩm ${getProductName(productId)} đã có Flash Sale.`)
-              return
-            }
-          }
-          
-          if (values.applyType === 'variant' && values.variantId && checkVariantFlashSaleExists(values.variantId)) {
-            message.error('Biến thể này đã có trong Flash Sale. Vui lòng chọn biến thể khác.')
-            return
-          }
+        // Kiểm tra trùng lặp variant
+        if (values.variantId && checkVariantFlashSaleExists(values.variantId)) {
+          message.error('Biến thể này đã có trong Flash Sale. Vui lòng chọn biến thể khác.')
+          return
         }
         
-        // Tạo flash sale items cho từng sản phẩm
-        let successCount = 0
-        for (const productId of productIds) {
-          try {
-            const data = {
-              flashSaleId,
-              productId,
-              ...(values.applyType === 'variant' && values.variantId ? { variantId: values.variantId } : {}),
-              discountPercent: values.discountPercent
-            }
-            
-            await createFlashSaleItem(data)
-            successCount++
-          } catch (error) {
-            console.error(`Lỗi khi tạo flash sale cho sản phẩm ${getProductName(productId)}:`, error)
-            message.error(`Không thể thêm sản phẩm ${getProductName(productId)} vào flash sale`)
-          }
+        const data = {
+          flashSaleId,
+          productId: values.productId,
+          variantId: values.variantId,
+          discountPercent: values.discountPercent
         }
         
-        if (successCount > 0) {
-          message.success(`Đã thêm ${successCount}/${productIds.length} sản phẩm vào flash sale thành công`)
-          queryClient.invalidateQueries({ 
-            queryKey: [FLASH_SALE_ITEM_QUERY_KEYS.FETCH_BY_FLASH_SALE, { flashSaleId }] 
-          })
-          handleCloseAddModal()
-        }
+        createMutation.mutate(data)
       }
     } catch (error) {
       console.error('Validation failed:', error)
@@ -267,7 +187,7 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
       dataIndex: 'productId',
       key: 'productId',
       render: (product) => {
-        if (typeof product === 'object') {
+        if (typeof product === 'object' && product) {
           return product.name
         }
         return 'N/A'
@@ -291,12 +211,10 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
       title: 'Giá gốc',
       key: 'originalPrice',
       render: (_, record) => {
-        if (typeof record.variantId === 'object' && record.variantId) {
-          return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(record.variantId.price)
-        } else if (typeof record.productId === 'object') {
-          return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(record.productId.price)
+        if (typeof record.variantId === 'object' && record.variantId && typeof record.variantId.price === 'number') {
+          return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(record.variantId.price);
         }
-        return 'N/A'
+        return 'N/A';
       }
     },
     {
@@ -308,19 +226,13 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
       title: 'Giá sau giảm',
       key: 'finalPrice',
       render: (_, record) => {
-        let originalPrice = 0;
-        
-        if (typeof record.variantId === 'object' && record.variantId) {
-          originalPrice = record.variantId.price;
-        } else if (typeof record.productId === 'object') {
-          originalPrice = record.productId.price;
-        } else {
-          return 'N/A';
+        if (typeof record.variantId === 'object' && record.variantId && typeof record.variantId.price === 'number' && typeof record.discountPercent === 'number') {
+          const originalPrice = record.variantId.price;
+          const discountAmount = originalPrice * (record.discountPercent / 100);
+          const finalPrice = originalPrice - discountAmount;
+          return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(finalPrice);
         }
-        
-        const discountAmount = originalPrice * (record.discountPercent / 100);
-        const finalPrice = originalPrice - discountAmount;
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(finalPrice);
+        return 'N/A';
       }
     },
     {
@@ -461,71 +373,21 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
             layout="vertical"
             name="flash_sale_item_form"
           >
-            <Alert
-              message="Hướng dẫn thêm sản phẩm vào Flash Sale"
-              description={
-                <ul className="list-disc pl-5">
-                  <li>Có thể chọn nhiều sản phẩm cùng lúc để thêm vào Flash Sale</li>
-                  <li>Chọn "Toàn bộ sản phẩm" để áp dụng Flash Sale cho tất cả biến thể của sản phẩm</li>
-                  <li>Chọn "Biến thể cụ thể" để áp dụng Flash Sale cho một biến thể nhất định (chỉ chọn được 1 sản phẩm)</li>
-                  <li>Không thể áp dụng Flash Sale cho toàn bộ sản phẩm nếu đã có biến thể có Flash Sale</li>
-                  <li>Không thể áp dụng Flash Sale cho biến thể đã có trong Flash Sale khác</li>
-                </ul>
-              }
-              type="info"
-              showIcon
-              className="mb-4"
-            />
 
-            <Form.Item
-              name="applyType"
-              label="Áp dụng cho"
-              rules={[{ required: true, message: 'Vui lòng chọn loại áp dụng' }]}
-              initialValue="product"
-              help="Chọn áp dụng Flash Sale cho toàn bộ sản phẩm hoặc chỉ cho một biến thể cụ thể"
-            >
-              <Radio.Group onChange={handleApplyTypeChange} disabled={!!editingItem}>
-                <Radio value="product">Toàn bộ sản phẩm</Radio>
-                <Radio value="variant">Biến thể cụ thể</Radio>
-              </Radio.Group>
-            </Form.Item>
+
+
             
-            {selectedProducts.length > 0 && applyType === 'product' && (
-              selectedProducts.some(productId => checkProductFlashSaleExists(productId)) && (
-                <Alert
-                  message="Cảnh báo: Một số sản phẩm đã có Flash Sale"
-                  description="Một số sản phẩm đã chọn đã có Flash Sale cho tất cả biến thể. Vui lòng bỏ chọn những sản phẩm này hoặc chọn biến thể cụ thể."
-                  type="warning"
-                  showIcon
-                  className="mb-4"
-                />
-              )
-            )}
-            
-            {selectedProducts.length > 0 && applyType === 'product' && (
-              selectedProducts.some(productId => checkAnyVariantHasFlashSale(productId)) && (
-                <Alert
-                  message="Cảnh báo: Một số biến thể đã có Flash Sale"
-                  description="Một số biến thể của các sản phẩm đã chọn đã có Flash Sale. Không thể áp dụng Flash Sale cho toàn bộ sản phẩm. Vui lòng chọn 'Biến thể cụ thể'."
-                  type="warning"
-                  showIcon
-                  className="mb-4"
-                />
-              )
-            )}
+
             
             <Form.Item
-              name={editingItem ? "productId" : "productIds"}
+              name="productId"
               label="Sản phẩm"
-              rules={[{ required: true, message: 'Vui lòng chọn ít nhất một sản phẩm' }]}
-              help={editingItem ? undefined : (applyType === 'variant' ? "Chỉ có thể chọn 1 sản phẩm khi chọn biến thể cụ thể" : "Có thể chọn nhiều sản phẩm cùng lúc")}
+              rules={[{ required: true, message: 'Vui lòng chọn sản phẩm' }]}
             >
               <Select
-                mode={editingItem ? undefined : (applyType === 'variant' ? undefined : "multiple")}
-                placeholder={editingItem ? "Chọn sản phẩm" : (applyType === 'variant' ? "Chọn sản phẩm" : "Chọn một hoặc nhiều sản phẩm")}
+                placeholder="Chọn sản phẩm"
                 onChange={handleProductChange}
                 disabled={!!editingItem}
-                maxTagCount="responsive"
               >
                 {productsData?.results?.map((product: any) => (
                   <Select.Option key={product._id} value={product._id}>
@@ -535,25 +397,22 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
               </Select>
             </Form.Item>
 
-            {applyType === 'variant' && (
-              <Form.Item
-                name="variantId"
-                label="Biến thể"
-                rules={[{ required: applyType === 'variant', message: 'Vui lòng chọn biến thể' }]}
-                help="Chọn biến thể cụ thể để áp dụng Flash Sale"
+            <Form.Item
+              name="variantId"
+              label="Biến thể"
+              rules={[{ required: true, message: 'Vui lòng chọn biến thể' }]}
+            >
+              <Select
+                placeholder="Chọn biến thể"
+                disabled={selectedProducts.length !== 1 || !!editingItem}
               >
-                <Select
-                  placeholder="Chọn biến thể"
-                  disabled={selectedProducts.length !== 1 || !!editingItem}
-                >
-                  {getVariantsForProduct().map((variant: any) => (
-                    <Select.Option key={variant._id} value={variant._id}>
-                      {variant.sku} - {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(variant.price)}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            )}
+                {getVariantsForProduct().map((variant: any) => (
+                  <Select.Option key={variant._id} value={variant._id}>
+                    {variant.sku} - {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(variant.price)}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
 
             <Form.Item
               name="discountPercent"

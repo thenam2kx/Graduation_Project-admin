@@ -440,12 +440,6 @@ const ShippingManagement: React.FC = () => {
       render: (text: string) => <span>{text || 'Chưa xác định'}</span>,
     },
     {
-      title: 'Phí vận chuyển',
-      dataIndex: ['shipping', 'fee'],
-      key: 'fee',
-      render: (fee: number) => <span>{fee?.toLocaleString('vi-VN')}đ</span>,
-    },
-    {
       title: 'Thao tác',
       key: 'action',
       render: (_: any, record: any) => (

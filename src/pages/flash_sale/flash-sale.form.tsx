@@ -107,20 +107,7 @@ const FlashSaleForm = ({ open, onCancel, flashSale }: FlashSaleFormProps) => {
         </Button>
       ]}
     >
-      <Alert
-        message="Hướng dẫn tạo Flash Sale"
-        description={
-          <ul className="list-disc pl-5">
-            <li>Tạo Flash Sale trước, sau đó thêm sản phẩm vào Flash Sale</li>
-            <li>Khi thêm sản phẩm, bạn có thể chọn áp dụng cho toàn bộ sản phẩm hoặc biến thể cụ thể</li>
-            <li>Không thể áp dụng Flash Sale cho toàn bộ sản phẩm nếu đã có biến thể có Flash Sale</li>
-            <li>Không thể áp dụng Flash Sale cho biến thể đã có trong Flash Sale khác</li>
-          </ul>
-        }
-        type="info"
-        showIcon
-        className="mb-4"
-      />
+
 
       <Form
         form={form}
@@ -155,24 +142,7 @@ const FlashSaleForm = ({ open, onCancel, flashSale }: FlashSaleFormProps) => {
           />
         </Form.Item>
 
-        <Divider orientation="left">Hướng dẫn áp dụng Flash Sale</Divider>
-        
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-bold mb-2">Khi thêm sản phẩm vào Flash Sale, bạn có thể:</h3>
-          <div className="flex gap-4 mb-2">
-            <div className="flex-1 border border-gray-200 rounded p-3 bg-white">
-              <div className="font-semibold text-blue-600 mb-1">Áp dụng cho toàn bộ sản phẩm</div>
-              <p className="text-sm text-gray-600">Giảm giá sẽ áp dụng cho tất cả biến thể của sản phẩm</p>
-            </div>
-            <div className="flex-1 border border-gray-200 rounded p-3 bg-white">
-              <div className="font-semibold text-green-600 mb-1">Áp dụng cho biến thể cụ thể</div>
-              <p className="text-sm text-gray-600">Giảm giá chỉ áp dụng cho một biến thể nhất định</p>
-            </div>
-          </div>
-          <p className="text-sm text-gray-700">
-            <strong>Lưu ý:</strong> Không thể áp dụng Flash Sale cho toàn bộ sản phẩm nếu đã có biến thể có Flash Sale và ngược lại.
-          </p>
-        </div>
+
       </Form>
     </Modal>
   )
