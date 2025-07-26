@@ -14,6 +14,7 @@ import {
   OrderedListOutlined,
   PercentageOutlined,
   ProductOutlined,
+  StarOutlined,
   ThunderboltOutlined,
   UserOutlined
 } from '@ant-design/icons'
@@ -80,6 +81,11 @@ const items: MenuProps['items'] = [
         key: '/orderitems',
         icon: <OrderedListOutlined />,
         label: <Link to={'/orderitems'}>Đơn hàng</Link>
+      },
+      {
+        key: '/reviews',
+        icon: <StarOutlined />,
+        label: <Link to={'/reviews'}>Đánh giá</Link>
       },
       {
         key: '/discounts',
