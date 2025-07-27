@@ -62,11 +62,12 @@ const CategoryList = () => {
 
   // React-query để fetch data
   const { data, isLoading } = useQuery({
-    queryKey: ['categories', pagination.current, pagination.pageSize, searchText],
-    queryFn: () =>
-      fetchList({ page: pagination.current, pageSize: pagination.pageSize, search: searchText }),
-    keepPreviousData: true
-  })
+  queryKey: ['categories', pagination.current, pagination.pageSize, searchText],
+  queryFn: () =>
+    fetchList({ page: pagination.current, pageSize: pagination.pageSize, search: searchText }),
+  placeholderData: (previousData) => previousData   // giữ lại dữ liệu cũ khi chuyển trang
+})
+
 
   // Mutation cập nhật trạng thái công khai
   const statusMutation = useMutation({
@@ -83,21 +84,33 @@ const CategoryList = () => {
 
   // Mutation xóa danh mục
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => axios.delete(`/api/v1/categories/${id}`),
-    onSuccess: () => {
-      message.success('Xóa danh mục thành công')
-      queryClient.invalidateQueries({ queryKey: ['categories'] })
-    },
-    onError: () => {
-      message.error('Xóa danh mục thất bại')
-    }
-  })
+  mutationFn: (id: string) => axios.delete(`/api/v1/categories/${id}`),
+  onSuccess: () => {
+    message.success('Xóa danh mục thành công')
+    queryClient.invalidateQueries({ queryKey: ['categories'] })
+  },
+  onError: (error: any) => {
+    const errorMessage =
+      error?.response?.data?.message || 'Xóa danh mục thất bại'
+    message.warning(errorMessage)
+  }
+})
+
 
   // Xác nhận xóa
   const showDeleteConfirm = (record: Category) => {
     Modal.confirm({
       title: 'Xác nhận xóa',
-      content: `Bạn có chắc chắn muốn xóa danh mục "${record.name}"?`,
+      content: (
+  <>
+    <p>Bạn có chắc chắn muốn xóa danh mục <strong>{record.name}</strong>?</p>
+    <p>
+      Tất cả sản phẩm thuộc danh mục này sẽ được tự động chuyển sang
+      <strong> danh mục mặc định</strong>.
+    </p>
+  </>
+),
+
       okText: 'Xóa',
       okType: 'danger',
       cancelText: 'Hủy',
