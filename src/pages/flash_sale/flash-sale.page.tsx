@@ -199,7 +199,7 @@ const FlashSalePage = () => {
       render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm')
     },
     {
-      title: 'Trạng thái',
+      title: 'Trạng thái thời gian',
       key: 'status',
       render: (_, record) => {
         const status = getFlashSaleStatus(record)
@@ -218,6 +218,16 @@ const FlashSalePage = () => {
       }
     },
     {
+      title: 'Kích hoạt',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      render: (isActive) => (
+        <Tag color={isActive ? 'green' : 'red'}>
+          {isActive ? 'Đã kích hoạt' : 'Chưa kích hoạt'}
+        </Tag>
+      )
+    },
+    {
       title: 'Thao tác',
       key: 'action',
       render: (_, record) => {
@@ -233,24 +243,26 @@ const FlashSalePage = () => {
               onClick={() => handleEdit(record)}
             />
             
-            {canActivate && (
-              isActive ? (
-                <Tooltip title="Tạm dừng Flash Sale">
-                  <Button 
-                    icon={<PauseCircleOutlined />} 
-                    onClick={() => handleToggleActivation(record, false)}
-                  />
-                </Tooltip>
-              ) : (
-                <Tooltip title="Kích hoạt Flash Sale">
-                  <Button 
-                    type="primary" 
-                    ghost
-                    icon={<PlayCircleOutlined />} 
-                    onClick={() => handleToggleActivation(record, true)}
-                  />
-                </Tooltip>
-              )
+            {record.isActive ? (
+              <Tooltip title="Tắt Flash Sale">
+                <Button 
+                  danger
+                  icon={<PauseCircleOutlined />} 
+                  onClick={() => handleToggleActivation(record, false)}
+                >
+                  Tắt
+                </Button>
+              </Tooltip>
+            ) : (
+              <Tooltip title="Bật Flash Sale">
+                <Button 
+                  type="primary" 
+                  icon={<PlayCircleOutlined />} 
+                  onClick={() => handleToggleActivation(record, true)}
+                >
+                  Bật
+                </Button>
+              </Tooltip>
             )}
             
             <Popconfirm
