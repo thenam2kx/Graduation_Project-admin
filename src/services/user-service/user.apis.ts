@@ -41,3 +41,8 @@ export const fetchOrderByUser = async (userId: string) => {
   const url = `/api/v1/orders/by-user/${userId}`
   return axios.get<IBackendResponse<IResponseList<IOrderItem>>>(url)
 }
+
+export const fetchAllUsers = async (params: { current: number; pageSize: number }) => {
+  const { current, pageSize } = params
+  return axios.get(`/api/v1/users?current=${current}&pageSize=${pageSize}`)
+}
