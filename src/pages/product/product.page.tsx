@@ -30,15 +30,13 @@ const ProductPage = () => {
     mutationFn: async (id: string) => {
       const res = await deleteProductAPI(id)
       if (res && res.data) {
-        message.success('Xóa sản phẩm thành công!')
         return res.data
       } else {
-        message.error('Xóa sản phẩm thất bại!')
+        throw new Error('Xóa sản phẩm thất bại!')
       }
     },
     onSuccess: () => {
       message.success('Xóa sản phẩm thành công!')
-      // Refetch the product list after deletion
       queryClient.invalidateQueries({ queryKey: [PRODUCT_QUERY_KEYS.FETCH_ALL] })
     },
     onError: () => {
