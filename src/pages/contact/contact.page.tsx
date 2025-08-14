@@ -1,24 +1,38 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from '@/config/axios.customize'
 import {
-  Table, Modal, Button, Tag, Space, message
+  Table, Modal, Button, Tag, Space, message, Input
 } from 'antd'
+const { TextArea } = Input
 import type { ColumnsType } from 'antd/es/table'
-import { Link } from 'react-router-dom'
+
 import { useState } from 'react'
 import { IContact } from '@/types/contact'
 
 export default function AdminContactPage() {
   const queryClient = useQueryClient()
   const [selectedContact, setSelectedContact] = useState<IContact | null>(null)
+  const [replyModalOpen, setReplyModalOpen] = useState(false)
+  const [replyMessage, setReplyMessage] = useState('')
+  const [replyingContact, setReplyingContact] = useState<IContact | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
-  const { data: contacts, isLoading } = useQuery({
-    queryKey: ['contacts'],
+  const { data: contactData, isLoading, refetch } = useQuery({
+    queryKey: ['contacts', currentPage, pageSize],
     queryFn: async () => {
-      const res = await axios.get('/api/v1/contacts')
-      return res.data?.results || []
+      const res = await axios.get(`/api/v1/contacts?page=${currentPage}&limit=${pageSize}`)
+      return res.data?.data || res.data || { results: [], meta: { total: 0 } }
     }
   })
+
+  const contacts = contactData?.results || []
+  const totalContacts = contactData?.meta?.total || 0
+
+  const handleRefresh = () => {
+    refetch()
+    message.info('Đã cập nhật danh sách liên hệ')
+  }
 
   const deleteMutation = useMutation({
     mutationFn: async (_id: string) => {
@@ -31,7 +45,8 @@ export default function AdminContactPage() {
       message.success('Xoá liên hệ thành công')
       queryClient.invalidateQueries({ queryKey: ['contacts'] })
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Delete contact error:', error)
       message.error('Xoá liên hệ thất bại')
     }
   })
@@ -47,6 +62,35 @@ export default function AdminContactPage() {
         deleteMutation.mutate(_id)
       }
     })
+  }
+
+  const replyMutation = useMutation({
+    mutationFn: async ({ contactId, message }: { contactId: string; message: string }) => {
+      await axios.post(`/api/v1/contacts/reply/${contactId}`, { replyMessage: message })
+    },
+    onSuccess: () => {
+      message.success('Gửi email phản hồi thành công')
+      setReplyModalOpen(false)
+      setReplyMessage('')
+      setReplyingContact(null)
+    },
+    onError: (error) => {
+      console.error('Reply email error:', error)
+      message.error('Gửi email phản hồi thất bại')
+    }
+  })
+
+  const handleReply = (contact: IContact) => {
+    setReplyingContact(contact)
+    setReplyModalOpen(true)
+  }
+
+  const handleSendReply = () => {
+    if (!replyingContact || !replyMessage.trim()) {
+      message.warning('Vui lòng nhập nội dung phản hồi')
+      return
+    }
+    replyMutation.mutate({ contactId: replyingContact._id, message: replyMessage })
   }
 
   const handleView = (contact: IContact) => {
@@ -90,6 +134,7 @@ export default function AdminContactPage() {
       render: (_, record) => (
         <Space>
           <Button type='link' onClick={() => handleView(record)} disabled={record.deleted}>Xem</Button>
+          <Button type='link' onClick={() => handleReply(record)} disabled={record.deleted}>Trả lời</Button>
           <Button
             danger
             type='link'
@@ -105,16 +150,29 @@ export default function AdminContactPage() {
 
   return (
     <div style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
-      <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16 }}>Quản lý liên hệ</h2>
-      <Link to='/contact/add'>
-        <Button type='primary' style={{ marginBottom: 20 }}>Thêm mới liên hệ</Button>
-      </Link>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>
+          Quản lý liên hệ ({totalContacts})
+        </h2>
+        <Button onClick={handleRefresh} loading={isLoading}>
+          Cập nhật
+        </Button>
+      </div>
       <Table
         columns={columns}
         dataSource={contacts?.filter((c: any) => !c.deleted)}
         rowKey='_id'
         bordered
         loading={isLoading}
+        pagination={{
+          current: currentPage,
+          pageSize: pageSize,
+          total: totalContacts,
+          onChange: (page, size) => {
+            setCurrentPage(page)
+            setPageSize(size || 10)
+          }
+        }}
       />
 
       <Modal
@@ -131,6 +189,50 @@ export default function AdminContactPage() {
             <p><strong>Ngày gửi:</strong> {new Date(selectedContact.createdAt).toLocaleString()}</p>
             <p><strong>Nội dung:</strong></p>
             <p style={{ whiteSpace: 'pre-wrap' }}>{selectedContact.message}</p>
+          </>
+        )}
+      </Modal>
+
+      <Modal
+        open={replyModalOpen}
+        onCancel={() => {
+          setReplyModalOpen(false)
+          setReplyMessage('')
+          setReplyingContact(null)
+        }}
+        title='Trả lời liên hệ'
+        footer={[
+          <Button key='cancel' onClick={() => {
+            setReplyModalOpen(false)
+            setReplyMessage('')
+            setReplyingContact(null)
+          }}>
+            Hủy
+          </Button>,
+          <Button 
+            key='send' 
+            type='primary' 
+            loading={replyMutation.isPending}
+            onClick={handleSendReply}
+          >
+            Gửi email
+          </Button>
+        ]}
+      >
+        {replyingContact && (
+          <>
+            <div style={{ marginBottom: 16, padding: 12, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
+              <p><strong>Khách hàng:</strong> {replyingContact.name} ({replyingContact.email})</p>
+              <p><strong>Tin nhắn gốc:</strong></p>
+              <p style={{ fontStyle: 'italic' }}>'{replyingContact.message}'</p>
+            </div>
+            <p><strong>Nội dung phản hồi:</strong></p>
+            <TextArea
+              value={replyMessage}
+              onChange={(e) => setReplyMessage(e.target.value)}
+              rows={6}
+              placeholder='Nhập nội dung phản hồi cho khách hàng...'
+            />
           </>
         )}
       </Modal>

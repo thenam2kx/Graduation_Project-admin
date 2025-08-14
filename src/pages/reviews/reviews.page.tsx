@@ -358,9 +358,6 @@ const ReviewsPage = () => {
           current: pagination.current,
           pageSize: pagination.pageSize,
           total: reviewsData?.data?.meta?.total || 0,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} đánh giá`,
           onChange: (page, pageSize) => {
             setPagination({ current: page, pageSize: pageSize || 10 });
           },

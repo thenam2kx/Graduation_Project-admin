@@ -364,10 +364,7 @@ export default function AdminUserManagement() {
             total: pagination.total,
             pageSize: pagination.pageSize,
             current: pagination.current,
-            onChange: (page, pageSize) => setPagination({ current: page, pageSize, total: pagination.total }),
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`
+            onChange: (page, pageSize) => setPagination({ current: page, pageSize, total: pagination.total })
           }}
           scroll={{ x: 1200 }}
           className='overflow-hidden'

@@ -332,7 +332,10 @@ const OrderPage = () => {
         dataSource={data}
         rowKey="_id"
         loading={isLoading}
-        pagination={{ pageSize: 10 }}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: false
+        }}
         defaultSortOrder="descend"
         sortDirections={['descend', 'ascend']}
         expandable={{

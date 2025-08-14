@@ -339,8 +339,7 @@ const CategoryList = () => {
           pageSize: pagination.pageSize,
           total: pagination.total,
           onChange: (page, pageSize) =>
-            setPagination(prev => ({ ...prev, current: page, pageSize })),
-          showSizeChanger: true
+            setPagination(prev => ({ ...prev, current: page, pageSize }))
         }}
         loading={isLoading}
       />
@@ -440,7 +439,7 @@ const CategoryList = () => {
                   fetchProducts(selectedCategoryId, page, pageSize, productsSearchTerm)
                 }
               }}
-              showSizeChanger
+
             />
           </div>
         </Spin>
