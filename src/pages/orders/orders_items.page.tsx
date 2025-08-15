@@ -328,12 +328,16 @@ const OrderPage = () => {
       </div>
 
       <Table
-        columns={columns}
-        dataSource={data}
-        rowKey="_id"
-        loading={isLoading}
-        pagination={{ pageSize: 10 }}
-        sortDirections={['descend', 'ascend']}
+  columns={columns}
+  dataSource={data}
+  rowKey="_id"
+  loading={isLoading}
+  pagination={{
+    pageSize: 10,
+    showSizeChanger: false
+  }}
+  defaultSortOrder="descend"
+  sortDirections={['descend', 'ascend']}
         expandable={{
           expandedRowRender: (record) => (
             <div>

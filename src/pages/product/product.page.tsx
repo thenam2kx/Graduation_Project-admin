@@ -197,10 +197,7 @@ const ProductPage = () => {
           total: listProducts?.meta.total || 0,
           pageSize: listProducts?.meta.pageSize || 10,
           current: listProducts?.meta.current || 1,
-          onChange: (page, pageSize) => setPagination({ current: page, pageSize, total: listProducts?.meta.total || 0 }),
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} sản phẩm`
+          onChange: (page, pageSize) => setPagination({ current: page, pageSize, total: listProducts?.meta.total || 0 })
         }}
       />
       
