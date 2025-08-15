@@ -18,7 +18,9 @@ store.subscribe(() => {
 // Set config defaults when creating the instance
 const instance = axios.create({
   // baseURL: import.meta.env.VITE_BACKEND_URL as string,
-  baseURL: 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_BACKEND_URL || 'https://graduation-project-apis.onrender.com',
+  // Uncomment line below for local development:
+  // baseURL: 'http://localhost:8080',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
