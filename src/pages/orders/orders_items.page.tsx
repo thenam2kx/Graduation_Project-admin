@@ -336,7 +336,6 @@ const OrderPage = () => {
     pageSize: 10,
     showSizeChanger: false
   }}
-  defaultSortOrder="descend"
   sortDirections={['descend', 'ascend']}
         expandable={{
           expandedRowRender: (record) => (
