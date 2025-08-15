@@ -84,7 +84,7 @@ const CategoryList = () => {
     queryKey: ['categories', pagination.current, pagination.pageSize, searchText],
     queryFn: () =>
       fetchList({ page: pagination.current, pageSize: pagination.pageSize, search: searchText }),
-    keepPreviousData: true
+    placeholderData: (previousData) => previousData
   })
 
   // Mutation to update category public status

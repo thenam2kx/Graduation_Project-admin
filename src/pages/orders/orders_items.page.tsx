@@ -257,7 +257,7 @@ const OrderPage = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      defaultSortOrder: 'descend',
+      defaultSortOrder: 'descend' as const,
       render: (value: string) => new Date(value).toLocaleString()
     },
     {
@@ -333,7 +333,6 @@ const OrderPage = () => {
         rowKey="_id"
         loading={isLoading}
         pagination={{ pageSize: 10 }}
-        defaultSortOrder="descend"
         sortDirections={['descend', 'ascend']}
         expandable={{
           expandedRowRender: (record) => (
@@ -653,7 +652,7 @@ const OrderPage = () => {
                           
                           if (slug === 'dung-tich' || name === 'dung tích' || name === 'dung tich' || 
                               slug === 'capacity' || name === 'capacity') {
-                            variantCapacity = attr.value;
+                            variantCapacity = (attr as any).value;
                             console.log('Found capacity in variant:', variantCapacity);
                             break;
                           }

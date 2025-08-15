@@ -29,9 +29,9 @@ const DiscountsUpdate = () => {
         ...data,
         startDate: data.startDate ? dayjs(data.startDate) : null,
         endDate: data.endDate ? dayjs(data.endDate) : null,
-        applies_product: data.applies_product?.map((item: any) => (typeof item === "string" ? item : item._id)),
-        applies_category: data.applies_category?.map((item: any) => (typeof item === "string" ? item : item._id)),
-        applies_variant: data.applies_variant?.map((item: any) => (typeof item === "string" ? item : item._id)),
+        applies_product: Array.isArray(data.applies_product) ? data.applies_product.map((item: any) => (typeof item === "string" ? item : item._id)) : data.applies_product,
+        applies_category: Array.isArray(data.applies_category) ? data.applies_category.map((item: any) => (typeof item === "string" ? item : item._id)) : data.applies_category,
+        applies_variant: Array.isArray(data.applies_variant) ? data.applies_variant.map((item: any) => (typeof item === "string" ? item : item._id)) : data.applies_variant,
       });
     }
   }, [data, form]);
@@ -51,9 +51,9 @@ const DiscountsUpdate = () => {
         ...values,
         startDate: startDate?.toISOString() || null,
         endDate: endDate?.toISOString() || null,
-        applies_product: values.applies_product?.map((id: any) => (typeof id === "string" ? id : id._id)),
-        applies_category: values.applies_category?.map((id: any) => (typeof id === "string" ? id : id._id)),
-        applies_variant: values.applies_variant?.map((id: any) => (typeof id === "string" ? id : id._id)),
+        applies_product: Array.isArray(values.applies_product) ? values.applies_product.map((id: any) => (typeof id === "string" ? id : id._id)) : values.applies_product,
+        applies_category: Array.isArray(values.applies_category) ? values.applies_category.map((id: any) => (typeof id === "string" ? id : id._id)) : values.applies_category,
+        applies_variant: Array.isArray(values.applies_variant) ? values.applies_variant.map((id: any) => (typeof id === "string" ? id : id._id)) : values.applies_variant,
         status,
       };
 
