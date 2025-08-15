@@ -187,8 +187,7 @@ const BlogPage = () => {
           current: pagination.current,
           pageSize: pagination.pageSize,
           total: pagination.total,
-          onChange: (page, pageSize) => setPagination(prev => ({ ...prev, current: page, pageSize })),
-          showSizeChanger: true
+          onChange: (page, pageSize) => setPagination(prev => ({ ...prev, current: page, pageSize }))
         }}
         loading={isLoading}
       />
