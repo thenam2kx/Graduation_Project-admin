@@ -4,6 +4,7 @@ export interface IFlashSale {
   description?: string
   startDate: string | Date
   endDate: string | Date
+  isActive?: boolean
   createdAt?: string
   updatedAt?: string
   createdBy?: {

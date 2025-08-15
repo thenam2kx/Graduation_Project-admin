@@ -112,7 +112,7 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
           : editingItem.variantId
 
         setSelectedProducts([productId])
-        setSelectedVariant(variantId || null)
+        setSelectedVariant(variantId as string || null)
         
         form.setFieldsValue({
           productId: productId,
@@ -176,7 +176,8 @@ const FlashSaleItemsModal = ({ open, onCancel, flashSaleId }: FlashSaleItemsModa
           productId: values.productId,
           variantId: values.variantId,
           discountPercent: values.discountPercent,
-          limitQuantity: values.limitQuantity
+          limitQuantity: values.limitQuantity,
+          soldQuantity: 0
         }
         
         createMutation.mutate(data)

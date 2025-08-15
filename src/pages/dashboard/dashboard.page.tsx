@@ -10,6 +10,7 @@ import { useAppSelector } from '@/redux/hooks';
 import '@/styles/dashboard.css';
 
 interface RevenueDataPoint {
+  key: string;
   label: string;
   value: number;
   fullLabel: string;

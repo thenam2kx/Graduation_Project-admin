@@ -25,9 +25,21 @@ declare global {
     category: string
     brand?: string
     images?: string[]
+    image?: string[] | string
     stock?: number
     status?: string
     variants?: IVariants[]
+    slug?: string
+    brandId?: {
+      name: string
+      _id: string
+    }
+    categoryId?: {
+      name: string
+      _id: string
+    }
+    deleted?: boolean
+    updatedAt?: Date
     createdBy?: {
       _id: string
       email: string
