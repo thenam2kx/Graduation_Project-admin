@@ -4,9 +4,10 @@ import { fetchAllProducts } from '@/services/product-service/product.apis';
 import { PRODUCT_QUERY_KEYS } from '@/services/product-service/product.key';
 import { getUserList } from '@/services/user-service/user.apis';
 import { fetchAllOrdersAPI } from '@/services/order-service/order.apis';
-import { DatePicker, theme } from 'antd';
+import { DatePicker, theme, Modal } from 'antd';
 import dayjs from 'dayjs';
 import { useAppSelector } from '@/redux/hooks';
+import { extractArrayFromResponse, extractMetaFromResponse, extractUserIdFromOrder, extractAmountFromOrder, isRevenueOrder } from '@/utils/dataExtractor';
 import '@/styles/dashboard.css';
 
 interface RevenueDataPoint {
@@ -24,6 +25,7 @@ const DashboardPage = () => {
     dayjs().subtract(6, 'month'), 
     dayjs()
   ]);
+  const [showAllUsers, setShowAllUsers] = useState(false);
 
 
   // Fetch orders data
@@ -67,17 +69,7 @@ const DashboardPage = () => {
 
   // Filter orders by date range
   const filteredOrders = useMemo(() => {
-    // Handle different possible response structures
-    let orders: any[] = [];
-    if (ordersData?.results) {
-      orders = ordersData.results;
-    } else if (ordersData?.data?.results) {
-      orders = ordersData.data.results;
-    } else if (Array.isArray(ordersData)) {
-      orders = ordersData;
-    } else if (Array.isArray(ordersData?.data)) {
-      orders = ordersData.data;
-    }
+    const orders = extractArrayFromResponse(ordersData);
     
     if (!orders.length) return [];
     
@@ -93,24 +85,17 @@ const DashboardPage = () => {
   }, [ordersData, dateRange]);
 
   // Calculate totals
-  const totalProducts = productsData?.meta?.total ?? productsData?.results?.length ?? 0;
-  const totalUsers = usersData?.meta?.total ?? usersData?.results?.length ?? 0;
+  const totalProducts = extractMetaFromResponse(productsData).total;
+  const totalUsers = extractMetaFromResponse(usersData).total;
   const totalOrders = filteredOrders.length; // All orders in date range
   
   const totalRevenue = useMemo(() => {
     if (!filteredOrders.length) return 0;
     
-    // Only count completed and delivered orders (đã thanh toán và đã giao hàng)
-    const paidStatuses = ['completed', 'delivered', 'paid', 'success'];
-    
     return filteredOrders
-      .filter((order: any) => paidStatuses.includes(order.status?.toLowerCase()))
+      .filter(isRevenueOrder)
       .reduce((sum: number, order: any) => {
-        // Try different possible amount field names
-        const amount = order.totalAmount || order.total || order.amount || 
-                      order.totalPrice || order.price || order.finalAmount ||
-                      order.grandTotal || order.orderTotal || 0;
-        return sum + amount;
+        return sum + extractAmountFromOrder(order);
       }, 0);
   }, [filteredOrders]);
 
@@ -133,10 +118,7 @@ const DashboardPage = () => {
     }
     
     if (filteredOrders.length > 0) {
-      const paidStatuses = ['completed', 'delivered'];
-      const paidOrders = filteredOrders.filter(
-        (order: any) => paidStatuses.includes(order.status?.toLowerCase())
-      );
+      const paidOrders = filteredOrders.filter(isRevenueOrder);
       
       const groupedData = new Map<string, RevenueDataPoint>();
       
@@ -162,9 +144,7 @@ const DashboardPage = () => {
           groupedData.set(key, { key, label, fullLabel, value: 0 });
         }
         
-        const amount = order.totalAmount || order.total || order.amount || 
-                      order.totalPrice || order.price || order.finalAmount ||
-                      order.grandTotal || order.orderTotal || 0;
+        const amount = extractAmountFromOrder(order);
         const dataPoint = groupedData.get(key);
         if (dataPoint) {
           dataPoint.value += amount;
@@ -180,8 +160,95 @@ const DashboardPage = () => {
 
   const maxValue = chartData.length > 0 ? Math.max(...chartData.map(d => d.value)) : 0;
 
-  // Debug logging
-  const revenueOrders = filteredOrders.filter((o: any) => ['completed', 'delivered'].includes(o.status?.toLowerCase()));
+  // Tính toán sản phẩm bán chạy
+  const topProducts = useMemo(() => {
+    const allOrders = extractArrayFromResponse(ordersData);
+    const products = extractArrayFromResponse(productsData);
+    
+    if (!allOrders.length || !products.length) return [];
+    
+    const productSales = new Map<string, number>();
+    
+    // Tính tổng số lượng đã bán cho mỗi sản phẩm từ các đơn hàng đã hoàn thành
+    allOrders
+      .filter(isRevenueOrder)
+      .forEach((order: any) => {
+        if (order.items && Array.isArray(order.items)) {
+          order.items.forEach((item: any) => {
+            const productId = item.productId?._id || item.productId;
+            if (productId) {
+              const currentSold = productSales.get(productId) || 0;
+              productSales.set(productId, currentSold + (item.quantity || 0));
+            }
+          });
+        }
+      });
+    
+    // Sắp xếp sản phẩm theo số lượng đã bán
+    return products
+      .map((product: any) => ({
+        ...product,
+        soldQuantity: productSales.get(product._id) || 0
+      }))
+      .sort((a: any, b: any) => b.soldQuantity - a.soldQuantity)
+      .slice(0, 4);
+  }, [ordersData, productsData]);
+
+  // Tính toán khách hàng tiềm năng
+  const { qualifiedUsers, userStats } = useMemo(() => {
+    const allOrders = extractArrayFromResponse(ordersData);
+    const allUsers = extractArrayFromResponse(usersData);
+    
+    if (!allOrders.length || !allUsers.length) {
+      return { qualifiedUsers: [], userStats: new Map() };
+    }
+    
+    // Calculate user spending from all orders
+    const userStatsMap = new Map<string, any>();
+    
+    // Chỉ tính các đơn hàng đã thanh toán và không bị hủy
+    const validOrders = allOrders.filter(isRevenueOrder);
+    
+    validOrders.forEach((order: any) => {
+      const userId = extractUserIdFromOrder(order);
+      
+      if (userId) {
+        const amount = extractAmountFromOrder(order);
+        
+        if (!userStatsMap.has(userId)) {
+          userStatsMap.set(userId, {
+            totalSpent: 0,
+            orderCount: 0,
+            lastOrderDate: null
+          });
+        }
+        
+        const stats = userStatsMap.get(userId);
+        if (stats) {
+          stats.totalSpent += amount;
+          stats.orderCount += 1;
+          stats.lastOrderDate = new Date(order.createdAt);
+        }
+      }
+    });
+    
+    // Filter out admin users and show all non-admin users (including those who haven't purchased)
+    const qualified = allUsers
+      .filter((user: any) => user.role !== 'admin')
+      .sort((a: any, b: any) => {
+        const statsA = userStatsMap.get(a._id)?.totalSpent || 0;
+        const statsB = userStatsMap.get(b._id)?.totalSpent || 0;
+        return statsB - statsA;
+      })
+      .slice(0, 4);
+    
+    return { qualifiedUsers: qualified, userStats: userStatsMap };
+  }, [ordersData, usersData]);
+
+  // Debug: Revenue calculation validation
+  const revenueOrders = useMemo(() => {
+    return filteredOrders.filter(isRevenueOrder);
+  }, [filteredOrders]);
 
   const stats = [
     { 
@@ -242,7 +309,7 @@ const DashboardPage = () => {
             <div key={index} className={`rounded-xl shadow-sm p-6 ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{['Tổng doanh thu', 'Đơn hàng', 'Khách hàng', 'Sản phẩm'][index]}</h3>
-                <div className="text-sm font-medium text-red-600">Lỗi</div>
+                <div className="text-sm font-medium text-red-600">Không thể tải</div>
               </div>
               <div className={`text-2xl font-bold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>--</div>
             </div>
@@ -303,7 +370,7 @@ const DashboardPage = () => {
             </div>
           ) : ordersError ? (
             <div className="h-64 flex items-center justify-center">
-              <p className="text-red-500">Lỗi khi tải dữ liệu</p>
+              <p className="text-red-500">Không thể tải dữ liệu biểu đồ</p>
             </div>
           ) : chartData.length === 0 ? (
             <div className="h-64 flex items-center justify-center">
@@ -343,48 +410,10 @@ const DashboardPage = () => {
         <div className={`rounded-xl shadow-sm p-6 ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
           <h2 className={`text-lg font-semibold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Sản phẩm bán chạy</h2>
           <div className="space-y-4">
-            {productsLoading || ordersLoading ? (
-              <div className={`text-center py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Đang tải...</div>
-            ) : (() => {
-              // Tính số lượng đã bán cho từng sản phẩm từ đơn hàng
-              const productSales = new Map<string, number>();
-              
-              // Lấy tất cả đơn hàng
-              let allOrders: any[] = [];
-              if (ordersData?.results) {
-                allOrders = ordersData.results;
-              } else if (ordersData?.data?.results) {
-                allOrders = ordersData.data.results;
-              } else if (Array.isArray(ordersData)) {
-                allOrders = ordersData;
-              } else if (Array.isArray(ordersData?.data)) {
-                allOrders = ordersData.data;
+            {(() => {
+              if (productsLoading || ordersLoading) {
+                return <div className={`text-center py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Đang tải...</div>;
               }
-              
-              // Tính tổng số lượng đã bán cho mỗi sản phẩm từ các đơn hàng đã hoàn thành
-              const completedStatuses = ['completed', 'delivered', 'paid', 'success'];
-              allOrders
-                .filter((order: any) => completedStatuses.includes(order.status?.toLowerCase()))
-                .forEach((order: any) => {
-                  if (order.items && Array.isArray(order.items)) {
-                    order.items.forEach((item: any) => {
-                      const productId = item.productId?._id || item.productId;
-                      if (productId) {
-                        const currentSold = productSales.get(productId) || 0;
-                        productSales.set(productId, currentSold + (item.quantity || 0));
-                      }
-                    });
-                  }
-                });
-              
-              // Sắp xếp sản phẩm theo số lượng đã bán
-              const topProducts = productsData?.results
-                ?.map((product: any) => ({
-                  ...product,
-                  soldQuantity: productSales.get(product._id) || 0
-                }))
-                .sort((a: any, b: any) => b.soldQuantity - a.soldQuantity)
-                .slice(0, 4);
               
               return topProducts?.length > 0 ? (
                 topProducts.map((product: any) => (
@@ -405,7 +434,7 @@ const DashboardPage = () => {
               );
             })()
             }
-          </div>
+            </div>
         </div>
       </div>
 
@@ -414,7 +443,10 @@ const DashboardPage = () => {
         <div className={`p-6 ${isDark ? 'border-b border-gray-700' : 'border-b border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Khách hàng tiềm năng</h2>
-            <button className={`text-sm font-medium ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
+            <button 
+              onClick={() => setShowAllUsers(true)}
+              className={`text-sm font-medium ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+            >
               Xem tất cả
             </button>
           </div>
@@ -426,81 +458,8 @@ const DashboardPage = () => {
                 return <div className={`col-span-full text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Đang tải...</div>;
               }
               
-              // Get all orders
-              let allOrders: any[] = [];
-              if (ordersData?.data?.results) {
-                allOrders = ordersData.data.results;
-              } else if (ordersData?.results) {
-                allOrders = ordersData.results;
-              } else if (Array.isArray(ordersData?.data)) {
-                allOrders = ordersData.data;
-              }
-
-              console.log('All orders:', allOrders.length);
-              console.log('Sample order:', allOrders[0]);
-              console.log('Users data:', usersData);
-              
-              // Calculate user spending from all orders
-              const userStats = new Map<string, any>();
-              
-              allOrders.forEach((order: any) => {
-                // Extract user ID from order - userId is an object with _id
-                const userId = order.userId?._id || order.userId || order.user?._id || order.customerId;
-                
-                console.log('Processing order:', {
-                  orderId: order._id,
-                  userId: userId,
-                  userIdObject: order.userId,
-                  totalPrice: order.totalPrice
-                });
-                
-                if (userId) {
-                  const amount = order.totalPrice || order.totalAmount || order.total || order.amount || 0;
-                  
-                  if (!userStats.has(userId)) {
-                    userStats.set(userId, {
-                      totalSpent: 0,
-                      orderCount: 0,
-                      lastOrderDate: null
-                    });
-                  }
-                  
-                  const stats = userStats.get(userId);
-                  if (stats) {
-                    stats.totalSpent += amount;
-                    stats.orderCount += 1;
-                    stats.lastOrderDate = new Date(order.createdAt);
-                  }
-                }
-              });
-              
-              // Get users from correct data structure
-              let allUsers: any[] = [];
-              if (usersData?.data?.results) {
-                allUsers = usersData.data.results;
-              } else if (usersData?.results) {
-                allUsers = usersData.results;
-              }
-              
-              console.log('Final user stats:', Array.from(userStats.entries()));
-              console.log('User IDs in orders:', [...new Set(allOrders.map(o => o.userId?._id))]);
-              console.log('User IDs in users:', allUsers.map(u => u._id));
-              console.log('All users:', allUsers);
-              
-              // Filter out admin users and show only regular users
-              const qualifiedUsers = allUsers
-                .filter((user: any) => user.role !== 'admin')
-                .sort((a: any, b: any) => {
-                  const statsA = userStats.get(a._id)?.totalSpent || 0;
-                  const statsB = userStats.get(b._id)?.totalSpent || 0;
-                  return statsB - statsA;
-                })
-                .slice(0, 4);
-              
-              console.log('Qualified users:', qualifiedUsers.length);
-              
               return qualifiedUsers.length > 0 ? (
-                qualifiedUsers.slice(0, 4).map((user: any) => {
+                qualifiedUsers.map((user: any) => {
                   const stats = userStats.get(user._id);
                   
                   return (
@@ -553,6 +512,70 @@ const DashboardPage = () => {
           </div>
         </div>
       </div>
+
+      <Modal
+        title="Tất cả khách hàng"
+        open={showAllUsers}
+        onCancel={() => setShowAllUsers(false)}
+        footer={null}
+        width={1200}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+          {extractArrayFromResponse(usersData)
+            .filter((user: any) => user.role !== 'admin')
+            .sort((a: any, b: any) => {
+              const statsA = userStats.get(a._id)?.totalSpent || 0;
+              const statsB = userStats.get(b._id)?.totalSpent || 0;
+              return statsB - statsA;
+            })
+            .map((user: any) => {
+              const stats = userStats.get(user._id);
+              
+              return (
+                <div key={user._id} className={`rounded-lg p-4 hover:shadow-lg transition-all ${isDark ? 'bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100'}`}>
+                  <div className="flex items-center mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md">
+                      {user.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div className="ml-3 flex-1 min-w-0">
+                      <h3 className={`font-semibold truncate text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{user.fullName || user.name || 'Khách hàng'}</h3>
+                      <p className={`text-xs truncate ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{user.email}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Đơn hàng:</span>
+                      <span className="font-semibold text-blue-600 text-xs">{stats?.orderCount || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Chi tiêu:</span>
+                      <span className="font-semibold text-green-600 text-xs">{(stats?.totalSpent || 0).toLocaleString()}₫</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>SĐT:</span>
+                      <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{user.phone || 'N/A'}</span>
+                    </div>
+                  </div>
+                  
+                  <div className={`mt-2 pt-2 ${isDark ? 'border-t border-gray-600' : 'border-t border-blue-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Mức độ:</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        (stats?.totalSpent || 0) >= 5000000 ? `${isDark ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'}` :
+                        (stats?.totalSpent || 0) >= 1000000 ? `${isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'}` :
+                        `${isDark ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'}`
+                      }`}>
+                        {(stats?.totalSpent || 0) >= 5000000 ? 'VIP' : (stats?.totalSpent || 0) >= 1000000 ? 'Tiềm năng' : 'Khách hàng'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          }
+        </div>
+      </Modal>
     </div>
   );
 };
