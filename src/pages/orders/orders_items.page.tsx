@@ -462,9 +462,6 @@ const OrderPage = () => {
                   {record.shipping.expectedDeliveryTime && (
                     <p><strong>Thời gian dự kiến:</strong> {record.shipping.expectedDeliveryTime}</p>
                   )}
-                  {record.shipping.fee && (
-                    <p><strong>Phí vận chuyển:</strong> {record.shipping.fee.toLocaleString('vi-VN')}đ</p>
-                  )}
                 </div>
               )}
             </div>
