@@ -17,26 +17,35 @@ const OrderPage = () => {
   const { confirm } = Modal
   const [messageApi, contextHolder] = message.useMessage()
   const queryClient = useQueryClient()
+  
+  // State cho phân trang
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
 
-  const { data  = [], isLoading, refetch } = useQuery({
-    queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS],
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS, currentPage, pageSize, statusFilter],
     queryFn: async () => {
       try {
-        console.log('Fetching orders from API...')
-        const res = await fetchAllOrdersAPI()
+        console.log('Fetching orders from API...', { page: currentPage, limit: pageSize, status: statusFilter })
+        const res = await fetchAllOrdersAPI({
+          page: currentPage,
+          limit: pageSize,
+          status: statusFilter,
+          sort: '-createdAt'
+        })
         console.log('Orders API response:', res)
         
-        if (res?.data?.results && Array.isArray(res.data.results)) {
-          console.log('Found orders:', res.data.results.length)
-          return res.data.results;
+        if (res?.data) {
+          return res.data; // Trả về toàn bộ data bao gồm meta và results
         } else {
           console.warn('No orders found or invalid response format')
-          return [];
+          return { results: [], meta: { total: 0, current: 1, pageSize: 10, pages: 0 } };
         }
       } catch (error) {
         console.error('Error fetching orders:', error)
         messageApi.error('Không thể lấy danh sách đơn hàng')
-        return []
+        return { results: [], meta: { total: 0, current: 1, pageSize: 10, pages: 0 } }
       }
     },
     refetchOnWindowFocus: true,
@@ -44,6 +53,10 @@ const OrderPage = () => {
     staleTime: 0,
     refetchInterval: 5000
   })
+  
+  // Lấy dữ liệu từ response
+  const orders = data?.results || []
+  const meta = data?.meta || { total: 0, current: 1, pageSize: 10, pages: 0 }
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string, status: string }) => {
@@ -51,7 +64,7 @@ const OrderPage = () => {
     },
     onSuccess: () => {
       messageApi.success('Cập nhật trạng thái đơn hàng thành công')
-      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS]})
+      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS, currentPage, pageSize, statusFilter]})
     },
     onError: (error) => {
       messageApi.error('Có lỗi xảy ra khi cập nhật trạng thái đơn hàng')
@@ -65,7 +78,7 @@ const OrderPage = () => {
     },
     onSuccess: () => {
       messageApi.success('Hủy đơn hàng thành công')
-      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS]})
+      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS, currentPage, pageSize, statusFilter]})
     },
     onError: (error) => {
       messageApi.error('Có lỗi xảy ra khi hủy đơn hàng')
@@ -80,7 +93,7 @@ const OrderPage = () => {
     },
     onSuccess: () => {
       messageApi.success('Tạo vận đơn GHN thành công')
-      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS]})
+      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS, currentPage, pageSize, statusFilter]})
       setIsModalVisible(false)
     },
     onError: (error) => {
@@ -318,25 +331,64 @@ const OrderPage = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Quản lý đơn hàng</h1>
         <div className="flex gap-2">
-          <Button 
-            onClick={() => refetch()} 
-            icon={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>}
-          >
-            Làm mới
-          </Button>
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-gray-600">
+              Hiển thị {orders.length} / {meta.total} đơn hàng
+            </span>
+            <Button 
+              onClick={() => refetch()} 
+              icon={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>}
+            >
+              Làm mới
+            </Button>
+          </div>
         </div>
       </div>
 
+      <div className="mb-4">
+        <Select
+          placeholder="Lọc theo trạng thái"
+          allowClear
+          style={{ width: 200 }}
+          onChange={(value) => {
+            setStatusFilter(value)
+            setCurrentPage(1) // Reset về trang đầu khi filter
+          }}
+          value={statusFilter}
+        >
+          <Select.Option value="pending">Chờ xác nhận</Select.Option>
+          <Select.Option value="confirmed">Đã xác nhận</Select.Option>
+          <Select.Option value="processing">Đang xử lý</Select.Option>
+          <Select.Option value="shipped">Đang giao hàng</Select.Option>
+          <Select.Option value="delivered">Đã giao hàng</Select.Option>
+          <Select.Option value="completed">Hoàn thành</Select.Option>
+          <Select.Option value="cancelled">Đã hủy</Select.Option>
+          <Select.Option value="refunded">Đã hoàn tiền</Select.Option>
+        </Select>
+      </div>
+
       <Table
-  columns={columns}
-  dataSource={data}
-  rowKey="_id"
-  loading={isLoading}
-  pagination={{
-    pageSize: 10,
-    showSizeChanger: false
-  }}
-  sortDirections={['descend', 'ascend']}
+        columns={columns}
+        dataSource={orders}
+        rowKey="_id"
+        loading={isLoading}
+        pagination={{
+          current: currentPage,
+          pageSize: pageSize,
+          total: meta.total,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} đơn hàng`,
+          onChange: (page, size) => {
+            setCurrentPage(page)
+            if (size !== pageSize) {
+              setPageSize(size)
+              setCurrentPage(1) // Reset về trang đầu khi thay đổi page size
+            }
+          },
+          pageSizeOptions: ['10', '20', '50', '100']
+        }}
+        sortDirections={['descend', 'ascend']}
         expandable={{
           expandedRowRender: (record) => (
             <div>
@@ -409,9 +461,6 @@ const OrderPage = () => {
                   </p>
                   {record.shipping.expectedDeliveryTime && (
                     <p><strong>Thời gian dự kiến:</strong> {record.shipping.expectedDeliveryTime}</p>
-                  )}
-                  {record.shipping.fee && (
-                    <p><strong>Phí vận chuyển:</strong> {record.shipping.fee.toLocaleString('vi-VN')}đ</p>
                   )}
                 </div>
               )}

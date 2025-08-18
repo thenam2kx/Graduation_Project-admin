@@ -14,6 +14,21 @@ import {
 import axios from 'axios'
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 
+// Hàm tạo slug từ tên
+const createSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Loại bỏ dấu
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^a-z0-9\s-]/g, '') // Chỉ giữ chữ, số, khoảng trắng và dấu gạch ngang
+    .replace(/\s+/g, '-') // Thay khoảng trắng bằng dấu gạch ngang
+    .replace(/-+/g, '-') // Loại bỏ nhiều dấu gạch ngang liên tiếp
+    .trim()
+    .replace(/^-+|-+$/g, '') // Loại bỏ dấu gạch ngang ở đầu và cuối
+}
+
 
 interface IAttribute {
   _id: string
@@ -124,6 +139,13 @@ const AttributePage = () => {
   const handleCancel = () => {
     setIsModalOpen(false)
     form.resetFields()
+  }
+
+  // Hàm xử lý khi thay đổi tên thuộc tính
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value
+    const slug = createSlug(name)
+    form.setFieldsValue({ slug })
   }
 
   const handlePageChange = (page: number, pageSize?: number) => {
@@ -245,7 +267,10 @@ const AttributePage = () => {
             name="name"
             rules={[{ required: true, message: 'Vui lòng nhập tên thuộc tính!' }]}
           >
-            <Input placeholder="Nhập tên thuộc tính" />
+            <Input 
+              placeholder="Nhập tên thuộc tính" 
+              onChange={handleNameChange}
+            />
           </Form.Item>
 
           <Form.Item

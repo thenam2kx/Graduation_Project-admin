@@ -73,6 +73,7 @@ export default function AdminContactPage() {
       setReplyModalOpen(false)
       setReplyMessage('')
       setReplyingContact(null)
+      queryClient.invalidateQueries({ queryKey: ['contacts'] })
     },
     onError: (error) => {
       console.error('Reply email error:', error)
@@ -123,9 +124,9 @@ export default function AdminContactPage() {
       title: 'Trạng thái',
       key: 'status',
       render: (_, record) => (
-        !record.deleted
-          ? <Tag color='green'>Đã đọc</Tag>
-          : <Tag color='red'>Đã xoá</Tag>
+        <Tag color={record.repliedAt ? 'green' : 'orange'}>
+          {record.repliedAt ? 'Đã trả lời' : 'Chưa trả lời'}
+        </Tag>
       )
     },
     {
@@ -134,7 +135,9 @@ export default function AdminContactPage() {
       render: (_, record) => (
         <Space>
           <Button type='link' onClick={() => handleView(record)} disabled={record.deleted}>Xem</Button>
-          <Button type='link' onClick={() => handleReply(record)} disabled={record.deleted}>Trả lời</Button>
+          {!record.repliedAt && (
+            <Button type='link' onClick={() => handleReply(record)} disabled={record.deleted}>Trả lời</Button>
+          )}
           <Button
             danger
             type='link'
@@ -189,6 +192,16 @@ export default function AdminContactPage() {
             <p><strong>Ngày gửi:</strong> {new Date(selectedContact.createdAt).toLocaleString()}</p>
             <p><strong>Nội dung:</strong></p>
             <p style={{ whiteSpace: 'pre-wrap' }}>{selectedContact.message}</p>
+            {selectedContact.repliedAt && (
+              <>
+                <hr style={{ margin: '16px 0' }} />
+                <p><strong>Phản hồi của admin:</strong></p>
+                <p style={{ whiteSpace: 'pre-wrap', backgroundColor: '#f0f8ff', padding: 12, borderRadius: 4 }}>
+                  {selectedContact.replyMessage}
+                </p>
+                <p><strong>Ngày trả lời:</strong> {new Date(selectedContact.repliedAt).toLocaleString()}</p>
+              </>
+            )}
           </>
         )}
       </Modal>

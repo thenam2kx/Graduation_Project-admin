@@ -17,10 +17,7 @@ store.subscribe(() => {
 
 // Set config defaults when creating the instance
 const instance = axios.create({
-  // baseURL: import.meta.env.VITE_BACKEND_URL as string,
-  baseURL: import.meta.env.VITE_BACKEND_URL || 'https://graduation-project-apis.onrender.com',
-  // Uncomment line below for local development:
-  // baseURL: 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_BACKEND_URL || (import.meta.env.PROD ? 'https://graduation-project-apis.onrender.com' : 'http://localhost:8080'),
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -61,6 +58,11 @@ instance.interceptors.request.use(
 instance.interceptors.response.use(
   (res) => res.data,
   async (error) => {
+    // Fallback to render if localhost fails
+    if (error.code === 'ERR_NETWORK' && instance.defaults.baseURL?.includes('localhost')) {
+      instance.defaults.baseURL = 'https://graduation-project-apis.onrender.com'
+      return instance.request(error.config)
+    }
     if (
       error.config &&
       error.response &&

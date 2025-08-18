@@ -294,30 +294,6 @@ const DetailDrawer = (props: IProps) => {
                 <Card title='Hoạt động gần đây' className='w-full'>
                   <Table columns={activityColumns} dataSource={activityData} pagination={false} size='small' />
                 </Card>
-
-                {/* Account Timeline */}
-                <Card title='Timeline tài khoản' className='w-full'>
-                  <Timeline
-                    items={[
-                      {
-                        children: 'User logged in from new device',
-                        color: 'blue'
-                      },
-                      {
-                        children: 'Made a purchase - Order #12345',
-                        color: 'green'
-                      },
-                      {
-                        children: 'Updated profile information',
-                        color: 'orange'
-                      },
-                      {
-                        children: 'Account created and verified',
-                        color: 'green'
-                      }
-                    ]}
-                  />
-                </Card>
               </div>
             </Col>
           </Row>

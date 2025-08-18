@@ -4,6 +4,8 @@ export interface IContact {
   email: string
   phone: string
   message: string
+  replyMessage?: string
+  repliedAt?: string
   createdAt: string
   updatedAt: string
   deletedAt?: string
