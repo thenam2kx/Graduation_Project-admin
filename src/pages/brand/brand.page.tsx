@@ -1,11 +1,23 @@
 import instance from '@/config/axios.customize'
 import { IBrand } from '@/types/brand'
-import { DeleteFilled, EditFilled, FolderAddFilled } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined, FolderAddFilled } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
-import { Button, Popconfirm, Switch, Table, Modal, Form, Input, Select, message, Tooltip } from 'antd'
+import { Button, Popconfirm, Switch, Table, Modal, Form, Input, Select, message, Space } from 'antd'
 import axios from 'axios'
 import { debounce } from 'lodash'
 import { useEffect, useMemo, useState } from 'react'
+
+// Function tạo slug
+const createSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Bỏ dấu
+    .replace(/[^a-z0-9\s-]/g, '') // Chỉ giữ chữ, số, space, dấu gạch
+    .replace(/\s+/g, '-') // Thay space bằng dấu gạch
+    .replace(/-+/g, '-') // Bỏ dấu gạch thừa
+    .trim()
+}
 
 
 const Brand = () => {
@@ -18,6 +30,7 @@ const Brand = () => {
   const [loading, setLoading] = useState<boolean>(false)
   const [searchText, setSearchText] = useState('')
   const [pagination, setPagination] = useState<IPagination>({ current: 1, pageSize: 10, total: 10 })
+  const [currentSlug, setCurrentSlug] = useState('')
 
   const ListBrand = async (qs?: string) => {
     try {
@@ -52,6 +65,8 @@ const Brand = () => {
   const handleAdd = () => {
     setModalMode('add')
     form.resetFields()
+    setCurrentSlug('')
+    setImage('')
     setModalOpen(true)
   }
 
@@ -64,21 +79,32 @@ const Brand = () => {
       avatar: brand.avatar,
       isPublic: brand.isPublic
     })
+    setCurrentSlug(brand.slug)
+    setImage(brand.avatar || '')
     setModalOpen(true)
   }
 
   const handleFinish = async (values: IBrand) => {
     try {
       if (modalMode === 'add') {
-        await instance.post('/api/v1/brand/', values)
-        message.success('Thêm thương hiệu thành công')
+        // Không gửi slug khi thêm mới, để server tự động tạo
+        const { slug, ...createData } = values
+        await instance.post('/api/v1/brand/', createData)
+        message.success('Thêm thương hiệu thành công')
       } else if (modalMode === 'edit' && editingID) {
-        await instance.patch(`/api/v1/brand/${editingID}`, values)
-        message.success('Cập nhật thương hiệu thành công')
+        // Không gửi slug khi sửa, để server tự động tạo từ name
+        const { slug, ...updateData } = values
+        await instance.patch(`/api/v1/brand/${editingID}`, updateData)
+        message.success('Cập nhật thương hiệu thành công')
       }
       setModalOpen(false)
       ListBrand()
-    } catch (error) {
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        message.error(error.response?.data?.message || 'Tên thương hiệu đã tồn tại')
+      } else {
+        message.error('Có lỗi xảy ra, vui lòng thử lại')
+      }
       console.log(error)
     }
   }
@@ -122,12 +148,12 @@ const Brand = () => {
 
   const columns = [
     {
-      title: 'Tên thương hiệu',
+      title: 'Tên thương hiệu',
       dataIndex: 'name',
       key: 'name'
     },
     {
-      title: 'Tên url',
+      title: 'Slug',
       dataIndex: 'slug',
       key: 'slug'
     },
@@ -147,7 +173,7 @@ const Brand = () => {
         )
     },
     {
-      title: 'Trạng thái',
+      title: 'Trạng thái',
       dataIndex: 'isPublic',
       key: 'isPublic',
       render: (isPublic: boolean, record: IBrand) => (
@@ -161,7 +187,7 @@ const Brand = () => {
                 await instance.patch(`api/v1/brand/${record._id}`, {
                   isPublic: checked
                 })
-                message.success('Thay đổi trạng thái thành công')
+                message.success('Thay đổi trạng thái thành công')
                 ListBrand()
               } catch (error) {
                 console.log(error)
@@ -172,25 +198,27 @@ const Brand = () => {
       )
     },
     {
-      title: 'Thao tác',
+      title: 'Thao tác',
       key: 'action',
       render: (record: IBrand) =>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <Tooltip title="Chỉnh sửa">
-            <Button type='primary' onClick={() => handleEdit(record)}><EditFilled /></Button>
-          </Tooltip>
+        <Space size="middle">
+          <Button
+            icon={<EditOutlined />}
+            className='text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500'
+            onClick={() => handleEdit(record)}
+          />
           <Popconfirm
-            title="Xóa thương hiệu"
-            description="Bạn có chắc chắn muốn xóa thương hiệu này?"
-            okText="Đồng ý"
-            cancelText="Không đồng ý"
+            title="Bạn có chắc muốn xóa thương hiệu này không?"
             onConfirm={() => handleDelete(record._id)}
+            okText="Có"
+            cancelText="Không"
           >
-            <Tooltip title="Xóa">
-              <Button danger><DeleteFilled /></Button>
-            </Tooltip>
+            <Button
+              icon={<DeleteOutlined />}
+              className='text-red-600 border-red-600 hover:text-red-500 hover:border-red-500'
+            />
           </Popconfirm>
-        </div>
+        </Space>
     }
   ]
 
@@ -198,8 +226,8 @@ const Brand = () => {
     <div>
       <div className='flex justify-between items-center mb-6'>
         <div>
-          <h1 className='text-2xl font-bold'>Quản lý thương hiệu</h1>
-          <p className='text-gray-500'>Quản lý thương hiệu trong hệ thống</p>
+          <h1 className='text-2xl font-bold'>Quản lý thương hiệu</h1>
+          <p className='text-gray-500'>Quản lý thương hiệu trong hệ thống</p>
           <Input.Search
             placeholder="Tìm kiếm thương hiệu"
             allowClear
@@ -216,7 +244,7 @@ const Brand = () => {
         </div>
         <div style={{}} >
           <Button type='primary' onClick={handleAdd}>
-            <FolderAddFilled /> Thêm thương hiệu
+            <FolderAddFilled /> Thêm thương hiệu
           </Button>
         </div>
       </div>
@@ -255,21 +283,43 @@ const Brand = () => {
             name="name"
             label="Tên"
             rules={[
-              { required: true, message: 'Vui lòng không bỏ trống' },
-              { min: 5, message: 'Tối thiểu 5 ký tự' }
+              { required: true, message: 'Vui lòng không bỏ trống' },
+              { min: 5, message: 'Tối thiểu 5 ký tự' }
             ]}
           >
-            <Input />
+            <Input 
+              onChange={(e) => {
+                const name = e.target.value
+                form.setFieldValue('name', name)
+                
+                if (name.trim()) {
+                  const newSlug = createSlug(name)
+                  setCurrentSlug(newSlug)
+                  form.setFieldValue('slug', newSlug)
+                } else {
+                  setCurrentSlug('')
+                  form.setFieldValue('slug', '')
+                }
+              }}
+            />
           </Form.Item>
           <Form.Item
             name="slug"
-            label="Tên url"
+            label="Slug"
             rules={[
-              { required: true, message: 'Vui lòng không bỏ trống' },
-              { min: 5, message: 'Tối thiểu 5 ký tự' }
+              { required: true, message: 'Vui lòng không bỏ trống' },
+              { min: 5, message: 'Tối thiểu 5 ký tự' }
             ]}
           >
-            <Input />
+            <Input 
+              placeholder="Slug tự động tạo từ tên"
+              style={{ 
+                backgroundColor: '#f5f5f5', 
+                cursor: 'not-allowed',
+                color: '#666'
+              }}
+              disabled
+            />
           </Form.Item>
           <Form.Item
             label="Ảnh đại diện"
@@ -292,12 +342,9 @@ const Brand = () => {
           <Form.Item name="avatar" style={{ display: 'none' }}>
             <Input type="hidden" />
           </Form.Item>
-          <Form.Item name="avatar" style={{ display: 'none' }}>
-            <Input type="hidden" />
-          </Form.Item>
           <Form.Item
             name="isPublic"
-            label="Trạng thái"
+            label="Trạng thái"
             rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
           >
             <Select placeholder="Chọn trạng thái">

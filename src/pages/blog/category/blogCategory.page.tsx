@@ -16,6 +16,18 @@ import {
 import axios from 'axios'
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 
+// Function tạo slug
+const createSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Bỏ dấu
+    .replace(/[^a-z0-9\s-]/g, '') // Chỉ giữ chữ, số, space, dấu gạch
+    .replace(/\s+/g, '-') // Thay space bằng dấu gạch
+    .replace(/-+/g, '-') // Bỏ dấu gạch thừa
+    .trim()
+}
+
 
 interface ICateblog {
   _id?: string
@@ -35,6 +47,7 @@ const BlogCategoryPage = () => {
   const [editingItem, setEditingItem] = useState<ICateblog | null>(null)
   const [searchInput, setSearchInput] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [currentSlug, setCurrentSlug] = useState('')
 
   const fetchData = async () => {
     setLoading(true)
@@ -86,12 +99,14 @@ const BlogCategoryPage = () => {
     form.resetFields()
     setIsEdit(false)
     setEditingItem(null)
+    setCurrentSlug('')
     setIsModalOpen(true)
   }
 
   const openEditModal = (item: ICateblog) => {
     setIsEdit(true)
     setEditingItem(item)
+    setCurrentSlug(item.slug)
     setIsModalOpen(true)
   }
 
@@ -120,14 +135,35 @@ const BlogCategoryPage = () => {
       setIsModalOpen(false)
       form.resetFields()
       fetchData()
-    } catch (error) {
-      message.error('Lưu thất bại, vui lòng thử lại!')
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        message.error(error.response?.data?.message || 'Tên danh mục bài viết đã tồn tại')
+      } else {
+        message.error('Lưu thất bại, vui lòng thử lại!')
+      }
     }
   }
 
   const handleCancel = () => {
     setIsModalOpen(false)
     form.resetFields()
+    setCurrentSlug('')
+  }
+
+  // Xử lý khi thay đổi tên để tự động tạo slug
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value
+    form.setFieldValue('name', name)
+    
+    if (name.trim()) {
+      // Tạo slug từ tên (cả khi thêm mới và chỉnh sửa)
+      const newSlug = createSlug(name)
+      setCurrentSlug(newSlug)
+      form.setFieldValue('slug', newSlug)
+    } else {
+      setCurrentSlug('')
+      form.setFieldValue('slug', '')
+    }
   }
 
   const handlePageChange = (page: number, pageSize?: number) => {
@@ -227,15 +263,27 @@ const BlogCategoryPage = () => {
             name="name"
             rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}
           >
-            <Input placeholder="Nhập tên danh mục" />
+            <Input 
+              placeholder="Nhập tên danh mục" 
+              onChange={handleNameChange}
+            />
           </Form.Item>
 
           <Form.Item
             label="Slug"
             name="slug"
-            rules={[{ required: true, message: 'Vui lòng nhập slug!' }]}
+            rules={[{ required: true, message: 'Slug sẽ được tự động tạo!' }]}
           >
-            <Input placeholder="Nhập slug" />
+            <Input 
+              placeholder="Slug tự động tạo từ tên" 
+              value={currentSlug}
+              readOnly
+              style={{ 
+                backgroundColor: '#f5f5f5', 
+                cursor: 'not-allowed',
+                color: '#666'
+              }}
+            />
           </Form.Item>
 
           <Form.Item>
