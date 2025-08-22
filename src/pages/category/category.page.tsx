@@ -10,6 +10,7 @@ import {
   Modal,
   Spin,
   Pagination,
+  Popconfirm,
 } from 'antd'
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import axios from '@/config/axios.customize'
@@ -179,16 +180,9 @@ const CategoryList = () => {
     setProductsPagination({ current: 1, pageSize: 5, total: 0 })
   }
 
-  // Confirm deletion
-  const showDeleteConfirm = (record: Category) => {
-    Modal.confirm({
-      title: 'Xác nhận xóa',
-      content: `Bạn có chắc chắn muốn xóa danh mục "${record.name}"?`,
-      okText: 'Xóa',
-      okType: 'danger',
-      cancelText: 'Hủy',
-      onOk: () => deleteMutation.mutate(record._id)
-    })
+  // Handle delete
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id)
   }
 
   // Open Drawer for adding new category
@@ -235,8 +229,12 @@ const CategoryList = () => {
       }
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       handleCloseDrawer()
-    } catch (error) {
-      message.error('Lỗi khi lưu danh mục!')
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        message.error(error.response?.data?.message || 'Tên danh mục đã tồn tại')
+      } else {
+        message.error('Lỗi khi lưu danh mục!')
+      }
     }
   }
 
@@ -275,12 +273,18 @@ const CategoryList = () => {
             className="text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500"
             title="Chỉnh sửa"
           />
-          <Button
-            icon={<DeleteOutlined />}
-            onClick={() => showDeleteConfirm(record)}
-            className="text-red-600 border-red-600 hover:text-red-500 hover:border-red-500"
-            title="Xóa danh mục"
-          />
+          <Popconfirm
+            title="Bạn có chắc muốn xóa danh mục này không?"
+            onConfirm={() => handleDelete(record._id)}
+            okText="Có"
+            cancelText="Không"
+          >
+            <Button
+              icon={<DeleteOutlined />}
+              className="text-red-600 border-red-600 hover:text-red-500 hover:border-red-500"
+              title="Xóa danh mục"
+            />
+          </Popconfirm>
         </Space>
       )
     }
@@ -393,9 +397,16 @@ const CategoryList = () => {
             <Form.Item
               label="Slug"
               name="slug"
-              rules={[{ required: true, message: 'Nhập slug' }]}
             >
-              <Input />
+              <Input 
+                placeholder="Slug tự động tạo từ tên" 
+                disabled
+                style={{ 
+                  backgroundColor: '#f5f5f5', 
+                  cursor: 'not-allowed',
+                  color: '#666'
+                }}
+              />
             </Form.Item>
 
             <Form.Item

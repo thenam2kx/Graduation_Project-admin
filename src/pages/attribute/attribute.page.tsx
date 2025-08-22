@@ -13,6 +13,7 @@ import {
 } from 'antd'
 import axios from 'axios'
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
+import { attributeApis } from '@/services/product-service/attributes.apis'
 
 // Hàm tạo slug từ tên
 const createSlug = (text: string): string => {
@@ -112,7 +113,7 @@ const AttributePage = () => {
   const handleDelete = async (id: string) => {
     try {
       await axios.delete(`http://localhost:8080/api/v1/attributes/${id}`)
-      message.success('Xóa thuộc tính thành công!')
+      message.success('Đã chuyển thuộc tính vào thùng rác!')
       fetchData()
     } catch {
       message.error('Xóa thuộc tính thất bại!')
@@ -131,8 +132,12 @@ const AttributePage = () => {
       setIsModalOpen(false)
       form.resetFields()
       fetchData()
-    } catch {
-      message.error('Lưu thất bại, vui lòng thử lại!')
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        message.error(error.response?.data?.message || 'Tên thuộc tính đã tồn tại')
+      } else {
+        message.error('Lưu thất bại, vui lòng thử lại!')
+      }
     }
   }
 
@@ -276,9 +281,16 @@ const AttributePage = () => {
           <Form.Item
             label="Slug"
             name="slug"
-            rules={[{ required: true, message: 'Vui lòng nhập slug!' }]}
           >
-            <Input placeholder="Nhập slug cho thuộc tính" />
+            <Input 
+              placeholder="Slug tự động tạo từ tên"
+              disabled
+              style={{ 
+                backgroundColor: '#f5f5f5', 
+                cursor: 'not-allowed',
+                color: '#666'
+              }}
+            />
           </Form.Item>
 
           <Form.Item>
