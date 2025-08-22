@@ -131,8 +131,12 @@ const AttributePage = () => {
       setIsModalOpen(false)
       form.resetFields()
       fetchData()
-    } catch {
-      message.error('Lưu thất bại, vui lòng thử lại!')
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        message.error(error.response?.data?.message || 'Tên thuộc tính đã tồn tại')
+      } else {
+        message.error('Lưu thất bại, vui lòng thử lại!')
+      }
     }
   }
 
@@ -276,9 +280,16 @@ const AttributePage = () => {
           <Form.Item
             label="Slug"
             name="slug"
-            rules={[{ required: true, message: 'Vui lòng nhập slug!' }]}
           >
-            <Input placeholder="Nhập slug cho thuộc tính" />
+            <Input 
+              placeholder="Slug tự động tạo từ tên"
+              disabled
+              style={{ 
+                backgroundColor: '#f5f5f5', 
+                cursor: 'not-allowed',
+                color: '#666'
+              }}
+            />
           </Form.Item>
 
           <Form.Item>
