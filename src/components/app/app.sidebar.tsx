@@ -7,6 +7,7 @@ import {
   ControlOutlined,
   DashboardOutlined,
   DatabaseOutlined,
+  DeleteOutlined,
   FileImageOutlined,
   IdcardOutlined,
   InsertRowRightOutlined,
@@ -70,6 +71,7 @@ const items: MenuProps['items'] = [
         icon: <IdcardOutlined />,
         label: <Link to={'/brand'}>Thương hiệu</Link>
       },
+
     ]
   },
   {
@@ -146,6 +148,11 @@ const items: MenuProps['items'] = [
         icon: <ContactsOutlined />,
         label: <Link to={'/contact'}>Liên hệ</Link>
       },
+      {
+        key: '/trash',
+        icon: <DeleteOutlined />,
+        label: <Link to={'/trash'}>Thùng rác</Link>
+      }
     ]
   }
 ]
