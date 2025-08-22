@@ -14,7 +14,7 @@ export interface IOrderItem {
     variant_attributes: {
       _id?: string
       variantId: string
-      slug: string
+      value: string
       attributeId: {
         name: string
         slug: string
@@ -66,7 +66,7 @@ export interface IOrderItem {
       variant_attributes: {
         _id?: string
         variantId: string
-        slug: string
+        value: string
         attributeId: {
           name: string
           slug: string

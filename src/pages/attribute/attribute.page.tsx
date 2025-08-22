@@ -171,9 +171,7 @@ const AttributePage = () => {
           value={searchValue}
           onChange={e => setSearchValue(e.target.value)}
         />
-        <Button type="primary" onClick={openAddModal}>
-          Thêm mới
-        </Button>
+
       </div>
 
       <Table
@@ -212,31 +210,7 @@ const AttributePage = () => {
             render: (date: string) =>
               date ? new Date(date).toLocaleString('vi-VN') : ''
           },
-          {
-            title: 'Hành động',
-            key: 'actions',
-            width: 150,
-            render: (_: any, record: IAttribute) => (
-              <Space size="middle">
-                <Button
-                  icon={<EditOutlined />}
-                  className='text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500'
-                  onClick={() => openEditModal(record)}
-                />
-                <Popconfirm
-                  title="Bạn có chắc muốn xóa thuộc tính này không?"
-                  onConfirm={() => handleDelete(record._id)}
-                  okText="Có"
-                  cancelText="Không"
-                >
-                  <Button
-                    icon={<DeleteOutlined />}
-                    className='text-red-600 border-red-600 hover:text-red-500 hover:border-red-500'
-                  />
-                </Popconfirm>
-              </Space>
-            )
-          }
+
         ]}
         dataSource={paginatedData}
         loading={loading}

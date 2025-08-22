@@ -101,15 +101,15 @@ export const updateOrderStatusAPI = async (orderId: string, status: string) => {
   }
 }
 
-export const cancelOrderAPI = async (orderId: string) => {
+export const cancelOrderAPI = async (orderId: string, reason?: string) => {
   try {
-    console.log(`Cancelling order ${orderId}`)
+    console.log(`Cancelling order ${orderId} with reason:`, reason)
     // Lấy token từ Redux store
     const token = store.getState().auth.access_token
     
     const response = await axios.patch(
       `http://localhost:8080/api/v1/orders/${orderId}/cancel`,
-      {},
+      { reason },
       {
         headers: {
           'Content-Type': 'application/json',
