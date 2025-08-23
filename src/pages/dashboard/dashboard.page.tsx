@@ -437,18 +437,6 @@ const DashboardPage = () => {
 
       </Row>
 
-      {/* Trend Analysis */}
-      <Row gutter={[24, 24]} className="mt-8">
-        <Col xs={24}>
-          <TrendWidget 
-            orders={filteredOrders}
-            products={productsData?.results || []}
-            users={usersData?.results || usersData?.data?.results || []}
-            dateRange={dateRange}
-          />
-        </Col>
-      </Row>
-
       {/* Bottom Section */}
       <Row gutter={[24, 24]} className="mt-8">
         {/* Notification Widget */}

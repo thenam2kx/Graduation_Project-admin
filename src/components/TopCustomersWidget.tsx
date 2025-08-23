@@ -1,10 +1,8 @@
 import React, { useMemo } from 'react';
-import { Card, Avatar, Typography, Tag, Progress, Tooltip } from 'antd';
+import { Card, Avatar, Typography } from 'antd';
 import { 
   UserOutlined, 
-  CrownOutlined, 
-  StarOutlined,
-  TrophyOutlined,
+  TeamOutlined,
   PhoneOutlined,
   MailOutlined
 } from '@ant-design/icons';
@@ -21,7 +19,6 @@ interface CustomerData {
   totalSpent: number;
   orderCount: number;
   lastOrderDate: Date;
-  tier: 'VIP' | 'Premium' | 'Regular';
   avatar?: string;
 }
 
@@ -95,10 +92,6 @@ const TopCustomersWidget: React.FC<TopCustomersWidgetProps> = ({
         // Nếu không có dữ liệu thực, tạo dữ liệu mẫu
         const mockSpent = stats.totalSpent || Math.floor(Math.random() * 5000000) + 1000000;
         const mockOrders = stats.orderCount || Math.floor(Math.random() * 10) + 1;
-        
-        let tier: 'VIP' | 'Premium' | 'Regular' = 'Regular';
-        if (mockSpent >= 10000000) tier = 'VIP';
-        else if (mockSpent >= 3000000) tier = 'Premium';
 
         console.log('Customer:', user.name, 'spent:', mockSpent, 'orders:', mockOrders);
 
@@ -110,7 +103,6 @@ const TopCustomersWidget: React.FC<TopCustomersWidgetProps> = ({
           totalSpent: mockSpent,
           orderCount: mockOrders,
           lastOrderDate: stats.lastOrderDate || new Date(),
-          tier,
           avatar: user.avatar
         };
       })
@@ -122,43 +114,14 @@ const TopCustomersWidget: React.FC<TopCustomersWidgetProps> = ({
     return customers;
   }, [orders, users]);
 
-  const getTierConfig = (tier: string) => {
-    switch (tier) {
-      case 'VIP':
-        return {
-          color: '#faad14',
-          bgColor: isDark ? 'bg-yellow-900' : 'bg-yellow-100',
-          textColor: isDark ? 'text-yellow-200' : 'text-yellow-800',
-          icon: <CrownOutlined />,
-          gradient: 'from-yellow-400 to-orange-500'
-        };
-      case 'Premium':
-        return {
-          color: '#722ed1',
-          bgColor: isDark ? 'bg-purple-900' : 'bg-purple-100',
-          textColor: isDark ? 'text-purple-200' : 'text-purple-800',
-          icon: <StarOutlined />,
-          gradient: 'from-purple-400 to-pink-500'
-        };
-      default:
-        return {
-          color: '#1890ff',
-          bgColor: isDark ? 'bg-blue-900' : 'bg-blue-100',
-          textColor: isDark ? 'text-blue-200' : 'text-blue-800',
-          icon: <UserOutlined />,
-          gradient: 'from-blue-400 to-cyan-500'
-        };
-    }
-  };
 
-  const maxSpent = topCustomers.length > 0 ? Math.max(...topCustomers.map(c => c.totalSpent)) : 0;
 
   return (
     <Card
       title={
         <div className="flex items-center">
-          <TrophyOutlined className="mr-2" />
-          <span>Khách hàng VIP</span>
+          <TeamOutlined className="mr-2" />
+          <span>Khách hàng tiềm năng</span>
         </div>
       }
       className={`shadow-lg ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}
@@ -176,9 +139,6 @@ const TopCustomersWidget: React.FC<TopCustomersWidgetProps> = ({
           </div>
         ) : (
           topCustomers.map((customer, index) => {
-            const tierConfig = getTierConfig(customer.tier);
-            const spentPercent = maxSpent > 0 ? (customer.totalSpent / maxSpent) * 100 : 0;
-            
             return (
               <div
                 key={customer.id}
@@ -192,7 +152,7 @@ const TopCustomersWidget: React.FC<TopCustomersWidgetProps> = ({
                 }}
               >
                 {/* Rank Badge */}
-                <div className={`absolute -top-2 -left-2 w-8 h-8 rounded-full bg-gradient-to-r ${tierConfig.gradient} flex items-center justify-center text-white font-bold text-sm shadow-lg`}>
+                <div className={`absolute -top-2 -left-2 w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-lg`}>
                   {index + 1}
                 </div>
 
@@ -202,34 +162,21 @@ const TopCustomersWidget: React.FC<TopCustomersWidgetProps> = ({
                     <Avatar
                       size={56}
                       src={customer.avatar}
-                      className={`bg-gradient-to-r ${tierConfig.gradient} shadow-lg`}
+                      className={`bg-gradient-to-r from-blue-400 to-cyan-500 shadow-lg`}
                     >
                       {customer.name.charAt(0).toUpperCase()}
                     </Avatar>
-                    <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-r ${tierConfig.gradient} flex items-center justify-center text-white shadow-md`}>
-                      {tierConfig.icon}
-                    </div>
                   </div>
 
                   {/* Customer Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <Title 
-                          level={5} 
-                          className={`mb-0 truncate ${isDark ? 'text-white' : 'text-gray-900'}`}
-                        >
-                          {customer.name}
-                        </Title>
-                        <div className="flex items-center mt-1">
-                          <Tag 
-                            color={tierConfig.color}
-                            className={`${tierConfig.bgColor} ${tierConfig.textColor} border-0 text-xs font-semibold`}
-                          >
-                            {customer.tier}
-                          </Tag>
-                        </div>
-                      </div>
+                    <div className="mb-2">
+                      <Title 
+                        level={5} 
+                        className={`mb-0 truncate ${isDark ? 'text-white' : 'text-gray-900'}`}
+                      >
+                        {customer.name}
+                      </Title>
                     </div>
 
                     {/* Contact Info */}
@@ -272,25 +219,6 @@ const TopCustomersWidget: React.FC<TopCustomersWidgetProps> = ({
                           {customer.orderCount}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="mb-2">
-                      <div className="flex justify-between items-center mb-1">
-                        <Text className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                          Mức độ hoạt động
-                        </Text>
-                        <Text className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                          {spentPercent.toFixed(0)}%
-                        </Text>
-                      </div>
-                      <Progress
-                        percent={spentPercent}
-                        showInfo={false}
-                        strokeColor={tierConfig.color}
-                        trailColor={isDark ? '#374151' : '#f5f5f5'}
-                        size="small"
-                      />
                     </div>
 
                     {/* Last Order */}
