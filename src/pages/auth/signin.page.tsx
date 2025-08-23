@@ -20,10 +20,14 @@ const SigninPage = () => {
       }
     },
     onSuccess: (data: IAuth) => {
-      dispatch(setStateSignin({ user: data.user, access_token: data.access_token }))
-      dispatch(setAccessToken({ access_token: data.access_token }))
-      message.success('Đăng nhập thành công!')
-      // navigate('/')
+      console.log('🚀 ~ SigninPage ~ data:', data)
+      if (data && data.user.role === 'admin') {
+        dispatch(setStateSignin({ user: data.user, access_token: data.access_token }))
+        dispatch(setAccessToken({ access_token: data.access_token }))
+        message.success('Đăng nhập thành công!')
+      } else {
+        message.error('Bạn không có quyền truy cập vào trang này.')
+      }
     },
     onError: (error) => {
       // eslint-disable-next-line no-console
