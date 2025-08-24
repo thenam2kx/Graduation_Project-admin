@@ -2,18 +2,25 @@ import axios from 'axios'
 import { IOrderItem } from '@/types/orders'
 import { store } from '@/redux/store'
 
-export const fetchAllOrdersAPI = async (params?: any) => {
+export const fetchAllOrdersAPI = async (params?: { page?: number; limit?: number; status?: string; sort?: string }) => {
   try {
     console.log('Calling fetchAllOrdersAPI with params:', params)
-    const queryString = params ? new URLSearchParams(params).toString() : ''
-    // Sử dụng URL đầy đủ và gọi trực tiếp đến API đơn hàng
-    const url = `http://localhost:8080/api/v1/orders${queryString ? `?${queryString}` : ''}`
+    
+    // Tạo query parameters với giá trị mặc định
+    const queryParams = {
+      page: params?.page || 1,
+      limit: params?.limit || 10,
+      sort: params?.sort || '-createdAt',
+      ...(params?.status && { status: params.status })
+    }
+    
+    const queryString = new URLSearchParams(queryParams as any).toString()
+    const url = `http://localhost:8080/api/v1/orders?${queryString}`
     console.log('API URL:', url)
     
     // Lấy token từ Redux store
     const token = store.getState().auth.access_token
     
-    // Thêm token vào header
     const response = await axios.get(url, {
       headers: {
         'Content-Type': 'application/json',
@@ -94,15 +101,15 @@ export const updateOrderStatusAPI = async (orderId: string, status: string) => {
   }
 }
 
-export const cancelOrderAPI = async (orderId: string) => {
+export const cancelOrderAPI = async (orderId: string, reason?: string) => {
   try {
-    console.log(`Cancelling order ${orderId}`)
+    console.log(`Cancelling order ${orderId} with reason:`, reason)
     // Lấy token từ Redux store
     const token = store.getState().auth.access_token
     
     const response = await axios.patch(
       `http://localhost:8080/api/v1/orders/${orderId}/cancel`,
-      {},
+      { reason },
       {
         headers: {
           'Content-Type': 'application/json',

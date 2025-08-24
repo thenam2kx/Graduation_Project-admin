@@ -1,6 +1,6 @@
 import axios from '@/config/axios.customize'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Table, Button, Space, Switch, Modal, message, Form, Input } from 'antd'
+import { Table, Button, Space, Switch, Modal, message, Form, Input, Popconfirm } from 'antd'
 import { Link } from 'react-router'
 import { useState, useEffect } from 'react'
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
@@ -77,13 +77,7 @@ const BlogPage = () => {
   })
 
   const handleDelete = (id: string) => {
-    Modal.confirm({
-      title: 'Xác nhận xóa',
-      content: 'Bạn có chắc chắn muốn xóa bài viết này không?',
-      okText: 'Xóa',
-      cancelText: 'Hủy',
-      onOk: () => deleteMutation.mutate(id)
-    })
+    deleteMutation.mutate(id)
   }
 
   const fetchDetail = async (id: string) => {
@@ -149,11 +143,17 @@ const BlogPage = () => {
           <Link to={`/blogs/edit/${record._id}`}>
             <Button icon={<EditOutlined />} />
           </Link>
-          <Button
-            icon={<DeleteOutlined />}
-            danger
-            onClick={() => handleDelete(record._id)}
-          />
+          <Popconfirm
+            title="Bạn có chắc muốn xóa bài viết này không?"
+            onConfirm={() => handleDelete(record._id)}
+            okText="Có"
+            cancelText="Không"
+          >
+            <Button
+              icon={<DeleteOutlined />}
+              className='text-red-600 border-red-600 hover:text-red-500 hover:border-red-500'
+            />
+          </Popconfirm>
         </Space>
       )
     }

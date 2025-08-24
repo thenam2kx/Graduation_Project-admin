@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Table, Button, Modal, Form, InputNumber, DatePicker, message, Space, Tooltip, Select, Tag } from 'antd'
+import { Table, Button, Modal, Form, InputNumber, DatePicker, message, Space, Tooltip, Select, Tag, Input } from 'antd'
 import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined, PlusOutlined, CarOutlined, EyeOutlined } from '@ant-design/icons'
 import moment from 'moment'
 import { IOrderItem } from '@/types/orders'
@@ -17,26 +17,40 @@ const OrderPage = () => {
   const { confirm } = Modal
   const [messageApi, contextHolder] = message.useMessage()
   const queryClient = useQueryClient()
+  
+  // State cho phân trang
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
+  
+  // State cho modal hủy đơn
+  const [isCancelModalVisible, setIsCancelModalVisible] = useState(false)
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null)
+  const [cancelForm] = Form.useForm()
 
-  const { data  = [], isLoading, refetch } = useQuery({
-    queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS],
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS, currentPage, pageSize, statusFilter],
     queryFn: async () => {
       try {
-        console.log('Fetching orders from API...')
-        const res = await fetchAllOrdersAPI()
+        console.log('Fetching orders from API...', { page: currentPage, limit: pageSize, status: statusFilter })
+        const res = await fetchAllOrdersAPI({
+          page: currentPage,
+          limit: pageSize,
+          status: statusFilter,
+          sort: '-createdAt'
+        })
         console.log('Orders API response:', res)
         
-        if (res?.data?.results && Array.isArray(res.data.results)) {
-          console.log('Found orders:', res.data.results.length)
-          return res.data.results;
+        if (res?.data) {
+          return res.data; // Trả về toàn bộ data bao gồm meta và results
         } else {
           console.warn('No orders found or invalid response format')
-          return [];
+          return { results: [], meta: { total: 0, current: 1, pageSize: 10, pages: 0 } };
         }
       } catch (error) {
         console.error('Error fetching orders:', error)
         messageApi.error('Không thể lấy danh sách đơn hàng')
-        return []
+        return { results: [], meta: { total: 0, current: 1, pageSize: 10, pages: 0 } }
       }
     },
     refetchOnWindowFocus: true,
@@ -44,6 +58,10 @@ const OrderPage = () => {
     staleTime: 0,
     refetchInterval: 5000
   })
+  
+  // Lấy dữ liệu từ response
+  const orders = data?.results || []
+  const meta = data?.meta || { total: 0, current: 1, pageSize: 10, pages: 0 }
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string, status: string }) => {
@@ -51,7 +69,7 @@ const OrderPage = () => {
     },
     onSuccess: () => {
       messageApi.success('Cập nhật trạng thái đơn hàng thành công')
-      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS]})
+      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS, currentPage, pageSize, statusFilter]})
     },
     onError: (error) => {
       messageApi.error('Có lỗi xảy ra khi cập nhật trạng thái đơn hàng')
@@ -60,12 +78,15 @@ const OrderPage = () => {
   })
   
   const cancelOrderMutation = useMutation({
-    mutationFn: async (orderId: string) => {
-      return cancelOrderAPI(orderId)
+    mutationFn: async ({ orderId, reason }: { orderId: string, reason: string }) => {
+      return cancelOrderAPI(orderId, reason)
     },
     onSuccess: () => {
       messageApi.success('Hủy đơn hàng thành công')
-      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS]})
+      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS, currentPage, pageSize, statusFilter]})
+      setIsCancelModalVisible(false)
+      setCancelOrderId(null)
+      cancelForm.resetFields()
     },
     onError: (error) => {
       messageApi.error('Có lỗi xảy ra khi hủy đơn hàng')
@@ -80,7 +101,7 @@ const OrderPage = () => {
     },
     onSuccess: () => {
       messageApi.success('Tạo vận đơn GHN thành công')
-      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS]})
+      queryClient.invalidateQueries({ queryKey: [ORDER_KEYS.FETCH_ALL_ORDERS, currentPage, pageSize, statusFilter]})
       setIsModalVisible(false)
     },
     onError: (error) => {
@@ -273,7 +294,7 @@ const OrderPage = () => {
               <Button
                 icon={<DeleteOutlined />}
                 danger
-                onClick={() => showCancelConfirm(record._id)}
+                onClick={() => showCancelModal(record._id)}
               >
                 Hủy
               </Button>
@@ -290,17 +311,20 @@ const OrderPage = () => {
     setIsModalVisible(true)
   }
 
-  const showCancelConfirm = (orderId: string) => {
-    confirm({
-      title: 'Bạn có chắc chắn muốn hủy đơn hàng này?',
-      icon: <ExclamationCircleOutlined />,
-      okText: 'Hủy đơn hàng',
-      okType: 'danger',
-      cancelText: 'Không',
-      onOk() {
-        cancelOrderMutation.mutate(orderId)
+  const showCancelModal = (orderId: string) => {
+    setCancelOrderId(orderId)
+    setIsCancelModalVisible(true)
+  }
+  
+  const handleCancelOrder = async () => {
+    try {
+      const values = await cancelForm.validateFields()
+      if (cancelOrderId) {
+        cancelOrderMutation.mutate({ orderId: cancelOrderId, reason: values.reason })
       }
-    })
+    } catch (error) {
+      console.error('Validation failed:', error)
+    }
   }
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
@@ -318,35 +342,95 @@ const OrderPage = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Quản lý đơn hàng</h1>
         <div className="flex gap-2">
-          <Button 
-            onClick={() => refetch()} 
-            icon={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>}
-          >
-            Làm mới
-          </Button>
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-gray-600">
+              Hiển thị {orders.length} / {meta.total} đơn hàng
+            </span>
+            <Button 
+              onClick={() => refetch()} 
+              icon={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>}
+            >
+              Làm mới
+            </Button>
+          </div>
         </div>
       </div>
 
+      <div className="mb-4">
+        <Select
+          placeholder="Lọc theo trạng thái"
+          allowClear
+          style={{ width: 200 }}
+          onChange={(value) => {
+            setStatusFilter(value)
+            setCurrentPage(1) // Reset về trang đầu khi filter
+          }}
+          value={statusFilter}
+        >
+          <Select.Option value="pending">Chờ xác nhận</Select.Option>
+          <Select.Option value="confirmed">Đã xác nhận</Select.Option>
+          <Select.Option value="processing">Đang xử lý</Select.Option>
+          <Select.Option value="shipped">Đang giao hàng</Select.Option>
+          <Select.Option value="delivered">Đã giao hàng</Select.Option>
+          <Select.Option value="completed">Hoàn thành</Select.Option>
+          <Select.Option value="cancelled">Đã hủy</Select.Option>
+          <Select.Option value="refunded">Đã hoàn tiền</Select.Option>
+        </Select>
+      </div>
+
       <Table
-  columns={columns}
-  dataSource={data}
-  rowKey="_id"
-  loading={isLoading}
-  pagination={{
-    pageSize: 10,
-    showSizeChanger: false
-  }}
-  sortDirections={['descend', 'ascend']}
+        columns={columns}
+        dataSource={orders}
+        rowKey="_id"
+        loading={isLoading}
+        pagination={{
+          current: currentPage,
+          pageSize: pageSize,
+          total: meta.total,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} đơn hàng`,
+          onChange: (page, size) => {
+            setCurrentPage(page)
+            if (size !== pageSize) {
+              setPageSize(size)
+              setCurrentPage(1) // Reset về trang đầu khi thay đổi page size
+            }
+          },
+          pageSizeOptions: ['10', '20', '50', '100']
+        }}
+        sortDirections={['descend', 'ascend']}
         expandable={{
           expandedRowRender: (record) => (
             <div>
               <h4 className="font-medium mb-2">Sản phẩm trong đơn hàng:</h4>
               <ul className="pl-5">
-                {record.items?.map((item: any, index: number) => (
-                  <li key={index} className="mb-1">
-                    {item.productId?.name || 'Sản phẩm'} - {item.variantId?.sku || 'Phiên bản'} x {item.quantity} = {(item.price * item.quantity).toLocaleString()} đ
-                  </li>
-                )) || <li>Không có sản phẩm</li>}
+                {record.items?.map((item: any, index: number) => {
+                  // Lấy dung tích từ variant_attributes
+                  let capacity = 'N/A';
+                  const attrs = item.variantId?.variant_attributes || [];
+                  for (const attr of attrs) {
+                    if (attr?.attributeId) {
+                      const slug = attr.attributeId.slug?.toLowerCase();
+                      const name = attr.attributeId.name?.toLowerCase();
+                      if (slug === 'dung-tich' || name === 'dung tích' || name === 'dung tich' || 
+                          slug === 'capacity' || name === 'capacity') {
+                        capacity = `${attr.value}ml`;
+                        break;
+                      }
+                    }
+                  }
+                  // Nếu không tìm thấy, lấy từ sản phẩm chính
+                  if (capacity === 'N/A' && item.productId?.capacity) {
+                    capacity = `${item.productId.capacity}ml`;
+                  }
+                  
+                  return (
+                    <li key={index} className="mb-1">
+                      {item.productId?.name || 'Sản phẩm'} ({capacity}) - {item.variantId?.sku || 'Phiên bản'} x {item.quantity} = {(item.price * item.quantity).toLocaleString()} đ
+                    </li>
+                  );
+                }) || <li>Không có sản phẩm</li>}
               </ul>
 
               {record.addressFree && (
@@ -409,9 +493,6 @@ const OrderPage = () => {
                   </p>
                   {record.shipping.expectedDeliveryTime && (
                     <p><strong>Thời gian dự kiến:</strong> {record.shipping.expectedDeliveryTime}</p>
-                  )}
-                  {record.shipping.fee && (
-                    <p><strong>Phí vận chuyển:</strong> {record.shipping.fee.toLocaleString('vi-VN')}đ</p>
                   )}
                 </div>
               )}
@@ -633,43 +714,29 @@ const OrderPage = () => {
                     title: 'Dung tích',
                     key: 'capacity',
                     render: (_, record) => {
-                      // Kiểm tra và log dữ liệu để debug
-                      console.log('Product data:', record.productId);
-                      console.log('Variant data:', record.variantId);
-                      
-                      // Lấy dung tích từ sản phẩm chính
-                      const productCapacity = record.productId?.capacity;
-                      
-                      // Kiểm tra variant_attributes
+                      // Lấy dung tích từ variant_attributes trước
                       const attrs = record.variantId?.variant_attributes || [];
-                      console.log('Variant attributes:', attrs);
                       
                       // Tìm thuộc tính dung tích trong variant_attributes
-                      let variantCapacity = null;
                       for (const attr of attrs) {
-                        console.log('Checking attribute:', attr);
                         if (attr?.attributeId) {
                           const slug = attr.attributeId.slug?.toLowerCase();
                           const name = attr.attributeId.name?.toLowerCase();
-                          console.log('Attribute slug:', slug, 'name:', name);
                           
                           if (slug === 'dung-tich' || name === 'dung tích' || name === 'dung tich' || 
                               slug === 'capacity' || name === 'capacity') {
-                            variantCapacity = (attr as any).value;
-                            console.log('Found capacity in variant:', variantCapacity);
-                            break;
+                            return `${attr.value}ml`;
                           }
                         }
                       }
                       
-                      // Hiển thị dung tích từ variant hoặc sản phẩm chính
-                      if (variantCapacity) {
-                        return `${variantCapacity}ml`;
-                      } else if (productCapacity) {
+                      // Nếu không tìm thấy trong variant, lấy từ sản phẩm chính
+                      const productCapacity = record.productId?.capacity;
+                      if (productCapacity) {
                         return `${productCapacity}ml`;
-                      } else {
-                        return '100ml'; // Giá trị mặc định nếu không tìm thấy
                       }
+                      
+                      return 'N/A';
                     }
                   },
 
@@ -730,6 +797,43 @@ const OrderPage = () => {
             )}
           </div>
         )}
+      </Modal>
+      
+      {/* Modal hủy đơn hàng */}
+      <Modal
+        title="Hủy đơn hàng"
+        open={isCancelModalVisible}
+        onOk={handleCancelOrder}
+        onCancel={() => {
+          setIsCancelModalVisible(false)
+          setCancelOrderId(null)
+          cancelForm.resetFields()
+        }}
+        okText="Xác nhận hủy"
+        cancelText="Hủy bỏ"
+        okType="danger"
+        confirmLoading={cancelOrderMutation.isPending}
+      >
+        <Form
+          form={cancelForm}
+          layout="vertical"
+        >
+          <Form.Item
+            name="reason"
+            label="Lý do hủy đơn hàng"
+            rules={[
+              { required: true, message: 'Vui lòng nhập lý do hủy đơn hàng' },
+              { min: 10, message: 'Lý do phải có ít nhất 10 ký tự' }
+            ]}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="Nhập lý do hủy đơn hàng (ví dụ: Khách hàng yêu cầu hủy, Sản phẩm hết hàng, v.v.)"
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   )

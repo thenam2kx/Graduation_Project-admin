@@ -58,24 +58,6 @@ const AppHeader = () => {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
         <ThemeSelect />
-
-        <Flex gap="small" vertical>
-          <Flex wrap gap="small">
-            <Tooltip title="Thông báo">
-              <Badge size='small' count={5}>
-                <Button type="default" shape="circle" icon={<BellOutlined />} />
-              </Badge>
-            </Tooltip>
-          </Flex>
-        </Flex>
-
-        <Dropdown menu={{ items }} trigger={['click']}>
-          <a onClick={(e) => e.preventDefault()}>
-            <Space>
-              <Avatar size={'default'} icon={<UserOutlined />} />
-            </Space>
-          </a>
-        </Dropdown>
       </div>
     </Header>
   )

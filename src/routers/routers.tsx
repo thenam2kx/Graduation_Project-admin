@@ -23,6 +23,8 @@ import FormProductAdd from '@/pages/product/product.form'
 import FormProductEdit from '@/pages/product/product.form-update'
 import ProductVariantsPage from '@/pages/productVariant/productVariant.page'
 import AttributePage from '@/pages/attribute/attribute.page'
+
+import UnifiedTrashPage from '@/pages/trash/unified-trash.page'
 import VariantAttributePage from '@/pages/variantsat/variantAttribute.page'
 import MediaPage from '@/pages/media/media.page'
 import SigninPage from '@/pages/auth/signin.page'
@@ -51,10 +53,13 @@ const Routers = () => {
           <Route path='/products' element={<ProductPage />} />
           <Route path='/variants' element={<ProductVariantsPage />} />
           <Route path='/attributes' element={<AttributePage />} />
+
           <Route path='/variantsat' element={<VariantAttributePage />} />
           <Route path='/products/add' element={<ProductAddPage />} />
           <Route path='/products/edit/:id' element={<ProductUpdatePage />} />
           <Route path='/cateblog' element={<BlogCategoryPage />} />
+
+          <Route path='/trash' element={<UnifiedTrashPage />} />
           <Route path='/blogCategory' element={<BlogCategoryPage />} />
           <Route path="/categories" element={<CategoryList />} />
           {/* <Route path="/categories/add" element={<CategoryAdd/>} />
@@ -67,6 +72,7 @@ const Routers = () => {
           <Route path='/blogs' element={<BlogPage />} />
           <Route path='/blogs/add' element={<FormBlogAdd />} />
           <Route path='/blogs/edit/:id' element={<FormBlogEdit />} />
+
           <Route path='/brand' element={<Brand />} />
           <Route path='/discounts' element={<Discounts />} />
           <Route path='/discounts/add' element={<DiscountsAdd />} />

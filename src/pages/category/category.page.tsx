@@ -10,11 +10,27 @@ import {
   Modal,
   Spin,
   Pagination,
+  Popconfirm,
 } from 'antd'
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import axios from '@/config/axios.customize'
 import type { ColumnsType } from 'antd/es/table'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+
+// Hàm tạo slug từ tên
+const createSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Loại bỏ dấu
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^a-z0-9\s-]/g, '') // Chỉ giữ chữ, số, khoảng trắng và dấu gạch ngang
+    .replace(/\s+/g, '-') // Thay khoảng trắng bằng dấu gạch ngang
+    .replace(/-+/g, '-') // Loại bỏ nhiều dấu gạch ngang liên tiếp
+    .trim()
+    .replace(/^-+|-+$/g, '') // Loại bỏ dấu gạch ngang ở đầu và cuối
+}
 
 interface Category {
   _id: string
@@ -56,6 +72,13 @@ const CategoryList = () => {
 
   // Form instance for category add/edit
   const [form] = Form.useForm()
+
+  // Hàm xử lý khi thay đổi tên danh mục
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value
+    const slug = createSlug(name)
+    form.setFieldsValue({ slug })
+  }
 
   // Fetch categories (pagination + search)
   const fetchList = async ({
@@ -157,16 +180,9 @@ const CategoryList = () => {
     setProductsPagination({ current: 1, pageSize: 5, total: 0 })
   }
 
-  // Confirm deletion
-  const showDeleteConfirm = (record: Category) => {
-    Modal.confirm({
-      title: 'Xác nhận xóa',
-      content: `Bạn có chắc chắn muốn xóa danh mục "${record.name}"?`,
-      okText: 'Xóa',
-      okType: 'danger',
-      cancelText: 'Hủy',
-      onOk: () => deleteMutation.mutate(record._id)
-    })
+  // Handle delete
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id)
   }
 
   // Open Drawer for adding new category
@@ -213,8 +229,12 @@ const CategoryList = () => {
       }
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       handleCloseDrawer()
-    } catch (error) {
-      message.error('Lỗi khi lưu danh mục!')
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        message.error(error.response?.data?.message || 'Tên danh mục đã tồn tại')
+      } else {
+        message.error('Lỗi khi lưu danh mục!')
+      }
     }
   }
 
@@ -253,12 +273,18 @@ const CategoryList = () => {
             className="text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500"
             title="Chỉnh sửa"
           />
-          <Button
-            icon={<DeleteOutlined />}
-            onClick={() => showDeleteConfirm(record)}
-            className="text-red-600 border-red-600 hover:text-red-500 hover:border-red-500"
-            title="Xóa danh mục"
-          />
+          <Popconfirm
+            title="Bạn có chắc muốn xóa danh mục này không?"
+            onConfirm={() => handleDelete(record._id)}
+            okText="Có"
+            cancelText="Không"
+          >
+            <Button
+              icon={<DeleteOutlined />}
+              className="text-red-600 border-red-600 hover:text-red-500 hover:border-red-500"
+              title="Xóa danh mục"
+            />
+          </Popconfirm>
         </Space>
       )
     }
@@ -365,15 +391,22 @@ const CategoryList = () => {
               name="name"
               rules={[{ required: true, message: 'Nhập tên danh mục' }]}
             >
-              <Input />
+              <Input onChange={handleNameChange} />
             </Form.Item>
 
             <Form.Item
               label="Slug"
               name="slug"
-              rules={[{ required: true, message: 'Nhập slug' }]}
             >
-              <Input />
+              <Input 
+                placeholder="Slug tự động tạo từ tên" 
+                disabled
+                style={{ 
+                  backgroundColor: '#f5f5f5', 
+                  cursor: 'not-allowed',
+                  color: '#666'
+                }}
+              />
             </Form.Item>
 
             <Form.Item

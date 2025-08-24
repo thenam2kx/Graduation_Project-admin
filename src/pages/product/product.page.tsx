@@ -43,7 +43,7 @@ const ProductPage = () => {
       queryClient.invalidateQueries({ queryKey: [PRODUCT_QUERY_KEYS.FETCH_ALL] })
     },
     onError: () => {
-      message.error('Xóa sản phẩm thất bại!')
+      message.error('Sản phẩm đã tồn tại trong đơn hàng, không thể xóa !')
     }
   })
 
