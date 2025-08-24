@@ -16,8 +16,6 @@ import {
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-
 
 const { Title } = Typography;
 const DiscountsAdd = () => {
@@ -26,28 +24,14 @@ const DiscountsAdd = () => {
 
 const handleFinish = async (values: IDiscounts) => {
   try {
-    const now = dayjs();
-    const { startDate, endDate } = values;
-    let status = "Sắp diễn ra";
-    if (startDate && endDate) {
-      if (now.isBefore(startDate)) {
-        status = "Sắp diễn ra";
-      } else if (now.isAfter(endDate)) {
-        status = "Đã kết thúc";
-      } else {
-        status = "Đang diễn ra";
-      }
-    }
-
     const payload = {
       ...values,
-      startDate: startDate?.toISOString() || null,
-      endDate: endDate?.toISOString() || null,
-      status,
+      startDate: values.startDate?.toISOString() || null,
+      endDate: values.endDate?.toISOString() || null,
     };
 
     await instance.post("/api/v1/discounts/", payload);
-    message.success("Thêm mã giảm giá thành công");
+    message.success("Thêm mã giảm giá thành công");
     nav("/discounts");
   } catch (err:any) {
      console.error(err);
@@ -55,50 +39,6 @@ const handleFinish = async (values: IDiscounts) => {
     message.error(errMessage);
   }
 };
-const fetchProducts = async () => {
-  const res = await instance.get("/api/v1/products/");
-  console.log("Products fetched:", res.data.results); 
-  return res.data.results || []; 
-};
-
-const fetchCategories = async () => {
-  const res = await instance.get("/api/v1/categories");
-  console.log(res);
-     return res.data.results || [];
-
-};
-const fetchVariants = async () => {
-    const res = await instance.get("/api/v1/variants");
-     return res.data.results || [];
-
-}
-
-const { data: products = [], isLoading: loadingProducts } = useQuery({
-  queryKey: ["products"],
-  queryFn: fetchProducts
-});
-const { data: categories = [], isLoading: loadingCategories } = useQuery({
-  queryKey: ["categories"],
-  queryFn: fetchCategories
-});
-const { data: variants = [], isLoading: loadingVariants } = useQuery({
-  queryKey: ["variants"],
-  queryFn: fetchVariants
-});
-const productOptions = products?.map((p: any) => ({
-  label: p.name,
-  value: p._id
-})) || [];
-
-const categoryOptions = categories?.map((c: any) => ({
-  label: c.name,
-  value: c._id
-})) || [];
-
-const variantOptions = variants?.map((v: any) => ({
-  label: `${v.sku} - ${v.productId?.name || "Không rõ sản phẩm"}`,
-  value: v._id
-})) || [];
 
   return (
     <div className="p-4">
@@ -110,18 +50,18 @@ const variantOptions = variants?.map((v: any) => ({
             {/* Cột trái */}
             <Col span={12}>
               <Form.Item
-                label="Mã giảm giá"
+                label="Mã giảm giá"
                 name="code"
                 rules={[
-                  { required: true, message: "Vui lòng không bỏ trống" },
-                  { min: 5, message: "Tối thiểu 5 ký tự" },
+                  { required: true, message: "Vui lòng không bỏ trống" },
+                  { min: 5, message: "Tối thiểu 5 ký tự" },
                 ]}
               >
-                <Input placeholder="Mã code" />
+                <Input placeholder="Mã code" />
               </Form.Item>
 
               <Form.Item
-                label="Kiểu giảm giá"
+                label="Kiểu giảm giá"
                 name="type"
                 rules={[{ required: true, message: "Vui lòng chọn kiểu giảm giá" }]}
               >
@@ -139,49 +79,31 @@ const variantOptions = variants?.map((v: any) => ({
                 <Input className="w-full" min={0} placeholder="Giá trị giảm" />
               </Form.Item>
 
-              <Form.Item label="Giảm tối đa" name="max_discount_amount">
+              <Form.Item 
+                label="Giảm tối đa" 
+                name="max_discount_amount"
+                rules={[{ required: true, message: "Vui lòng nhập giảm tối đa" }]}
+              >
                 <Input className="w-full" min={0} placeholder="Giảm tối đa" />
               </Form.Item>
 
-              <Form.Item label="Giá trị đơn hàng tối thiểu" name="min_order_value">
+              <Form.Item 
+                label="Giá trị đơn hàng tối thiểu" 
+                name="min_order_value"
+                rules={[{ required: true, message: "Vui lòng nhập giá trị tối thiểu" }]}
+              >
                 <Input className="w-full" min={0} placeholder="Giá trị tối thiểu" />
               </Form.Item>
 
-              <Form.Item label="Giới hạn toàn hệ thống" name="usage_limit">
-                <Input className="w-full" min={100} placeholder="Giới hạn sử dụng" />
+              <Form.Item 
+                label="Giới hạn toàn hệ thống" 
+                name="usage_limit"
+                rules={[{ required: true, message: "Vui lòng nhập giới hạn sử dụng" }]}
+              >
+                <Input className="w-full" min={0} max={100} placeholder="Giới hạn sử dụng" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Sản phẩm áp dụng" name="applies_product">
-              <Select
-                mode="multiple"
-                allowClear
-                style={{ width: '100%' }}
-                placeholder="Tên sản phẩm"
-                options={productOptions}
-                loading={loadingProducts}
-              />
-            </Form.Item>
-              <Form.Item label="Danh mục áp dụng" name="applies_category">
-            <Select
-              mode="multiple"
-              allowClear
-              style={{ width: '100%' }}
-              placeholder="Tên danh mục"
-              options={categoryOptions}
-              loading={loadingCategories}
-            />
-          </Form.Item>
-          <Form.Item label="Biến thể áp dụng" name="applies_variant">
-            <Select
-              mode="multiple"
-              allowClear
-              style={{ width: '100%' }}
-              placeholder="Tên biến thể"
-              options={variantOptions}
-              loading={loadingVariants}
-            />
-          </Form.Item>
               <Form.Item
                 name="startDate"
                 label="Ngày bắt đầu"
@@ -196,8 +118,12 @@ const variantOptions = variants?.map((v: any) => ({
               >
                 <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" className="w-full" />
               </Form.Item>
-              <Form.Item label="Giới hạn mỗi người dùng" name="usage_per_user">
-                <Input className="w-full" min={1} placeholder="Mỗi người dùng" />
+              <Form.Item 
+                label="Giới hạn mỗi người dùng" 
+                name="usage_per_user"
+                rules={[{ required: true, message: "Vui lòng nhập giới hạn mỗi người dùng" }]}
+              >
+                <Input className="w-full" min={0} max={1} placeholder="Mỗi người dùng" />
               </Form.Item>
             </Col>
           </Row>
@@ -207,7 +133,7 @@ const variantOptions = variants?.map((v: any) => ({
                 name="description"
                 label="Mô tả"
                 rules={[
-                  { required: true, message: "Vui lòng không bỏ trống" },
+                  { required: true, message: "Vui lòng không bỏ trống" },
                   { min: 5, message: "Tối thiểu 5 ký tự" },
                 ]}
               >
