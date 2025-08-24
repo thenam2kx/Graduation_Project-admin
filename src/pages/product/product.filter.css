@@ -1,0 +1,43 @@
+.product-filter-container {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #e9ecef;
+}
+
+.filter-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-clear-btn {
+  background: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+.filter-clear-btn:hover {
+  background: #5a6268 !important;
+  border-color: #545b62 !important;
+  color: white !important;
+}
+
+@media (max-width: 768px) {
+  .filter-item {
+    min-width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .filter-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

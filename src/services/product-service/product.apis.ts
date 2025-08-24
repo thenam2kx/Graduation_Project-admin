@@ -13,15 +13,25 @@ export const fetchProductById = async (id: string) => {
 }
 
 export const createProductAPI = async (data: IProductFormData) => {
-  const url = '/api/v1/products'
-  const response = await axios.post<IBackendResponse<IProduct>>(url, { ...data })
-  return response
+  try {
+    const url = '/api/v1/products'
+    const response = await axios.post<IBackendResponse<IProduct>>(url, data)
+    return response
+  } catch (error) {
+    console.error('Error creating product:', error)
+    throw error
+  }
 }
 
 export const updateProductAPI = async (id: string, data: IProductFormData) => {
-  const url = `/api/v1/products/${id}`
-  const response = await axios.patch<IBackendResponse<IProduct>>(url, { ...data })
-  return response
+  try {
+    const url = `/api/v1/products/${id}`
+    const response = await axios.patch<IBackendResponse<IProduct>>(url, data)
+    return response
+  } catch (error) {
+    console.error('Error updating product:', error)
+    throw error
+  }
 }
 
 export const deleteProductAPI = async (id: string) => {
