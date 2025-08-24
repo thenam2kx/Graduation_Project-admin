@@ -29,36 +29,21 @@ const DiscountsUpdate = () => {
         ...data,
         startDate: data.startDate ? dayjs(data.startDate) : null,
         endDate: data.endDate ? dayjs(data.endDate) : null,
-        applies_product: Array.isArray(data.applies_product) ? data.applies_product.map((item: any) => (typeof item === "string" ? item : item._id)) : data.applies_product,
-        applies_category: Array.isArray(data.applies_category) ? data.applies_category.map((item: any) => (typeof item === "string" ? item : item._id)) : data.applies_category,
-        applies_variant: Array.isArray(data.applies_variant) ? data.applies_variant.map((item: any) => (typeof item === "string" ? item : item._id)) : data.applies_variant,
+
       });
     }
   }, [data, form]);
 
   const handleFinish = async (values: IDiscounts) => {
     try {
-      const now = dayjs();
-      const { startDate, endDate } = values;
-      let status = "Sắp diễn ra";
-      if (startDate && endDate) {
-        if (now.isBefore(startDate)) status = "Sắp diễn ra";
-        else if (now.isAfter(endDate)) status = "Đã kết thúc";
-        else status = "Đang diễn ra";
-      }
-
       const payload = {
         ...values,
-        startDate: startDate?.toISOString() || null,
-        endDate: endDate?.toISOString() || null,
-        applies_product: Array.isArray(values.applies_product) ? values.applies_product.map((id: any) => (typeof id === "string" ? id : id._id)) : values.applies_product,
-        applies_category: Array.isArray(values.applies_category) ? values.applies_category.map((id: any) => (typeof id === "string" ? id : id._id)) : values.applies_category,
-        applies_variant: Array.isArray(values.applies_variant) ? values.applies_variant.map((id: any) => (typeof id === "string" ? id : id._id)) : values.applies_variant,
-        status,
+        startDate: values.startDate?.toISOString() || null,
+        endDate: values.endDate?.toISOString() || null,
       };
 
       await instance.patch(`/api/v1/discounts/${id}`, payload);
-      message.success("Sửa mã giảm giá thành công");
+      message.success("Sửa mã giảm giá thành công");
       nav("/discounts");
     } catch (err: any) {
       console.error(err);
@@ -66,66 +51,22 @@ const DiscountsUpdate = () => {
     message.error(errMessage);
     }
   };
-  const fetchProducts = async () => {
-    const res = await instance.get("/api/v1/products/");
-    return res.data.results || [];
-  };
 
-  const fetchCategories = async () => {
-    const res = await instance.get("/api/v1/categories");
-    return res.data.results || [];
-  };
-
-  const fetchVariants = async () => {
-    const res = await instance.get("/api/v1/variants");
-    return res.data.results || [];
-  };
-
-  const { data: products = [], isLoading: loadingProducts } = useQuery({
-    queryKey: ["products"],
-    queryFn: fetchProducts
-  });
-
-  const { data: categories = [], isLoading: loadingCategories } = useQuery({
-    queryKey: ["categories"],
-    queryFn: fetchCategories
-  });
-
-  const { data: variants = [], isLoading: loadingVariants } = useQuery({
-    queryKey: ["variants"],
-    queryFn: fetchVariants
-  });
-
-  const productOptions = products.map((p: any) => ({
-    label: p.name,
-    value: p._id,
-  }));
-  // console.log("productOptions", productOptions);  
-
-  const categoryOptions = categories.map((c: any) => ({
-    label: c.name,
-    value: c._id
-  }));
-
-  const variantOptions = variants.map((v: any) => ({
-    label: `${v.sku} - ${v.productId?.name || "Không rõ sản phẩm"}`,
-    value: v._id
-  }));
 
   return (
     <div className="p-4">
       <Card>
-        <Title level={4}>Sửa mã giảm giá</Title>
+        <Title level={4}>Sửa mã giảm giá</Title>
         <Form layout="vertical" onFinish={handleFinish} form={form}>
           <Row gutter={24}>
             <Col span={12}>
-              <Form.Item label="Mã giảm giá" name="code" rules={[
-                { required: true, message: "Vui lòng không bỏ trống" },
-                { min: 5, message: "Tối thiểu 5 ký tự" },
+              <Form.Item label="Mã giảm giá" name="code" rules={[
+                { required: true, message: "Vui lòng không bỏ trống" },
+                { min: 5, message: "Tối thiểu 5 ký tự" },
               ]}>
-                <Input placeholder="Mã code" />
+                <Input placeholder="Mã code" />
               </Form.Item>
-              <Form.Item label="Kiểu giảm giá" name="type" rules={[{ required: true }]}>
+              <Form.Item label="Kiểu giảm giá" name="type" rules={[{ required: true }]}>
                 <Select placeholder="Chọn kiểu giảm giá">
                   <Select.Option value="%">%</Select.Option>
                   <Select.Option value="Vnd">Vnđ</Select.Option>
@@ -145,30 +86,21 @@ const DiscountsUpdate = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Sản phẩm áp dụng" name="applies_product">
-                <Select mode="multiple" allowClear style={{ width: "100%" }} placeholder="Tên sản phẩm" options={productOptions} loading={loadingProducts} />
-              </Form.Item>
-              <Form.Item label="Danh mục áp dụng" name="applies_category">
-                <Select mode="multiple" allowClear style={{ width: "100%" }} placeholder="Tên danh mục" options={categoryOptions} loading={loadingCategories} />
-              </Form.Item>
-              <Form.Item label="Biến thể áp dụng" name="applies_variant">
-                <Select mode="multiple" allowClear style={{ width: "100%" }} placeholder="Tên biến thể" options={variantOptions} loading={loadingVariants} />
-              </Form.Item>
               <Form.Item name="startDate" label="Ngày bắt đầu" rules={[{ required: true }]}>
                 <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" className="w-full" />
               </Form.Item>
               <Form.Item name="endDate" label="Ngày kết thúc" rules={[{ required: true }]}>
                 <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" className="w-full" />
               </Form.Item>
-              <Form.Item label="Giới hạn mỗi người dùng" name="usage_per_user">
-                <Input className="w-full" min={1} placeholder="Mỗi người dùng" />
+              <Form.Item label="Giới hạn mỗi người dùng" name="usage_per_user" initialValue={1}>
+                <Input className="w-full" disabled value={1} placeholder="Mỗi người dùng" />
               </Form.Item>
             </Col>
           </Row>
           <Row>
             <Col span={24}>
               <Form.Item name="description" label="Mô tả" rules={[
-                { required: true, message: "Vui lòng không bỏ trống" },
+                { required: true, message: "Vui lòng không bỏ trống" },
                 { min: 5, message: "Tối thiểu 5 ký tự" },
               ]}>
                 <TextArea rows={4} placeholder="Mô tả chi tiết..." />
@@ -180,7 +112,7 @@ const DiscountsUpdate = () => {
             <Col>
               <Form.Item>
                 <div className="flex gap-4">
-                  <Button htmlType="submit" type="primary">Sửa</Button>
+                  <Button htmlType="submit" type="primary">Sửa</Button>
                   <Button onClick={() => nav("/discounts")}>Hủy</Button>
                 </div>
               </Form.Item>
