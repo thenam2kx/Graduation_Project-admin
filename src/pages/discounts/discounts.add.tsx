@@ -121,9 +121,9 @@ const handleFinish = async (values: IDiscounts) => {
               <Form.Item 
                 label="Giới hạn mỗi người dùng" 
                 name="usage_per_user"
-                rules={[{ required: true, message: "Vui lòng nhập giới hạn mỗi người dùng" }]}
+                initialValue={1}
               >
-                <Input className="w-full" min={0} max={1} placeholder="Mỗi người dùng" />
+                <Input className="w-full" disabled value={1} placeholder="Mỗi người dùng" />
               </Form.Item>
             </Col>
           </Row>

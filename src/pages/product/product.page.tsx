@@ -1,33 +1,74 @@
 import { deleteProductAPI, fetchAllProducts } from '@/services/product-service/product.apis'
 import { PRODUCT_QUERY_KEYS } from '@/services/product-service/product.key'
-import { DeleteOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons'
+import { getAllBrandsAPI } from '@/services/brand-service/brand.apis'
+import { getAllCategoriesAPI } from '@/services/category-service/category.apis'
+import { DeleteOutlined, EditOutlined, EyeOutlined, FilterOutlined, ClearOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, message, Popconfirm, Space, Table } from 'antd'
+import { Button, message, Popconfirm, Space, Table, Select, Row, Col, Card } from 'antd'
 import Search from 'antd/es/input/Search'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router'
 import ProductDetailModal from './product-detail.modal'
+import './product.filter.css'
 
 const ProductPage = () => {
   const [searchValue, setSearchValue] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [selectedBrand, setSelectedBrand] = useState<string | undefined>(undefined)
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined)
   const [pagination, setPagination] = useState<IPagination>({ current: 1, pageSize: 10, total: 10 })
   const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const queryClient = useQueryClient()
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchValue)
+      setPagination(prev => ({ ...prev, current: 1 }))
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchValue])
+
   const { data: listProducts, isLoading } = useQuery({
-    queryKey: [PRODUCT_QUERY_KEYS.FETCH_ALL, pagination.current, pagination.pageSize],
+    queryKey: [PRODUCT_QUERY_KEYS.FETCH_ALL, pagination.current, pagination.pageSize, debouncedSearch, selectedBrand, selectedCategory],
     queryFn: async () => {
-      const params = `?current=${pagination.current}&pageSize=${pagination.pageSize}&sort=-createdAt`
-      const res = await fetchAllProducts(params)
-      if (res && res.data) {
-        return res.data
-      } else {
+      try {
+        let params = `?current=${pagination.current}&pageSize=${pagination.pageSize}&sort=-createdAt`
+        if (debouncedSearch) params += `&name=${encodeURIComponent(debouncedSearch)}`
+        if (selectedBrand) params += `&brandId=${selectedBrand}`
+        if (selectedCategory) params += `&categoryId=${selectedCategory}`
+        
+        const res = await fetchAllProducts(params)
+        if (res && res.data) {
+          return res.data
+        } else {
+          throw new Error('Không có dữ liệu trả về từ API')
+        }
+      } catch (error) {
         message.error('Lấy danh sách sản phẩm thất bại!')
+        throw error
       }
+    },
+    enabled: true
+  })
+
+  const { data: brands } = useQuery({
+    queryKey: ['brands-all'],
+    queryFn: async () => {
+      const res = await getAllBrandsAPI()
+      return res?.data || []
     }
   })
-  console.log('🚀 ~ ProductPage ~ listProducts:', listProducts)
+
+  const { data: categories } = useQuery({
+    queryKey: ['categories-all'],
+    queryFn: async () => {
+      const res = await getAllCategoriesAPI()
+      return res?.data || []
+    }
+  })
+  // Debug log removed for production
 
   const deleteProductMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -60,6 +101,18 @@ const ProductPage = () => {
     setIsModalVisible(false)
     setSelectedProduct(null)
   }
+
+  const handleClearFilters = () => {
+    setSearchValue('')
+    setDebouncedSearch('')
+    setSelectedBrand(undefined)
+    setSelectedCategory(undefined)
+    setPagination({ current: 1, pageSize: 10, total: 10 })
+  }
+
+  const handleSearch = useCallback((value: string) => {
+    setSearchValue(value)
+  }, [])
 
   const columns = [
     {
@@ -170,23 +223,87 @@ const ProductPage = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <h1>Trang quản lý sản phẩm</h1>
 
-      <Link to="/products/add">
-        <Button type="primary" style={{ marginBottom: 16, float: 'right' }}>
-          Thêm mới
-        </Button>
-      </Link>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0 }}>Trang quản lý sản phẩm</h1>
+        <Link to="/products/add">
+          <Button type="primary">
+            Thêm mới
+          </Button>
+        </Link>
+      </div>
 
-      <Search
-        placeholder="Tìm kiếm sản phẩm..."
-        allowClear
-        enterButton="Tìm"
-        size="middle"
-        style={{ marginBottom: 16, maxWidth: 300 }}
-        onChange={e => setSearchValue(e.target.value)}
-        value={searchValue}
-      />
+      <Card className="product-filter-container" size="small">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={8} lg={6} className="filter-item">
+            <Search
+              placeholder="Tìm kiếm theo tên sản phẩm..."
+              allowClear
+              enterButton="Tìm"
+              size="middle"
+              onChange={e => handleSearch(e.target.value)}
+              onSearch={handleSearch}
+              value={searchValue}
+              loading={searchValue !== debouncedSearch}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={6} className="filter-item">
+            <Select
+              placeholder="Lọc theo thương hiệu"
+              allowClear
+              style={{ width: '100%' }}
+              value={selectedBrand}
+              onChange={setSelectedBrand}
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={[
+                ...(brands?.map(brand => ({ value: brand._id, label: brand.name })) || [])
+              ]}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={6} className="filter-item">
+            <Select
+              placeholder="Lọc theo danh mục"
+              allowClear
+              style={{ width: '100%' }}
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={[
+                ...(categories?.map(category => ({ value: category._id, label: category.name })) || [])
+              ]}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={6} className="filter-item">
+            <Button 
+              icon={<ClearOutlined />} 
+              onClick={handleClearFilters}
+              className="filter-clear-btn"
+              style={{ width: '100%' }}
+              disabled={!searchValue && !selectedBrand && !selectedCategory}
+            >
+              Xóa bộ lọc
+            </Button>
+          </Col>
+        </Row>
+      </Card>
+
+      {(debouncedSearch || selectedBrand || selectedCategory) && (
+        <div style={{ marginBottom: 16, padding: '8px 12px', background: '#f0f8ff', borderRadius: 4, border: '1px solid #d6e4ff' }}>
+          <span style={{ color: '#1890ff', fontSize: '14px' }}>
+            <FilterOutlined style={{ marginRight: 8 }} />
+            Đang lọc: {listProducts?.meta.total || 0} sản phẩm
+            {debouncedSearch && <span style={{ marginLeft: 8 }}>• Từ khóa: "{debouncedSearch}"</span>}
+            {selectedBrand && <span style={{ marginLeft: 8 }}>• Thương hiệu: {brands?.find(b => b._id === selectedBrand)?.name}</span>}
+            {selectedCategory && <span style={{ marginLeft: 8 }}>• Danh mục: {categories?.find(c => c._id === selectedCategory)?.name}</span>}
+          </span>
+        </div>
+      )}
 
       <Table
         rowKey="_id"
